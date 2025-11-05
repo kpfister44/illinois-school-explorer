@@ -73,3 +73,8 @@ build/
 *.tmp
 *.temp
 .cache/
+
+# Planning and Documentation (keep private)
+docs/plans/
+docs/PROMPTS.md
+CLAUDE.md
