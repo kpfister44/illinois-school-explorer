@@ -1,15 +1,45 @@
 # ABOUTME: School detail and comparison endpoints
 # ABOUTME: Retrieves individual school data and multi-school comparisons
 
-from typing import Annotated, Optional
+from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db, get_school_by_rcdts
-from app.models import ACTScores, Demographics, Diversity, SchoolDetail, SchoolMetrics
+from app.models import (
+    ACTScores,
+    CompareResponse,
+    Demographics,
+    Diversity,
+    SchoolDetail,
+    SchoolMetrics,
+)
 
 router = APIRouter(prefix="/api/schools", tags=["schools"])
+
+
+@router.get("/compare", response_model=CompareResponse)
+def compare_schools(
+    rcdts: Annotated[str, Query(description="Comma-separated RCDTS codes (2-5)")],
+    db: Session = Depends(get_db),
+) -> CompareResponse:
+    """Compare multiple schools side-by-side."""
+    rcdts_list = [code.strip() for code in rcdts.split(",") if code.strip()]
+
+    if len(rcdts_list) < 2 or len(rcdts_list) > 5:
+        raise HTTPException(
+            status_code=400,
+            detail="Must provide 2-5 school RCDTS codes",
+        )
+
+    schools: List[SchoolDetail] = []
+    for rcdts_code in rcdts_list:
+        school = get_school_by_rcdts(db, rcdts_code)
+        if school:
+            schools.append(build_school_detail(school))
+
+    return CompareResponse(schools=schools)
 
 
 def build_school_detail(school) -> SchoolDetail:

@@ -92,3 +92,97 @@ def test_get_school_detail_shows_null_for_suppressed_data(client, test_db):
     data = response.json()
     assert data["metrics"]["diversity"]["white"] is None
     assert data["metrics"]["diversity"]["black"] is None
+
+
+def test_compare_schools_returns_multiple_schools(client, test_db):
+    """GET /api/schools/compare returns details for multiple schools."""
+    school1 = School(
+        rcdts="05-016-2140-17-0001",
+        school_name="School A",
+        city="Chicago",
+        level="School",
+        student_enrollment=1000,
+        act_ela_avg=20.0,
+        act_math_avg=21.0,
+    )
+    school2 = School(
+        rcdts="05-016-2140-17-0002",
+        school_name="School B",
+        city="Springfield",
+        level="School",
+        student_enrollment=500,
+        act_ela_avg=18.0,
+        act_math_avg=19.0,
+    )
+    test_db.add_all([school1, school2])
+    test_db.commit()
+
+    response = client.get(
+        "/api/schools/compare?rcdts=05-016-2140-17-0001,05-016-2140-17-0002"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["schools"]) == 2
+    assert data["schools"][0]["school_name"] == "School A"
+    assert data["schools"][1]["school_name"] == "School B"
+    assert data["schools"][0]["metrics"]["enrollment"] == 1000
+    assert data["schools"][1]["metrics"]["act"]["overall_avg"] == 18.5
+
+
+def test_compare_schools_requires_2_to_5_schools(client):
+    """GET /api/schools/compare validates 2-5 school requirement."""
+    response = client.get("/api/schools/compare?rcdts=05-016-2140-17-0001")
+    assert response.status_code == 400
+    assert "2-5" in response.json()["detail"]
+
+    rcdts_codes = ",".join([f"05-016-2140-17-{i:04d}" for i in range(6)])
+    response = client.get(f"/api/schools/compare?rcdts={rcdts_codes}")
+    assert response.status_code == 400
+    assert "2-5" in response.json()["detail"]
+
+
+def test_compare_schools_skips_nonexistent_schools(client, test_db):
+    """GET /api/schools/compare skips schools that don't exist."""
+    school = School(
+        rcdts="05-016-2140-17-0001",
+        school_name="Real School",
+        city="Chicago",
+        level="School",
+    )
+    test_db.add(school)
+    test_db.commit()
+
+    response = client.get(
+        "/api/schools/compare?rcdts=05-016-2140-17-0001,99-999-9999-99-9999"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["schools"]) == 1
+    assert data["schools"][0]["school_name"] == "Real School"
+
+
+def test_compare_schools_handles_three_schools(client, test_db):
+    """GET /api/schools/compare works with 3 schools."""
+    schools = [
+        School(
+            rcdts=f"05-016-2140-17-{i:04d}",
+            school_name=f"School {i}",
+            city="Chicago",
+            level="School",
+            student_enrollment=100 * i,
+        )
+        for i in range(1, 4)
+    ]
+    test_db.add_all(schools)
+    test_db.commit()
+
+    rcdts_codes = ",".join([f"05-016-2140-17-{i:04d}" for i in range(1, 4)])
+    response = client.get(f"/api/schools/compare?rcdts={rcdts_codes}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["schools"]) == 3
+    assert data["schools"][0]["metrics"]["enrollment"] == 100
+    assert data["schools"][2]["metrics"]["enrollment"] == 300
