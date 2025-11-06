@@ -4,7 +4,7 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from app.database import Base
+from app.database import Base, create_fts_index
 
 
 @pytest.fixture(scope="function")
@@ -16,6 +16,7 @@ def test_engine():
         echo=False
     )
     Base.metadata.create_all(engine)
+    create_fts_index(engine)
     yield engine
     Base.metadata.drop_all(engine)
     engine.dispose()

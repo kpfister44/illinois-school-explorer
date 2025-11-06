@@ -2,7 +2,7 @@
 # ABOUTME: Defines School model with base metadata and session helpers
 
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 Base = declarative_base()
@@ -71,3 +71,59 @@ def get_db():
 def init_db():
     """Initialize database tables."""
     Base.metadata.create_all(bind=engine)
+    create_fts_index(engine)
+
+
+def create_fts_index(target_engine):
+    """Create and sync FTS5 virtual table for School search."""
+    with target_engine.connect() as conn:
+        conn.execute(text("DROP TRIGGER IF EXISTS schools_fts_insert"))
+        conn.execute(text("DROP TRIGGER IF EXISTS schools_fts_delete"))
+        conn.execute(text("DROP TRIGGER IF EXISTS schools_fts_update"))
+        conn.execute(text("DROP TABLE IF EXISTS schools_fts"))
+        conn.execute(
+            text(
+                """
+                CREATE VIRTUAL TABLE schools_fts USING fts5(
+                    school_name,
+                    city,
+                    district,
+                    content=schools,
+                    content_rowid=id
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                CREATE TRIGGER schools_fts_insert AFTER INSERT ON schools BEGIN
+                    INSERT INTO schools_fts(rowid, school_name, city, district)
+                    VALUES (new.id, new.school_name, new.city, new.district);
+                END
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                CREATE TRIGGER schools_fts_delete AFTER DELETE ON schools BEGIN
+                    DELETE FROM schools_fts WHERE rowid = old.id;
+                END
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                CREATE TRIGGER schools_fts_update AFTER UPDATE ON schools BEGIN
+                    UPDATE schools_fts
+                    SET school_name = new.school_name,
+                        city = new.city,
+                        district = new.district
+                    WHERE rowid = new.id;
+                END
+                """
+            )
+        )
+        conn.commit()
