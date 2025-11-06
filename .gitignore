@@ -74,7 +74,6 @@ build/
 *.temp
 .cache/
 
-# Planning and Documentation (keep private)
-docs/plans/
-docs/PROMPTS.md
+# Private configuration (keep local only)
 CLAUDE.md
+AGENTS.md
