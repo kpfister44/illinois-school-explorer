@@ -102,3 +102,21 @@ def test_search_finds_schools_by_city(client, test_db):
     assert response.status_code == 200
     data = response.json()
     assert data["total"] == 2
+
+
+def test_search_handles_special_characters(client, test_db):
+    """GET /api/search handles special characters in query."""
+    school = School(
+        rcdts="05-016-2140-17-0001",
+        school_name="St. Mary's School",
+        city="O'Fallon",
+        level="School",
+    )
+    test_db.add(school)
+    test_db.commit()
+
+    response = client.get("/api/search?q=o'fallon")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] >= 1

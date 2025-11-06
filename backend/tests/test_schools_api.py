@@ -1,6 +1,10 @@
 # ABOUTME: Tests for /api/schools endpoints (detail and compare)
 # ABOUTME: Validates school retrieval, metrics formatting, and error handling
 
+from unittest.mock import patch
+
+from sqlalchemy.exc import OperationalError
+
 from app.database import School
 
 
@@ -186,3 +190,21 @@ def test_compare_schools_handles_three_schools(client, test_db):
     assert len(data["schools"]) == 3
     assert data["schools"][0]["metrics"]["enrollment"] == 100
     assert data["schools"][2]["metrics"]["enrollment"] == 300
+
+
+def test_get_school_handles_database_error(client):
+    """GET /api/schools/{rcdts} returns 503 on database error."""
+    with patch("app.api.schools.get_school_by_rcdts") as mock_get:
+        mock_get.side_effect = OperationalError("statement", {}, "error")
+
+        response = client.get("/api/schools/05-016-2140-17-0001")
+
+        assert response.status_code == 503
+        assert "unavailable" in response.json()["detail"].lower()
+
+
+def test_compare_schools_handles_malformed_rcdts(client):
+    """GET /api/schools/compare handles malformed RCDTS gracefully."""
+    response = client.get("/api/schools/compare?rcdts=invalid,,extra-comma")
+
+    assert response.status_code in [200, 400]

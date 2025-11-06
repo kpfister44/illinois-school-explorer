@@ -1,8 +1,10 @@
 # ABOUTME: FastAPI application entry point with CORS and route configuration
 # ABOUTME: Initializes app, registers routers, and configures middleware
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
 
 from app.api.search import router as search_router
 from app.api.schools import router as schools_router
@@ -23,6 +25,15 @@ app.add_middleware(
 
 app.include_router(search_router)
 app.include_router(schools_router)
+
+
+@app.exception_handler(OperationalError)
+async def database_exception_handler(request: Request, exc: OperationalError):
+    """Handle database connection errors."""
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "Service temporarily unavailable"},
+    )
 
 
 @app.get("/health")
