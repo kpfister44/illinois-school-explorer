@@ -2,6 +2,7 @@
 # ABOUTME: Defines School model with base metadata and session helpers
 
 from datetime import UTC, datetime
+import re
 from typing import List, Optional
 
 from sqlalchemy import Column, DateTime, Float, Integer, String, Text, create_engine, text
@@ -136,6 +137,12 @@ def search_schools(db: Session, query: str, limit: int = 10) -> List[School]:
     if not query:
         return []
 
+    cleaned_query = re.sub(r"[^\w\s]", " ", query)
+    cleaned_query = re.sub(r"\s+", " ", cleaned_query).strip()
+
+    if not cleaned_query:
+        return []
+
     limit = max(1, min(limit, 50))
 
     stmt = text(
@@ -148,7 +155,7 @@ def search_schools(db: Session, query: str, limit: int = 10) -> List[School]:
         """
     )
 
-    rows = db.execute(stmt, {"query": query, "limit": limit}).fetchall()
+    rows = db.execute(stmt, {"query": cleaned_query, "limit": limit}).fetchall()
     school_ids = [row.id for row in rows]
 
     results: List[School] = []
