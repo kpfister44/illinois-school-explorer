@@ -2,9 +2,11 @@
 # ABOUTME: Provides test database sessions and client instances
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from app.database import Base, create_fts_index
+from app.database import Base, create_fts_index, get_db
+from app.main import app
 
 
 @pytest.fixture(scope="function")
@@ -35,3 +37,11 @@ def test_db(test_engine) -> Session:
         yield db
     finally:
         db.close()
+
+
+@pytest.fixture
+def client(test_db):
+    """Provide FastAPI TestClient with test database."""
+    app.dependency_overrides[get_db] = lambda: test_db
+    yield TestClient(app)
+    app.dependency_overrides.clear()
