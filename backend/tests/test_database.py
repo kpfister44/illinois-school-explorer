@@ -6,7 +6,15 @@ from pathlib import Path
 import pytest
 from sqlalchemy import text
 
-from app.database import Base, School, get_db, init_db, engine
+from app.database import (
+    Base,
+    School,
+    engine,
+    get_db,
+    get_school_by_rcdts,
+    init_db,
+    search_schools,
+)
 
 
 def test_school_table_exists(test_engine):
@@ -140,3 +148,63 @@ def test_init_db_creates_tables_and_fts(tmp_path):
 
     assert tables
     assert fts_tables
+
+
+@pytest.mark.slow
+def test_search_schools_by_name(test_db):
+    """search_schools finds records by partial school name."""
+    from app.utils.import_data import import_to_database
+
+    import_to_database("../2025-Report-Card-Public-Data-Set.xlsx", test_db)
+
+    results = search_schools(test_db, "elk grove", limit=5)
+
+    assert len(results) > 0
+    assert any("elk grove" in s.school_name.lower() for s in results)
+
+
+@pytest.mark.slow
+def test_search_schools_by_city(test_db):
+    """search_schools matches against city names."""
+    from app.utils.import_data import import_to_database
+
+    import_to_database("../2025-Report-Card-Public-Data-Set.xlsx", test_db)
+
+    results = search_schools(test_db, "chicago", limit=10)
+
+    assert len(results) > 0
+    assert any(s.city.lower() == "chicago" for s in results)
+
+
+@pytest.mark.slow
+def test_search_schools_limit_works(test_db):
+    """Limit parameter caps number of returned schools."""
+    from app.utils.import_data import import_to_database
+
+    import_to_database("../2025-Report-Card-Public-Data-Set.xlsx", test_db)
+
+    results = search_schools(test_db, "high school", limit=3)
+
+    assert 0 < len(results) <= 3
+
+
+@pytest.mark.slow
+def test_get_school_by_rcdts(test_db):
+    """get_school_by_rcdts returns persisted school for valid code."""
+    from app.utils.import_data import import_to_database
+
+    import_to_database("../2025-Report-Card-Public-Data-Set.xlsx", test_db)
+
+    first_school = test_db.query(School).first()
+
+    result = get_school_by_rcdts(test_db, first_school.rcdts)
+
+    assert result is not None
+    assert result.rcdts == first_school.rcdts
+    assert result.school_name == first_school.school_name
+
+
+def test_get_school_by_rcdts_not_found(test_db):
+    """Invalid RCDTS returns None."""
+    result = get_school_by_rcdts(test_db, "INVALID-RCDTS")
+    assert result is None
