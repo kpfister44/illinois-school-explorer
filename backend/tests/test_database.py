@@ -1,9 +1,12 @@
 # ABOUTME: Tests for database models and CRUD operations
 # ABOUTME: Validates School model, FTS search, and data integrity
 
+from pathlib import Path
+
+import pytest
 from sqlalchemy import text
 
-from app.database import Base, School
+from app.database import Base, School, get_db, init_db, engine
 
 
 def test_school_table_exists(test_engine):
@@ -74,3 +77,66 @@ def test_fts_search_by_city(test_db, test_engine):
     ).fetchall()
 
     assert len(results) == 1
+
+
+def test_school_repr():
+    """Test School __repr__ includes key fields."""
+    school = School(
+        rcdts="TEST",
+        school_name="Test School",
+        city="Chicago",
+        level="School"
+    )
+
+    representation = repr(school)
+
+    assert "TEST" in representation
+    assert "Test School" in representation
+    assert "Chicago" in representation
+
+
+def test_get_db_generator_closes_session(monkeypatch):
+    """Test get_db yields a session and closes it after iteration."""
+
+    class DummySession:
+        def __init__(self):
+            self.closed = False
+
+        def close(self):
+            self.closed = True
+
+    dummy_session = DummySession()
+
+    def dummy_sessionlocal():
+        return dummy_session
+
+    monkeypatch.setattr("app.database.SessionLocal", dummy_sessionlocal)
+
+    db_generator = get_db()
+    session = next(db_generator)
+
+    assert session is dummy_session
+
+    with pytest.raises(StopIteration):
+        next(db_generator)
+
+    assert dummy_session.closed
+
+
+def test_init_db_creates_tables_and_fts(tmp_path):
+    """Test init_db initializes tables and FTS index on disk database."""
+    data_dir = Path("data")
+    data_dir.mkdir(exist_ok=True)
+
+    init_db()
+
+    with engine.connect() as conn:
+        tables = conn.execute(
+            text("SELECT name FROM sqlite_master WHERE type='table' AND name='schools'")
+        ).fetchall()
+        fts_tables = conn.execute(
+            text("SELECT name FROM sqlite_master WHERE type='table' AND name='schools_fts'")
+        ).fetchall()
+
+    assert tables
+    assert fts_tables
