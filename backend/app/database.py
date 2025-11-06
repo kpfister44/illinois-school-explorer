@@ -1,7 +1,7 @@
 # ABOUTME: SQLAlchemy database models and session configuration
 # ABOUTME: Defines School model with base metadata and session helpers
 
-from datetime import datetime
+from datetime import UTC, datetime
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -43,7 +43,7 @@ class School(Base):
     pct_two_or_more = Column(Float)
     pct_mena = Column(Float)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     def __repr__(self):
         return f"<School(rcdts='{self.rcdts}', name='{self.school_name}', city='{self.city}')>"
