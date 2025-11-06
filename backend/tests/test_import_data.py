@@ -4,11 +4,14 @@
 import pandas as pd
 import pytest
 
+from app.database import School
 from app.utils.import_data import (
     load_excel_data,
     clean_percentage,
     clean_enrollment,
     merge_school_data,
+    prepare_school_records,
+    import_to_database,
 )
 
 
@@ -78,3 +81,41 @@ def test_merge_school_data_joins_act_scores():
     ]
     for column in expected_columns:
         assert column in merged_df.columns
+
+
+@pytest.mark.slow
+def test_prepare_school_records_transforms_data():
+    """Merged rows convert into dictionaries for bulk insert."""
+    general_df, act_df = load_excel_data("../2025-Report-Card-Public-Data-Set.xlsx")
+    merged_df = merge_school_data(general_df, act_df)
+
+    records = prepare_school_records(merged_df)
+
+    assert isinstance(records, list)
+    assert len(records) > 0
+    first = records[0]
+    assert first["rcdts"]
+    assert first["school_name"]
+    assert "city" in first
+
+
+@pytest.mark.slow
+def test_import_to_database_inserts_schools(test_db):
+    """Full import populates the schools table via bulk insert."""
+    import_to_database("../2025-Report-Card-Public-Data-Set.xlsx", test_db)
+
+    count = test_db.query(School).count()
+    assert count > 3800
+
+    sample = test_db.query(School).filter_by(city="Elk Grove Village").first()
+    assert sample is not None
+    assert sample.school_name
+
+
+@pytest.mark.slow
+def test_import_handles_suppressed_data(test_db):
+    """Suppressed ACT values store as NULL in the database."""
+    import_to_database("../2025-Report-Card-Public-Data-Set.xlsx", test_db)
+
+    school_with_null = test_db.query(School).filter(School.act_ela_avg.is_(None)).first()
+    assert school_with_null is not None
