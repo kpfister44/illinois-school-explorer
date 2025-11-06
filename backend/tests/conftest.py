@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
 from app.database import Base, create_fts_index, get_db
 from app.main import app
 
@@ -15,7 +16,8 @@ def test_engine():
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
-        echo=False
+        echo=False,
+        poolclass=StaticPool
     )
     Base.metadata.create_all(engine)
     create_fts_index(engine)

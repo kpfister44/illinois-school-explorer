@@ -4,6 +4,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.search import router as search_router
+
 app = FastAPI(
     title="Illinois School Explorer API",
     description="REST API for searching and comparing Illinois schools",
@@ -17,6 +19,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(search_router)
 
 
 @app.get("/health")
