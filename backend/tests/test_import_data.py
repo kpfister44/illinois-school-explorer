@@ -35,6 +35,17 @@ def test_clean_percentage_handles_none():
     assert pd.isna(clean_percentage(float("nan")))
 
 
+def test_clean_percentage_invalid_string():
+    """Non-numeric strings return None."""
+    assert clean_percentage("not a number") is None
+
+
+def test_clean_percentage_numeric_types():
+    """Numeric inputs are passed through as floats."""
+    assert clean_percentage(45) == 45.0
+    assert clean_percentage(45.5) == 45.5
+
+
 def test_clean_enrollment_converts_string():
     """Enrollment strings convert to ints."""
     assert clean_enrollment("1,234") == 1234
@@ -44,6 +55,22 @@ def test_clean_enrollment_converts_string():
 def test_clean_enrollment_handles_asterisk():
     """Enrollment asterisks become None."""
     assert clean_enrollment("*") is None
+
+
+def test_clean_enrollment_invalid_string():
+    """Non-numeric enrollment strings return None."""
+    assert clean_enrollment("not a number") is None
+
+
+def test_clean_enrollment_numeric_types():
+    """Numeric inputs remain ints."""
+    assert clean_enrollment(1234) == 1234
+    assert clean_enrollment(1234.5) == 1234
+
+
+def test_clean_enrollment_float_string():
+    """Float strings truncate to int."""
+    assert clean_enrollment("1234.5") == 1234
 
 
 @pytest.mark.slow
@@ -97,6 +124,17 @@ def test_prepare_school_records_transforms_data():
     assert first["rcdts"]
     assert first["school_name"]
     assert "city" in first
+
+
+@pytest.mark.slow
+def test_prepare_school_records_includes_district():
+    """District field should populate using dataset column."""
+    general_df, act_df = load_excel_data("../2025-Report-Card-Public-Data-Set.xlsx")
+    merged_df = merge_school_data(general_df, act_df)
+
+    records = prepare_school_records(merged_df)
+
+    assert any(record.get("district") for record in records)
 
 
 @pytest.mark.slow

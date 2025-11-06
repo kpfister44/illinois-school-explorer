@@ -84,7 +84,7 @@ def prepare_school_records(merged_df: pd.DataFrame) -> List[dict]:
         record = {
             "rcdts": row["RCDTS"],
             "school_name": row["School Name"],
-            "district": row.get("District Name"),
+            "district": row.get("District"),
             "city": row.get("City"),
             "county": row.get("County"),
             "school_type": row.get("School Type"),
@@ -130,7 +130,7 @@ def import_to_database(excel_path: str, db: Session) -> int:
     return len(records)
 
 
-def main() -> None:
+def main() -> None:  # pragma: no cover
     """CLI entry point for import execution."""
     import argparse
 
@@ -147,5 +147,5 @@ def main() -> None:
         db.close()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
