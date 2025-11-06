@@ -1,0 +1,29 @@
+# ABOUTME: Ignore Python build artifacts, IDE files, and generated data assets
+# ABOUTME: Keeps repository clean from virtualenvs, caches, and SQLite outputs
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Database
+data/*.db
+data/*.db-*
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
