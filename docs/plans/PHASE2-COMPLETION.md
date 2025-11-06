@@ -11,13 +11,15 @@
 
 ## Test Coverage
 - Total tests: 62 (Phase 1 + Phase 2)
-- Overall coverage: 98%
-- app/api/search.py: 100%
-- app/api/schools.py: 100%
-- app/models.py: 100%
-- app/main.py: 100%
-- app/database.py: 96%
-- app/utils/import_data.py: 97%
+- Overall coverage: 89% (fast tests), 98% (including slow integration tests)
+- Phase 2 API modules: 100%
+  - app/api/search.py: 100%
+  - app/api/schools.py: 100%
+  - app/models.py: 100%
+  - app/main.py: 100%
+- Phase 1 modules:
+  - app/database.py: 96%
+  - app/utils/import_data.py: 60% (fast tests), 97% (with slow tests)
 
 ## Manual Verification
 - Swagger UI served correctly at http://localhost:8000/docs
