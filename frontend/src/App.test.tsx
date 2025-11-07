@@ -13,6 +13,6 @@ describe('App', () => {
 
   it('renders the foundation setup message', () => {
     render(<App />);
-    expect(screen.getByText('Frontend foundation setup')).toBeInTheDocument();
+    expect(screen.getByText('Frontend foundation setup complete')).toBeInTheDocument();
   });
 });
