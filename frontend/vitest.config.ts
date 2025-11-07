@@ -11,5 +11,12 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
     css: true,
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
+      '**/tests/e2e/**',
+    ],
   },
 });
