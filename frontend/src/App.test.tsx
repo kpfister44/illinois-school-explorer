@@ -1,5 +1,5 @@
 // ABOUTME: Unit tests for main App component
-// ABOUTME: Verifies app renders with correct header text
+// ABOUTME: Verifies app renders with router and navigation
 
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -11,8 +11,8 @@ describe('App', () => {
     expect(screen.getByText('Illinois School Explorer')).toBeInTheDocument();
   });
 
-  it('renders the foundation setup message', () => {
+  it('renders home page by default', () => {
     render(<App />);
-    expect(screen.getByText('Frontend foundation setup complete')).toBeInTheDocument();
+    expect(screen.getByText(/search for illinois schools/i)).toBeInTheDocument();
   });
 });
