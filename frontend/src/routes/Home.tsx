@@ -2,6 +2,7 @@
 // ABOUTME: Landing page with search instructions
 
 import { Button } from '@/components/ui/button';
+import SchoolCount from '@/components/SchoolCount';
 
 export default function Home() {
   return (
@@ -10,10 +11,13 @@ export default function Home() {
         <h2 className="text-4xl font-bold tracking-tight mb-4">
           Search for Illinois Schools
         </h2>
-        <p className="text-lg text-muted-foreground mb-8">
+        <p className="text-lg text-muted-foreground mb-4">
           Enter a school name or city to view enrollment, test scores, and demographics.
           Compare multiple schools side-by-side.
         </p>
+        <div className="mb-8">
+          <SchoolCount />
+        </div>
         <Button size="lg">Get Started</Button>
       </div>
     </div>
