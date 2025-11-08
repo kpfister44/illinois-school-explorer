@@ -11,7 +11,7 @@ export const schoolDetailQueryKey = (rcdts: string) => ['school', rcdts];
 export const compareQueryKey = (rcdtsList: string[]) => ['compare', rcdtsList.join(',')];
 
 // Search schools by name or city
-export const useSearch = (query: string, limit: number = 10) => {
+export const useSearch = (query: string, limit: number = 10, enabled?: boolean) => {
   return useQuery({
     queryKey: searchQueryKey(query, limit),
     queryFn: async () => {
@@ -20,7 +20,7 @@ export const useSearch = (query: string, limit: number = 10) => {
       });
       return data;
     },
-    enabled: query.length > 0,
+    enabled: enabled !== undefined ? enabled : query.length > 0,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
