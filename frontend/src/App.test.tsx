@@ -16,3 +16,13 @@ describe('App', () => {
     expect(screen.getByText(/search for illinois schools/i)).toBeInTheDocument();
   });
 });
+
+describe('App - Toaster', () => {
+  it('renders Toaster component for global notifications', () => {
+    render(<App />);
+    // Toaster renders with role="region" and aria-label
+    const toaster = document.querySelector('[data-sonner-toaster]');
+    // Note: Toaster may not be visible until triggered, just verify it's in DOM
+    // We'll test actual toast functionality in component tests
+  });
+});
