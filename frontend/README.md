@@ -1,6 +1,15 @@
+# ABOUTME: Comprehensive frontend documentation for React components, routing, and API integration
+# ABOUTME: Primary reference for Claude Code sessions working with the frontend
+
 # Illinois School Explorer - Frontend
 
 React + TypeScript frontend for the Illinois School Explorer application.
+
+**Tech:** React 18, TypeScript 5, Vite 5, shadcn/ui, Tailwind CSS 3
+**Testing:** 16 unit tests, 4 E2E tests (Vitest + Playwright)
+**Status:** Phase 3 complete, ready for Phase 4 (Core Components)
+
+---
 
 ## Tech Stack
 
@@ -13,6 +22,25 @@ React + TypeScript frontend for the Illinois School Explorer application.
 - **React Router** - Client-side routing
 - **Vitest** - Unit testing
 - **Playwright** - E2E testing
+
+---
+
+## Current Implementation Status
+
+**Phase 3 Complete:**
+- ✅ React + Vite + TypeScript project initialized
+- ✅ shadcn/ui + Tailwind CSS 3 configured
+- ✅ Vitest unit testing (16 tests passing)
+- ✅ Playwright E2E testing (4 tests passing)
+- ✅ API client with TanStack Query
+- ✅ React Router with route structure
+- ✅ SchoolCount component (demonstrates full integration)
+- ✅ Environment configuration
+- ✅ Comprehensive test coverage
+
+**Phase 4 Next:** SearchBar, SchoolCard, SchoolDetail components
+
+---
 
 ## Prerequisites
 
@@ -76,6 +104,51 @@ frontend/
 └── package.json
 ```
 
+---
+
+## Components
+
+### Implemented Components
+
+**SchoolCount** (`src/components/SchoolCount.tsx`)
+- Fetches total school count from backend API
+- Demonstrates full integration: component → TanStack Query → API client → backend
+- Handles loading, error, and success states
+- Example usage in `src/routes/Home.tsx`
+
+**shadcn/ui Components** (`src/components/ui/`)
+- Button (with variants: default, destructive, outline, ghost)
+- More components to be added in Phase 4
+
+### Component Patterns
+
+All components follow these patterns:
+- TypeScript for type safety
+- ABOUTME comments at file top
+- TanStack Query for API calls
+- Proper loading/error/success state handling
+- Unit tests with React Testing Library
+- E2E tests with Playwright (for user flows)
+
+---
+
+## Routing Structure
+
+**Current Routes** (Phase 3):
+- `/` - Home page with search instructions
+- `/search` - Search results (placeholder)
+- `/school/:rcdts` - School detail page (placeholder)
+- `/compare` - School comparison (placeholder)
+- `*` - 404 Not Found page
+
+**Router Configuration:**
+- React Router v7
+- BrowserRouter for clean URLs
+- TanStack Query provider wraps entire app
+- React Query DevTools enabled in development
+
+---
+
 ## Adding shadcn/ui Components
 
 ```bash
@@ -118,24 +191,179 @@ test('user can search for schools', async ({ page }) => {
 });
 ```
 
+---
+
 ## API Integration
 
-The frontend connects to the backend API at `http://localhost:8000`.
+### API Client Configuration
 
-API client hooks are available in `src/lib/api/queries.ts`:
+**Base URL:** Configured via environment variable `VITE_API_URL` (default: `http://localhost:8000`)
+
+**Client:** `src/lib/api/client.ts`
+- axios instance with 10s timeout
+- Error interceptor for centralized logging
+- Automatic JSON content-type headers
+
+**Types:** `src/lib/api/types.ts`
+- TypeScript interfaces matching backend Pydantic models
+- `School`, `SchoolDetail`, `SearchResponse`, `CompareResponse`
+- All metric types: `ACTScores`, `Demographics`, `Diversity`, `SchoolMetrics`
+
+### TanStack Query Hooks
+
+**Available in `src/lib/api/queries.ts`:**
+
+#### 1. useSearch - Search Schools
 
 ```tsx
-import { useSearch, useSchoolDetail, useCompare } from '@/lib/api/queries';
+import { useSearch } from '@/lib/api/queries';
 
-// Search schools
-const { data, isLoading } = useSearch('Elk Grove', 10);
+function SearchComponent() {
+  const { data, isLoading, isError } = useSearch('Elk Grove', 10);
 
-// Get school details
-const { data: school } = useSchoolDetail('05-016-2140-17-0002');
+  if (isLoading) return <div>Loading...</div>;
+  if (isError) return <div>Error loading schools</div>;
 
-// Compare schools
-const { data: comparison } = useCompare(['rcdts1', 'rcdts2']);
+  return (
+    <div>
+      <p>{data?.total} schools found</p>
+      {data?.results.map(school => (
+        <div key={school.id}>{school.school_name}</div>
+      ))}
+    </div>
+  );
+}
 ```
+
+**Parameters:**
+- `query: string` - Search query (must be non-empty)
+- `limit: number` - Max results (default: 10)
+
+**Returns:** `SearchResponse` with `results` array and `total` count
+
+**Caching:** 5 minutes stale time
+
+---
+
+#### 2. useSchoolDetail - Get School Details
+
+```tsx
+import { useSchoolDetail } from '@/lib/api/queries';
+
+function SchoolDetailComponent({ rcdts }: { rcdts: string }) {
+  const { data: school, isLoading, isError } = useSchoolDetail(rcdts);
+
+  if (isLoading) return <div>Loading school details...</div>;
+  if (isError) return <div>School not found</div>;
+
+  return (
+    <div>
+      <h1>{school.school_name}</h1>
+      <p>City: {school.city}</p>
+      <p>Enrollment: {school.metrics.enrollment}</p>
+      <p>ACT Average: {school.metrics.act.overall_avg}</p>
+    </div>
+  );
+}
+```
+
+**Parameters:**
+- `rcdts: string` - School RCDTS identifier (e.g., "05-016-2140-17-0002")
+
+**Returns:** `SchoolDetail` with full school information and metrics
+
+**Caching:** 10 minutes stale time
+
+---
+
+#### 3. useCompare - Compare Multiple Schools
+
+```tsx
+import { useCompare } from '@/lib/api/queries';
+
+function ComparisonComponent({ rcdtsList }: { rcdtsList: string[] }) {
+  const { data, isLoading, isError } = useCompare(rcdtsList);
+
+  if (isLoading) return <div>Loading comparison...</div>;
+  if (isError) return <div>Error loading schools</div>;
+
+  return (
+    <table>
+      <thead>
+        <tr>
+          {data?.schools.map(school => (
+            <th key={school.rcdts}>{school.school_name}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          {data?.schools.map(school => (
+            <td key={school.rcdts}>{school.metrics.enrollment}</td>
+          ))}
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+```
+
+**Parameters:**
+- `rcdtsList: string[]` - Array of 2-5 RCDTS codes
+
+**Returns:** `CompareResponse` with `schools` array
+
+**Caching:** 10 minutes stale time
+
+**Validation:** Query only enabled when 2-5 schools provided
+
+---
+
+### Query Key Factories
+
+For manual cache invalidation or prefetching:
+
+```tsx
+import {
+  searchQueryKey,
+  schoolDetailQueryKey,
+  compareQueryKey
+} from '@/lib/api/queries';
+
+// Generate query keys
+const key1 = searchQueryKey('query', 10);      // ['search', 'query', 10]
+const key2 = schoolDetailQueryKey('rcdts');    // ['school', 'rcdts']
+const key3 = compareQueryKey(['r1', 'r2']);    // ['compare', 'r1,r2']
+
+// Invalidate cache
+queryClient.invalidateQueries({ queryKey: searchQueryKey('elk', 10) });
+```
+
+---
+
+## Environment Configuration
+
+### Environment Variables
+
+**File:** `.env.local` (gitignored, copy from `.env.example`)
+
+```bash
+# Backend API URL
+VITE_API_URL=http://localhost:8000
+```
+
+**Access in code:**
+```tsx
+const apiUrl = import.meta.env.VITE_API_URL;
+```
+
+**Notes:**
+- Environment variables must be prefixed with `VITE_` to be exposed to the frontend
+- Changes to `.env.local` require dev server restart
+- Never commit `.env.local` (contains local/sensitive config)
+- Always update `.env.example` when adding new variables
+
+---
 
 ## Development Workflow
 
