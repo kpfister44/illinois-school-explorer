@@ -1,9 +1,10 @@
 // ABOUTME: Main application component with routing
-// ABOUTME: Sets up React Router and TanStack Query provider
+// ABOUTME: Provides React Query and Toast notification context
 
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { Toaster } from '@/components/ui/toaster';
 import Home from './routes/Home';
 import SearchResults from './routes/SearchResults';
 import SchoolDetail from './routes/SchoolDetail';
@@ -41,6 +42,7 @@ function App() {
             </Routes>
           </main>
         </div>
+        <Toaster />
       </BrowserRouter>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
