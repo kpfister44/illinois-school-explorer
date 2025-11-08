@@ -6,7 +6,7 @@
 
 **Architecture:** React 18 with Vite for fast development, Vitest for unit tests, Playwright for E2E tests, TanStack Query for server state management, React Router for navigation, shadcn/ui components with Tailwind CSS styling
 
-**Tech Stack:** React 18, TypeScript 5, Vite 5, Vitest, Playwright, shadcn/ui, Tailwind CSS, TanStack Query, axios, React Router
+**Tech Stack:** React 18, TypeScript 5, Vite 5, Vitest, Playwright, shadcn/ui, Tailwind CSS 3, TanStack Query, axios, React Router
 
 ---
 
@@ -325,9 +325,11 @@ git commit -m "test(frontend): configure Playwright for E2E testing"
 
 ```bash
 cd frontend
-npm install -D tailwindcss postcss autoprefixer
+npm install -D tailwindcss@3 postcss autoprefixer
 npx tailwindcss init -p
 ```
+
+**Note:** We use Tailwind CSS v3 (not v4) because the configuration format in this plan is v3-specific and shadcn/ui requires v3.
 
 **Step 2: Install shadcn/ui dependencies**
 
