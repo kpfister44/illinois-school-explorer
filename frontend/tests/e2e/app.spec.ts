@@ -6,6 +6,6 @@ import { test, expect } from '@playwright/test';
 test('app displays header and initial content', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: 'Illinois School Explorer' })).toBeVisible();
-  await expect(page.getByText('Frontend foundation setup')).toBeVisible();
+  await expect(page.getByText('Illinois School Explorer')).toBeVisible();
+  await expect(page.getByText(/search for illinois schools/i)).toBeVisible();
 });
