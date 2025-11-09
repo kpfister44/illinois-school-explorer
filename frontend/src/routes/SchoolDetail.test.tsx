@@ -2,7 +2,7 @@
 // ABOUTME: Verifies school detail loading, error handling, and display
 
 import { render, screen, waitFor } from '@testing-library/react';
-import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach, beforeEach, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
@@ -74,6 +74,16 @@ const createWrapper = (rcdts: string) => {
 };
 
 describe('SchoolDetail', () => {
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
   it('displays loading skeleton while fetching', () => {
     render(<SchoolDetail />, { wrapper: createWrapper('05-016-2140-17-0002') });
 
@@ -92,21 +102,15 @@ describe('SchoolDetail', () => {
   });
 
   it('displays error message when school not found', async () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    render(<SchoolDetail />, { wrapper: createWrapper('invalid-rcdts') });
 
-    try {
-      render(<SchoolDetail />, { wrapper: createWrapper('invalid-rcdts') });
+    await waitFor(() => {
+      expect(screen.getByText(/error/i)).toBeInTheDocument();
+    });
 
-      await waitFor(() => {
-        expect(screen.getByText(/error/i)).toBeInTheDocument();
-      });
-
-      expect(errorSpy).toHaveBeenCalled();
-      const [label, status] = errorSpy.mock.calls[0];
-      expect(label).toBe('API Error:');
-      expect(status).toBe(404);
-    } finally {
-      errorSpy.mockRestore();
-    }
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    const [label, status] = consoleErrorSpy.mock.calls[0];
+    expect(label).toBe('API Error:');
+    expect(status).toBe(404);
   });
 });
