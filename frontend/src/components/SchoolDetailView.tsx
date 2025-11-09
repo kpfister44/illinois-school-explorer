@@ -153,45 +153,60 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
               <CardTitle>Racial Diversity</CardTitle>
               <CardDescription>Student population breakdown</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               {school.metrics.diversity.white !== null && (
-                <div className="flex justify-between text-sm">
-                  <span>White</span>
-                  <span className="font-medium">
-                    {formatPercent(school.metrics.diversity.white)}
-                  </span>
+                <div>
+                  <div className="flex justify-between mb-2 text-sm">
+                    <span>White</span>
+                    <span className="font-medium">
+                      {formatPercent(school.metrics.diversity.white)}
+                    </span>
+                  </div>
+                  <Progress value={school.metrics.diversity.white} />
                 </div>
               )}
               {school.metrics.diversity.hispanic !== null && (
-                <div className="flex justify-between text-sm">
-                  <span>Hispanic</span>
-                  <span className="font-medium">
-                    {formatPercent(school.metrics.diversity.hispanic)}
-                  </span>
+                <div>
+                  <div className="flex justify-between mb-2 text-sm">
+                    <span>Hispanic</span>
+                    <span className="font-medium">
+                      {formatPercent(school.metrics.diversity.hispanic)}
+                    </span>
+                  </div>
+                  <Progress value={school.metrics.diversity.hispanic} />
                 </div>
               )}
               {school.metrics.diversity.asian !== null && (
-                <div className="flex justify-between text-sm">
-                  <span>Asian</span>
-                  <span className="font-medium">
-                    {formatPercent(school.metrics.diversity.asian)}
-                  </span>
+                <div>
+                  <div className="flex justify-between mb-2 text-sm">
+                    <span>Asian</span>
+                    <span className="font-medium">
+                      {formatPercent(school.metrics.diversity.asian)}
+                    </span>
+                  </div>
+                  <Progress value={school.metrics.diversity.asian} />
                 </div>
               )}
               {school.metrics.diversity.black !== null && (
-                <div className="flex justify-between text-sm">
-                  <span>Black</span>
-                  <span className="font-medium">
-                    {formatPercent(school.metrics.diversity.black)}
-                  </span>
+                <div>
+                  <div className="flex justify-between mb-2 text-sm">
+                    <span>Black</span>
+                    <span className="font-medium">
+                      {formatPercent(school.metrics.diversity.black)}
+                    </span>
+                  </div>
+                  <Progress value={school.metrics.diversity.black} />
                 </div>
               )}
               {school.metrics.diversity.two_or_more !== null && (
-                <div className="flex justify-between text-sm">
-                  <span>Two or More Races</span>
-                  <span className="font-medium">
-                    {formatPercent(school.metrics.diversity.two_or_more)}
-                  </span>
+                <div>
+                  <div className="flex justify-between mb-2 text-sm">
+                    <span>Two or More Races</span>
+                    <span className="font-medium">
+                      {formatPercent(school.metrics.diversity.two_or_more)}
+                    </span>
+                  </div>
+                  <Progress value={school.metrics.diversity.two_or_more} />
                 </div>
               )}
             </CardContent>

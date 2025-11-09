@@ -108,4 +108,15 @@ describe('SchoolDetailView', () => {
     expect(screen.getByText(/Low Income/i)).toBeInTheDocument();
     expect(screen.getByText('38.4%')).toBeInTheDocument();
   });
+
+  it('displays diversity progress bars', async () => {
+    const user = userEvent.setup();
+    render(<SchoolDetailView school={mockSchoolDetail} />);
+
+    const demographicsTab = screen.getByRole('tab', { name: /demographics/i });
+    await user.click(demographicsTab);
+
+    const progressBars = screen.getAllByRole('progressbar');
+    expect(progressBars.length).toBeGreaterThan(0);
+  });
 });
