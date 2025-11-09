@@ -11,3 +11,6 @@
 ## 2025-11-09 – ACT visualization tweaks
 - Installed shadcn Progress component (remember it defaults to creating files under `@/components`, so move them into `src/components/ui`).
 - SchoolDetailView now renders ACT scores as stacked progress bars capped at 36, matching Task 10 requirements.
+
+## 2025-11-09 – Diversity visualization
+- Added diversity progress bars sharing the same Progress component to keep visual language consistent; tests now click the Demographics tab and assert progressbars render.
