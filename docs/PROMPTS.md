@@ -108,6 +108,7 @@ I want to create a detailed implementation plan for Phase 4: Core Components.
 
 The design doc is at docs/plans/2025-11-05-illinois-school-explorer-design.md.
 The roadmap is at docs/plans/IMPLEMENTATION-ROADMAP.md.
+Use your shadcn-ui skill to help you create and choose components. 
 Phase 3 is complete - frontend foundation is ready.
 
 Focus only on:
@@ -129,7 +130,7 @@ Expected deliverables:
 - Search results appear in <100ms
 - Users can view full school details with all metrics
 - All core components tested (unit + E2E)
-- Responsive design working on mobile and desktop
+- Responsive mobile first design
 
 Timeline: 3 days
 ```
@@ -336,6 +337,32 @@ Claude: Creates docs/plans/phase2-backend-api-plan.md
 ... repeat ...
 ```
 
+
+I need you to implement Batch 1 (Tasks 1-2) from the plan at
+  docs/plans/2025-11-08-phase4-core-components.md.
+
+  This is Phase 4 of the Illinois School Explorer project. Phase 3 (frontend
+   foundation) is complete - backend API is running, React app is set up
+  with TanStack Query, React Router, and basic shadcn/ui.
+
+  Before starting, use the shadcn-ui skill to familiarize yourself with the
+  component library. Then use your execute-plan skill to execute the plan. 
+
+  Your job:
+  1. Use the shadcn-ui skill for reference
+  2. Read docs/plans/2025-11-08-phase4-core-components.md
+  3. Execute ONLY Tasks 1-2 (Install shadcn/ui components and add Toaster)
+  4. Follow TDD strictly - tests before implementation
+  5. Run tests after each step to verify
+  6. Commit after each task as specified in the plan
+  7. STOP after Task 2 is complete
+
+  When done, show me:
+  - What you completed
+  - Test results
+  - Git log of commits
+
+  Do NOT proceed beyond Task 2. I'll review before starting Batch 2.
 ---
 
 **Last Updated:** 2025-11-05
