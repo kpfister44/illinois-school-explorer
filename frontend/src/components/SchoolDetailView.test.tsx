@@ -85,6 +85,17 @@ describe('SchoolDetailView', () => {
     expect(screen.getByText('18.2')).toBeInTheDocument();
   });
 
+  it('displays ACT score progress bars', async () => {
+    const user = userEvent.setup();
+    render(<SchoolDetailView school={mockSchoolDetail} />);
+
+    const academicsTab = screen.getByRole('tab', { name: /academics/i });
+    await user.click(academicsTab);
+
+    const progressBars = screen.getAllByRole('progressbar');
+    expect(progressBars.length).toBeGreaterThan(0);
+  });
+
   it('displays demographics when Demographics tab is clicked', async () => {
     const user = userEvent.setup();
     render(<SchoolDetailView school={mockSchoolDetail} />);

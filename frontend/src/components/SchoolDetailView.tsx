@@ -4,6 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
 import { SchoolDetail } from '@/lib/api/types';
 
 interface SchoolDetailViewProps {
@@ -76,25 +77,51 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
               <CardTitle>ACT Scores</CardTitle>
               <CardDescription>Average Grade 11 performance (out of 36)</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-4">
+            <CardContent className="space-y-6">
+              {school.metrics.act.ela_avg !== null && (
                 <div>
-                  <p className="text-sm text-muted-foreground uppercase">ELA</p>
-                  <p className="text-2xl font-bold">{formatNumber(school.metrics.act.ela_avg)}</p>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">ELA</span>
+                    <span className="text-sm font-bold">
+                      {school.metrics.act.ela_avg.toFixed(1)}
+                    </span>
+                  </div>
+                  <Progress value={(school.metrics.act.ela_avg / 36) * 100} />
                 </div>
+              )}
+              {school.metrics.act.math_avg !== null && (
                 <div>
-                  <p className="text-sm text-muted-foreground uppercase">Math</p>
-                  <p className="text-2xl font-bold">{formatNumber(school.metrics.act.math_avg)}</p>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Math</span>
+                    <span className="text-sm font-bold">
+                      {school.metrics.act.math_avg.toFixed(1)}
+                    </span>
+                  </div>
+                  <Progress value={(school.metrics.act.math_avg / 36) * 100} />
                 </div>
+              )}
+              {school.metrics.act.science_avg !== null && (
                 <div>
-                  <p className="text-sm text-muted-foreground uppercase">Science</p>
-                  <p className="text-2xl font-bold">{formatNumber(school.metrics.act.science_avg)}</p>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Science</span>
+                    <span className="text-sm font-bold">
+                      {school.metrics.act.science_avg.toFixed(1)}
+                    </span>
+                  </div>
+                  <Progress value={(school.metrics.act.science_avg / 36) * 100} />
                 </div>
+              )}
+              {school.metrics.act.overall_avg !== null && (
                 <div>
-                  <p className="text-sm text-muted-foreground uppercase">Overall</p>
-                  <p className="text-2xl font-bold">{formatNumber(school.metrics.act.overall_avg)}</p>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Overall</span>
+                    <span className="text-sm font-bold">
+                      {school.metrics.act.overall_avg.toFixed(1)}
+                    </span>
+                  </div>
+                  <Progress value={(school.metrics.act.overall_avg / 36) * 100} />
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
