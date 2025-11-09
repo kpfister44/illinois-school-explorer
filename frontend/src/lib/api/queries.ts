@@ -12,6 +12,11 @@ export const searchSchools = async (query: string, limit: number = 10): Promise<
   return data;
 };
 
+export async function getSchoolDetail(rcdts: string): Promise<SchoolDetail> {
+  const { data } = await apiClient.get<SchoolDetail>(`/api/schools/${rcdts}`);
+  return data;
+}
+
 // Query key factories for consistent caching
 export const searchQueryKey = (query: string, limit: number) => ['search', query, limit];
 export const schoolDetailQueryKey = (rcdts: string) => ['school', rcdts];
