@@ -5,6 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from './client';
 import type { SearchResponse, SchoolDetail, CompareResponse } from './types';
 
+export const searchSchools = async (query: string, limit: number = 10): Promise<SearchResponse> => {
+  const { data } = await apiClient.get<SearchResponse>('/api/search', {
+    params: { q: query, limit },
+  });
+  return data;
+};
+
 // Query key factories for consistent caching
 export const searchQueryKey = (query: string, limit: number) => ['search', query, limit];
 export const schoolDetailQueryKey = (rcdts: string) => ['school', rcdts];
