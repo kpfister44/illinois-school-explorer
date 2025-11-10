@@ -62,7 +62,7 @@ const createWrapper = (initialRoute = '/search?q=grove') => {
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[initialRoute]}>
         <Routes>
-          <Route path="/search" element={<SearchResults />} />
+          <Route path="/search" element={children} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>

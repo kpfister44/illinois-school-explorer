@@ -4,7 +4,7 @@
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { School } from '@/lib/api/types';
+import type { School } from '@/lib/api/types';
 
 interface SchoolCardProps {
   school: School;

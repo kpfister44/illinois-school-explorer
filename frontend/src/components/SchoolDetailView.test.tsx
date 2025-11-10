@@ -5,7 +5,7 @@ import { render, screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, it, expect } from 'vitest';
 import SchoolDetailView from './SchoolDetailView';
-import { SchoolDetail } from '@/lib/api/types';
+import type { SchoolDetail } from '@/lib/api/types';
 
 const mockSchoolDetail: SchoolDetail = {
   id: 1,
