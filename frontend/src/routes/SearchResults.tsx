@@ -1,16 +1,19 @@
 // ABOUTME: SearchResults page component
 // ABOUTME: Displays search results with SearchBar and SchoolCard list
 
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import SearchBar from '@/components/SearchBar';
 import SchoolCard from '@/components/SchoolCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { searchSchools } from '@/lib/api/queries';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
+  const { toast } = useToast();
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['search', query],
@@ -18,19 +21,16 @@ export default function SearchResults() {
     enabled: query.length >= 2,
   });
 
-  const renderErrorMessage = () => {
-    if (!isError) {
-      return null;
+  useEffect(() => {
+    if (isError && error) {
+      toast({
+        variant: 'destructive',
+        title: 'Search Failed',
+        description:
+          error instanceof Error ? error.message : 'Unable to search schools',
+      });
     }
-
-    const message = error instanceof Error ? error.message : 'Unknown error';
-
-    return (
-      <div className="text-center text-destructive">
-        <p>Error loading search results: {message}</p>
-      </div>
-    );
-  };
+  }, [isError, error, toast]);
 
   return (
     <div className="py-8">
@@ -52,8 +52,6 @@ export default function SearchResults() {
             ))}
           </div>
         )}
-
-        {renderErrorMessage()}
 
         {data && data.results.length === 0 && (
           <div className="text-center text-muted-foreground">
