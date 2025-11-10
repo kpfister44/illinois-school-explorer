@@ -2,12 +2,18 @@
 // ABOUTME: Verifies search results display and loading states
 
 import { render, screen, waitFor } from '@testing-library/react';
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import SearchResults from './SearchResults';
+
+const toastSpy = vi.fn();
+
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: () => ({ toast: toastSpy }),
+}));
 
 const server = setupServer(
   http.get('http://localhost:8000/api/search', ({ request }) => {
@@ -50,7 +56,10 @@ beforeAll(() => {
     disconnect() {}
   } as unknown as typeof ResizeObserver;
 });
-afterEach(() => server.resetHandlers());
+afterEach(() => {
+  server.resetHandlers();
+  toastSpy.mockReset();
+});
 afterAll(() => server.close());
 
 const createWrapper = (initialRoute = '/search?q=grove') => {
@@ -85,6 +94,22 @@ describe('SearchResults', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/no schools found/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows toast notification when search request fails', async () => {
+    server.use(
+      http.get('http://localhost:8000/api/search', () =>
+        HttpResponse.json({ message: 'fail' }, { status: 500 })
+      )
+    );
+
+    render(<SearchResults />, { wrapper: createWrapper('/search?q=crash') });
+
+    await waitFor(() => {
+      expect(toastSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Search Failed', variant: 'destructive' })
+      );
     });
   });
 

@@ -9,6 +9,12 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import SchoolDetail from './SchoolDetail';
 
+const toastSpy = vi.fn();
+
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: () => ({ toast: toastSpy }),
+}));
+
 const mockSchoolDetail = {
   id: 1,
   rcdts: '05-016-2140-17-0002',
@@ -53,7 +59,10 @@ const server = setupServer(
 );
 
 beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
+afterEach(() => {
+  server.resetHandlers();
+  toastSpy.mockReset();
+});
 afterAll(() => server.close());
 
 const createWrapper = (rcdts: string) => {
@@ -112,5 +121,21 @@ describe('SchoolDetail', () => {
     const [label, status] = consoleErrorSpy.mock.calls[0];
     expect(label).toBe('API Error:');
     expect(status).toBe(404);
+  });
+
+  it('shows toast notification when detail request fails', async () => {
+    server.use(
+      http.get('http://localhost:8000/api/schools/:rcdts', () =>
+        HttpResponse.json({ message: 'fail' }, { status: 500 })
+      )
+    );
+
+    render(<SchoolDetail />, { wrapper: createWrapper('05-016-2140-17-0002') });
+
+    await waitFor(() => {
+      expect(toastSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Failed to Load School', variant: 'destructive' })
+      );
+    });
   });
 });
