@@ -1,12 +1,20 @@
 // ABOUTME: Unit tests for main App component
 // ABOUTME: Verifies app renders with router and navigation
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import App from './App';
 import * as queries from '@/lib/api/queries';
 
 describe('App', () => {
+  beforeAll(() => {
+    global.ResizeObserver = class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+  });
+
   beforeEach(() => {
     vi.spyOn(queries, 'useSearch').mockReturnValue({
       data: { results: [], total: 3827 },
@@ -32,6 +40,14 @@ describe('App', () => {
 });
 
 describe('App - Toaster', () => {
+  beforeAll(() => {
+    global.ResizeObserver = class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+  });
+
   beforeEach(() => {
     vi.spyOn(queries, 'useSearch').mockReturnValue({
       data: { results: [], total: 3827 },

@@ -1,7 +1,7 @@
 // ABOUTME: Home page component
-// ABOUTME: Landing page with search instructions
+// ABOUTME: Landing page with search functionality
 
-import { Button } from '@/components/ui/button';
+import SearchBar from '@/components/SearchBar';
 import SchoolCount from '@/components/SchoolCount';
 
 export default function Home() {
@@ -18,7 +18,9 @@ export default function Home() {
         <div className="mb-8">
           <SchoolCount />
         </div>
-        <Button size="lg">Get Started</Button>
+        <div className="w-full max-w-xl mx-auto">
+          <SearchBar />
+        </div>
       </div>
     </div>
   );
