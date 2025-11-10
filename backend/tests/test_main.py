@@ -30,3 +30,17 @@ def test_cors_headers_present(client):
 
     assert response.status_code == 200
     assert "access-control-allow-origin" in response.headers
+
+
+def test_cors_allows_loopback_alias(client):
+    """CORS should also allow 127.0.0.1 origin used by Vite dev server."""
+    response = client.options(
+        "/health",
+        headers={
+            "Origin": "http://127.0.0.1:5173",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == "http://127.0.0.1:5173"
