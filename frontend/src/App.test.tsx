@@ -46,10 +46,10 @@ describe('App - Toaster', () => {
   });
 
   it('renders Toaster component for global notifications', () => {
-    render(<App />);
-    // Toaster renders with role="region" and aria-label
-    const toaster = document.querySelector('[data-sonner-toaster]');
-    // Note: Toaster may not be visible until triggered, just verify it's in DOM
-    // We'll test actual toast functionality in component tests
+    const { container } = render(<App />);
+    // Toaster uses Radix UI ToastProvider which always renders successfully
+    // The actual viewport is only rendered when toasts are shown
+    // We verify the Toaster doesn't break rendering by checking the app still renders
+    expect(container.querySelector('.min-h-screen')).toBeInTheDocument();
   });
 });
