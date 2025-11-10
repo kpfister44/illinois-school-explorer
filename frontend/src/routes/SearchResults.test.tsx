@@ -10,6 +10,7 @@ import { setupServer } from 'msw/node';
 import SearchResults from './SearchResults';
 
 const toastSpy = vi.fn();
+let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
 vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({ toast: toastSpy }),
@@ -56,9 +57,15 @@ beforeAll(() => {
     disconnect() {}
   } as unknown as typeof ResizeObserver;
 });
+
+beforeEach(() => {
+  consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+});
+
 afterEach(() => {
   server.resetHandlers();
   toastSpy.mockReset();
+  consoleErrorSpy.mockRestore();
 });
 afterAll(() => server.close());
 
@@ -111,6 +118,8 @@ describe('SearchResults', () => {
         expect.objectContaining({ title: 'Search Failed', variant: 'destructive' })
       );
     });
+
+    expect(consoleErrorSpy).toHaveBeenCalled();
   });
 
   it('displays SearchBar at top of results', () => {
