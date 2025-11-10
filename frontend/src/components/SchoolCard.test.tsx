@@ -5,7 +5,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import SchoolCard from './SchoolCard';
-import { School } from '@/lib/api/types';
+import type { School } from '@/lib/api/types';
 
 const mockSchool: School = {
   id: 1,
