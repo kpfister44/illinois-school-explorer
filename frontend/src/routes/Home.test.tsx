@@ -1,8 +1,9 @@
 // ABOUTME: Unit tests for Home page component
-// ABOUTME: Verifies welcome message renders correctly
+// ABOUTME: Verifies welcome message and SearchBar render correctly
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Home from './Home';
 import * as queries from '@/lib/api/queries';
@@ -14,11 +15,21 @@ const createWrapper = () => {
     },
   });
   return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>{children}</BrowserRouter>
+    </QueryClientProvider>
   );
 };
 
 describe('Home', () => {
+  beforeAll(() => {
+    global.ResizeObserver = class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+  });
+
   beforeEach(() => {
     vi.spyOn(queries, 'useSearch').mockReturnValue({
       data: { results: [], total: 3827 },
@@ -40,5 +51,10 @@ describe('Home', () => {
   it('renders search instruction', () => {
     render(<Home />, { wrapper: createWrapper() });
     expect(screen.getByText(/enter a school name or city/i)).toBeInTheDocument();
+  });
+
+  it('renders SearchBar component', () => {
+    render(<Home />, { wrapper: createWrapper() });
+    expect(screen.getByPlaceholderText(/search for schools/i)).toBeInTheDocument();
   });
 });
