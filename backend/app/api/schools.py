@@ -69,6 +69,9 @@ def build_school_detail(school) -> SchoolDetail:
             two_or_more=school.pct_two_or_more,
             mena=school.pct_mena,
         ),
+        iar_ela_proficiency_pct=school.iar_ela_proficiency_pct,
+        iar_math_proficiency_pct=school.iar_math_proficiency_pct,
+        iar_overall_proficiency_pct=school.iar_overall_proficiency_pct,
     )
 
     return SchoolDetail(

@@ -36,6 +36,11 @@ class School(Base):
     act_math_avg = Column(Float)
     act_science_avg = Column(Float)
 
+    # IAR Proficiency Rates
+    iar_ela_proficiency_pct = Column(Float)
+    iar_math_proficiency_pct = Column(Float)
+    iar_overall_proficiency_pct = Column(Float)
+
     # Diversity Percentages
     pct_white = Column(Float)
     pct_black = Column(Float)

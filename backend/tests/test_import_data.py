@@ -73,10 +73,42 @@ def test_clean_enrollment_float_string():
     assert clean_enrollment("1234.5") == 1234
 
 
+def test_prepare_school_records_includes_iar_fields():
+    """prepare_school_records should emit normalized level + IAR rates."""
+    merged_df = pd.DataFrame(
+        [
+            {
+                "RCDTS": "11-111-1111-11-0001",
+                "School Name": "Sample Elementary",
+                "District": "Unit 5",
+                "City": "Normal",
+                "County": "McLean",
+                "School Type": "Elementary School",
+                "Level": "School",
+                "Grades Served": "K-5",
+                "# Student Enrollment": "450",
+                "% Student Enrollment - EL": "12.5%",
+                "% Student Enrollment - Low Income": "40%",
+                "ACT ELA Average Score - Grade 11": None,
+                "ACT Math Average Score - Grade 11": None,
+                "ACT Science Average Score - Grade 11": None,
+                "IAR ELA Proficiency Rate - Total": "55.4%",
+                "IAR Math Proficiency Rate - Total": "48.1%",
+            }
+        ]
+    )
+
+    records = prepare_school_records(merged_df)
+    assert records[0]["level"] == "elementary"
+    assert records[0]["iar_ela_proficiency_pct"] == 55.4
+    assert records[0]["iar_math_proficiency_pct"] == 48.1
+    assert records[0]["iar_overall_proficiency_pct"] == 51.75
+
+
 @pytest.mark.slow
 def test_load_excel_data_returns_dataframes():
     """Loading Excel file yields General/ACT dataframes."""
-    general_df, act_df = load_excel_data("../2025-Report-Card-Public-Data-Set.xlsx")
+    general_df, act_df, iar_df = load_excel_data("../2025-Report-Card-Public-Data-Set.xlsx")
 
     assert not general_df.empty
     assert not act_df.empty
@@ -87,8 +119,8 @@ def test_load_excel_data_returns_dataframes():
 @pytest.mark.slow
 def test_merge_school_data_filters_schools_only():
     """Merge filters to school-level rows."""
-    general_df, act_df = load_excel_data("../2025-Report-Card-Public-Data-Set.xlsx")
-    merged_df = merge_school_data(general_df, act_df)
+    general_df, act_df, iar_df = load_excel_data("../2025-Report-Card-Public-Data-Set.xlsx")
+    merged_df = merge_school_data(general_df, act_df, iar_df)
 
     assert not merged_df.empty
     assert (merged_df["Level"] == "School").all()
@@ -98,8 +130,8 @@ def test_merge_school_data_filters_schools_only():
 @pytest.mark.slow
 def test_merge_school_data_joins_act_scores():
     """ACT columns appear after merge."""
-    general_df, act_df = load_excel_data("../2025-Report-Card-Public-Data-Set.xlsx")
-    merged_df = merge_school_data(general_df, act_df)
+    general_df, act_df, iar_df = load_excel_data("../2025-Report-Card-Public-Data-Set.xlsx")
+    merged_df = merge_school_data(general_df, act_df, iar_df)
 
     expected_columns = [
         "ACT ELA Average Score - Grade 11",
@@ -113,8 +145,8 @@ def test_merge_school_data_joins_act_scores():
 @pytest.mark.slow
 def test_prepare_school_records_transforms_data():
     """Merged rows convert into dictionaries for bulk insert."""
-    general_df, act_df = load_excel_data("../2025-Report-Card-Public-Data-Set.xlsx")
-    merged_df = merge_school_data(general_df, act_df)
+    general_df, act_df, iar_df = load_excel_data("../2025-Report-Card-Public-Data-Set.xlsx")
+    merged_df = merge_school_data(general_df, act_df, iar_df)
 
     records = prepare_school_records(merged_df)
 
@@ -129,8 +161,8 @@ def test_prepare_school_records_transforms_data():
 @pytest.mark.slow
 def test_prepare_school_records_includes_district():
     """District field should populate using dataset column."""
-    general_df, act_df = load_excel_data("../2025-Report-Card-Public-Data-Set.xlsx")
-    merged_df = merge_school_data(general_df, act_df)
+    general_df, act_df, iar_df = load_excel_data("../2025-Report-Card-Public-Data-Set.xlsx")
+    merged_df = merge_school_data(general_df, act_df, iar_df)
 
     records = prepare_school_records(merged_df)
 

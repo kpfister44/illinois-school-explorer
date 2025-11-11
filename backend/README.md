@@ -23,6 +23,8 @@ uv sync --all-extras
 # Import school data
 uv run python -m app.utils.import_data ../2025-Report-Card-Public-Data-Set.xlsx
 
+> **Schema note:** The import now stores normalized levels plus IAR proficiency columns. If you already have `data/schools.db`, delete it (or drop/recreate the table) before re-importing so the schema matches.
+
 # Start development server
 uv run uvicorn app.main:app --reload --port 8000
 
@@ -210,6 +212,55 @@ curl "http://localhost:8000/api/schools/compare?rcdts=05-016-2140-17-0001,05-016
 
 **Error Responses:**
 - `400`: Less than 2 or more than 5 RCDTS codes provided
+- `503`: Database unavailable
+
+---
+
+### 5. Get Top Scores
+
+```http
+GET /api/top-scores?assessment={act|iar}&level={high|middle|elementary}&limit={1-100}
+```
+
+**Description:** Ranked list of the top 100 (max) Illinois schools for ACT composites or IAR proficiency. Levels use the normalized categories generated during import (`high`, `middle`, `elementary`).
+
+**Query Parameters:**
+- `assessment` (required): `act` or `iar`
+- `level` (required): Normalized school level (`high`, `middle`, `elementary`)
+- `limit` (optional): Result count (default 100, max 100)
+
+**Example Request:**
+```bash
+curl "http://localhost:8000/api/top-scores?assessment=act&level=high&limit=5"
+```
+
+**Example Response:**
+```json
+{
+  "results": [
+    {
+      "rank": 1,
+      "rcdts": "05-016-2140-17-0002",
+      "school_name": "Elk Grove High School",
+      "city": "Elk Grove Village",
+      "district": "Township HSD 214",
+      "school_type": "High School",
+      "level": "high",
+      "enrollment": 1775,
+      "score": 25.1
+    }
+  ]
+}
+```
+
+**Behavior Notes:**
+- `score` is ACT composite (ELA+Math / 2) or IAR overall proficiency percent, rounded to two decimals
+- Schools missing required assessment data are excluded
+- Ranking sorts descending by score, breaking ties alphabetically by school name
+
+**Error Responses:**
+- `422`: Missing/invalid query parameters
+- `503`: Database unavailable
 
 ---
 
@@ -231,7 +282,7 @@ class School(Base):
     district: str
     county: str
     school_type: str        # "Elementary School", "High School", etc.
-    level: str              # "School", "District", "Statewide"
+    level: str              # Normalized level: "elementary", "middle", "high", "other"
     grades_served: str      # "9-12", "K-8", etc.
 
     # Core Metrics

@@ -61,6 +61,9 @@ class SchoolMetrics(BaseModel):
     act: Optional[ACTScores] = None
     demographics: Optional[Demographics] = None
     diversity: Optional[Diversity] = None
+    iar_ela_proficiency_pct: Optional[float] = None
+    iar_math_proficiency_pct: Optional[float] = None
+    iar_overall_proficiency_pct: Optional[float] = None
 
 
 class SchoolDetail(BaseModel):
@@ -77,6 +80,26 @@ class SchoolDetail(BaseModel):
     school_type: Optional[str] = None
     grades_served: Optional[str] = None
     metrics: SchoolMetrics
+
+
+class TopScoreEntry(BaseModel):
+    """Single ranked school entry for the top scores endpoint."""
+
+    rank: int
+    rcdts: str
+    school_name: str
+    city: str
+    district: Optional[str] = None
+    school_type: Optional[str] = None
+    level: str
+    enrollment: Optional[int] = None
+    score: float
+
+
+class TopScoresResponse(BaseModel):
+    """Response wrapper for top scores endpoint."""
+
+    results: List[TopScoreEntry]
 
 
 class SearchResponse(BaseModel):

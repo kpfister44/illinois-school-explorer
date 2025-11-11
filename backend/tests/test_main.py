@@ -44,3 +44,11 @@ def test_cors_allows_loopback_alias(client):
 
     assert response.status_code == 200
     assert response.headers.get("access-control-allow-origin") == "http://127.0.0.1:5173"
+
+
+def test_openapi_includes_top_scores_route():
+    """OpenAPI schema should document the top scores endpoint."""
+    from app.main import app
+
+    schema = app.openapi()
+    assert "/api/top-scores" in schema["paths"]
