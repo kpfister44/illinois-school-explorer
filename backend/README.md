@@ -23,6 +23,8 @@ uv sync --all-extras
 # Import school data
 uv run python -m app.utils.import_data ../2025-Report-Card-Public-Data-Set.xlsx
 
+> **Schema note:** The import now stores normalized levels plus IAR proficiency columns. If you already have `data/schools.db`, delete it (or drop/recreate the table) before re-importing so the schema matches.
+
 # Start development server
 uv run uvicorn app.main:app --reload --port 8000
 
@@ -280,7 +282,7 @@ class School(Base):
     district: str
     county: str
     school_type: str        # "Elementary School", "High School", etc.
-    level: str              # "School", "District", "Statewide"
+    level: str              # Normalized level: "elementary", "middle", "high", "other"
     grades_served: str      # "9-12", "K-8", etc.
 
     # Core Metrics
