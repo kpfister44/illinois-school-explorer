@@ -3,8 +3,11 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { Plus, Minus } from 'lucide-react';
+import { useComparison } from '@/contexts/ComparisonContext';
 import type { SchoolDetail } from '@/lib/api/types';
 
 interface SchoolDetailViewProps {
@@ -31,6 +34,17 @@ function formatPercent(value: number | null): string {
 }
 
 export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
+  const { addToComparison, removeFromComparison, isInComparison, canAddMore } = useComparison();
+  const inComparison = isInComparison(school.rcdts);
+
+  const handleComparisonToggle = () => {
+    if (inComparison) {
+      removeFromComparison(school.rcdts);
+    } else {
+      addToComparison(school.rcdts);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="border-b border-border pb-6">
@@ -47,6 +61,25 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
             {school.school_type && <Badge variant="secondary">{school.school_type}</Badge>}
             {school.grades_served && <Badge variant="outline">Grades {school.grades_served}</Badge>}
           </div>
+        </div>
+        <div className="mt-4">
+          <Button
+            onClick={handleComparisonToggle}
+            variant={inComparison ? 'outline' : 'default'}
+            disabled={!inComparison && !canAddMore}
+          >
+            {inComparison ? (
+              <>
+                <Minus className="mr-2 h-4 w-4" />
+                Remove from Compare
+              </>
+            ) : (
+              <>
+                <Plus className="mr-2 h-4 w-4" />
+                Add to Compare
+              </>
+            )}
+          </Button>
         </div>
       </div>
 
