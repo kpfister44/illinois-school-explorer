@@ -47,6 +47,6 @@ export function useComparisonSchools(): School[] {
       return buildPlaceholder(rcdts, 'School unavailable', -2);
     }
 
-    return buildPlaceholder(rcdts, 'Loading…', -1);
+    return buildPlaceholder(rcdts, 'Loading...', -1);
   });
 }
