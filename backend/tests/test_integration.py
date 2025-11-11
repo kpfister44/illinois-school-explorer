@@ -46,7 +46,7 @@ def test_data_quality_no_missing_required_fields(test_db):
         assert school.rcdts
         assert school.school_name
         assert school.city
-        assert school.level == "School"
+        assert school.level in {"elementary", "middle", "high", "other"}
 
 
 def test_coverage_target_met():
