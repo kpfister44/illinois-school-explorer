@@ -52,15 +52,18 @@ def clean_enrollment(value) -> Optional[int]:
     return None
 
 
-def load_excel_data(excel_path: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Load General and ACT sheets from Excel workbook."""
+def load_excel_data(excel_path: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Load General, ACT, and IAR sheets from Excel workbook."""
     general_df = pd.read_excel(excel_path, sheet_name="General")
     act_df = pd.read_excel(excel_path, sheet_name="ACT")
-    return general_df, act_df
+    iar_df = pd.read_excel(excel_path, sheet_name="IAR")
+    return general_df, act_df, iar_df
 
 
-def merge_school_data(general_df: pd.DataFrame, act_df: pd.DataFrame) -> pd.DataFrame:
-    """Filter to school rows and join ACT scores."""
+def merge_school_data(
+    general_df: pd.DataFrame, act_df: pd.DataFrame, iar_df: pd.DataFrame
+) -> pd.DataFrame:
+    """Filter to school rows and join ACT/IAR scores."""
     schools_df = general_df[general_df["Level"] == "School"].copy()
 
     act_subset = act_df[
@@ -73,7 +76,32 @@ def merge_school_data(general_df: pd.DataFrame, act_df: pd.DataFrame) -> pd.Data
     ].copy()
 
     merged_df = schools_df.merge(act_subset, on="RCDTS", how="left")
+
+    iar_subset = iar_df[
+        [
+            "RCDTS",
+            "IAR ELA Proficiency Rate - Total",
+            "IAR Math Proficiency Rate - Total",
+        ]
+    ].copy()
+
+    merged_df = merged_df.merge(iar_subset, on="RCDTS", how="left")
     return merged_df
+
+
+def normalize_level(school_type: Optional[str]) -> str:
+    """Normalize school type strings into level buckets."""
+    if not school_type:
+        return "other"
+
+    normalized = school_type.lower()
+    if "high" in normalized:
+        return "high"
+    if "middle" in normalized or "junior" in normalized or "intermediate" in normalized:
+        return "middle"
+    if "elementary" in normalized or "primary" in normalized:
+        return "elementary"
+    return "other"
 
 
 def prepare_school_records(merged_df: pd.DataFrame) -> List[dict]:
@@ -81,6 +109,12 @@ def prepare_school_records(merged_df: pd.DataFrame) -> List[dict]:
 
     records: List[dict] = []
     for _, row in merged_df.iterrows():
+        iar_ela = clean_percentage(row.get("IAR ELA Proficiency Rate - Total"))
+        iar_math = clean_percentage(row.get("IAR Math Proficiency Rate - Total"))
+        iar_overall = None
+        if iar_ela is not None and iar_math is not None:
+            iar_overall = (iar_ela + iar_math) / 2
+
         record = {
             "rcdts": row["RCDTS"],
             "school_name": row["School Name"],
@@ -88,7 +122,7 @@ def prepare_school_records(merged_df: pd.DataFrame) -> List[dict]:
             "city": row.get("City"),
             "county": row.get("County"),
             "school_type": row.get("School Type"),
-            "level": row.get("Level"),
+            "level": normalize_level(row.get("School Type")),
             "grades_served": row.get("Grades Served"),
             "student_enrollment": clean_enrollment(row.get("# Student Enrollment")),
             "el_percentage": clean_percentage(row.get("% Student Enrollment - EL")),
@@ -96,6 +130,9 @@ def prepare_school_records(merged_df: pd.DataFrame) -> List[dict]:
             "act_ela_avg": clean_percentage(row.get("ACT ELA Average Score - Grade 11")),
             "act_math_avg": clean_percentage(row.get("ACT Math Average Score - Grade 11")),
             "act_science_avg": clean_percentage(row.get("ACT Science Average Score - Grade 11")),
+            "iar_ela_proficiency_pct": iar_ela,
+            "iar_math_proficiency_pct": iar_math,
+            "iar_overall_proficiency_pct": iar_overall,
             "pct_white": clean_percentage(row.get("% Student Enrollment - White")),
             "pct_black": clean_percentage(row.get("% Student Enrollment - Black or African American")),
             "pct_hispanic": clean_percentage(row.get("% Student Enrollment - Hispanic or Latino")),
@@ -116,8 +153,8 @@ def prepare_school_records(merged_df: pd.DataFrame) -> List[dict]:
 def import_to_database(excel_path: str, db: Session) -> int:
     """Run full import pipeline: load, clean, and bulk insert to schools table."""
 
-    general_df, act_df = load_excel_data(excel_path)
-    merged_df = merge_school_data(general_df, act_df)
+    general_df, act_df, iar_df = load_excel_data(excel_path)
+    merged_df = merge_school_data(general_df, act_df, iar_df)
     records = prepare_school_records(merged_df)
 
     db.query(School).delete()
