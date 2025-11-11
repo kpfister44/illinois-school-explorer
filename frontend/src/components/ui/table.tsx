@@ -1,3 +1,6 @@
+// ABOUTME: shadcn/ui Table component primitives
+// ABOUTME: Provides accessible table elements with consistent styling
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
