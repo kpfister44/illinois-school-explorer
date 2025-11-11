@@ -35,19 +35,30 @@ export default function ComparisonBasket({ schools }: ComparisonBasketProps) {
               <Badge variant="secondary">{comparisonList.length} schools selected</Badge>
             </div>
             <div className="flex flex-wrap gap-2">
-              {orderedSchools.map((school) => (
-                <Badge key={school.rcdts} variant="outline" className="pr-1">
-                  <span className="max-w-[200px] truncate">{school.school_name}</span>
+              {orderedSchools.map((school) => {
+                const isPlaceholder = school.id < 0;
+                const displayName = isPlaceholder
+                  ? `${school.school_name} (${school.rcdts})`
+                  : school.school_name;
+
+                return (
+                  <Badge key={school.rcdts} variant="outline" className="pr-1">
+                    <span
+                      className={`max-w-[200px] truncate ${isPlaceholder ? 'text-muted-foreground' : ''}`}
+                    >
+                      {displayName}
+                    </span>
                   <button
                     type="button"
                     onClick={() => removeFromComparison(school.rcdts)}
                     className="ml-1 rounded-sm p-0.5 hover:bg-muted"
-                    aria-label={`Remove ${school.school_name}`}
+                    aria-label={`Remove ${displayName}`}
                   >
                     <X className="h-3 w-3" />
                   </button>
                 </Badge>
-              ))}
+                );
+              })}
             </div>
           </div>
           <div className="flex gap-2">

@@ -6,6 +6,17 @@ import { useComparison } from '@/contexts/ComparisonContext';
 import { getSchoolDetail, schoolDetailQueryKey } from '@/lib/api/queries';
 import type { School } from '@/lib/api/types';
 
+function buildPlaceholder(rcdts: string, label: string, id: number): School {
+  return {
+    id,
+    rcdts,
+    school_name: label,
+    city: '',
+    district: null,
+    school_type: null,
+  };
+}
+
 export function useComparisonSchools(): School[] {
   const { comparisonList } = useComparison();
 
@@ -17,14 +28,12 @@ export function useComparisonSchools(): School[] {
     })),
   });
 
-  return schoolQueries
-    .map((query) => {
-      if (!query.data) {
-        return null;
-      }
+  return comparisonList.map((rcdts, index) => {
+    const query = schoolQueries[index];
 
+    if (query?.data) {
       const detail = query.data;
-      const school: School = {
+      return {
         id: detail.id,
         rcdts: detail.rcdts,
         school_name: detail.school_name,
@@ -32,8 +41,12 @@ export function useComparisonSchools(): School[] {
         district: detail.district,
         school_type: detail.school_type,
       };
+    }
 
-      return school;
-    })
-    .filter((school): school is School => Boolean(school));
+    if (query?.isError) {
+      return buildPlaceholder(rcdts, 'School unavailable', -2);
+    }
+
+    return buildPlaceholder(rcdts, 'Loading…', -1);
+  });
 }

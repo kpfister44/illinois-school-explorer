@@ -90,4 +90,93 @@ describe('useComparisonSchools', () => {
       ]);
     });
   });
+
+  it('preserves comparison order when multiple schools are selected', async () => {
+    const schools = ['05-016-2140-17-0001', '05-016-2140-17-0002'];
+    localStorage.setItem('school-comparison', JSON.stringify(schools));
+
+    vi.spyOn(apiQueries, 'getSchoolDetail').mockImplementation((rcdts: string) => {
+      return Promise.resolve({
+        id: rcdts.endsWith('0001') ? 1 : 2,
+        rcdts,
+        school_name: rcdts.endsWith('0001') ? 'First School' : 'Second School',
+        city: 'City',
+        district: 'District',
+        school_type: 'High School',
+        county: null,
+        grades_served: null,
+        metrics: {
+          enrollment: null,
+          act: { ela_avg: null, math_avg: null, science_avg: null, overall_avg: null },
+          demographics: { el_percentage: null, low_income_percentage: null },
+          diversity: {
+            white: null,
+            black: null,
+            hispanic: null,
+            asian: null,
+            pacific_islander: null,
+            native_american: null,
+            two_or_more: null,
+            mena: null,
+          },
+        },
+      });
+    });
+
+    const { result } = renderHook(() => useComparisonSchools(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.map((school) => school.rcdts)).toEqual(schools);
+    });
+  });
+
+  it('includes placeholder entries when a school fails to load', async () => {
+    const schools = ['05-016-2140-17-0001', '05-016-2140-17-0002'];
+    localStorage.setItem('school-comparison', JSON.stringify(schools));
+
+    const detailSpy = vi.spyOn(apiQueries, 'getSchoolDetail');
+    detailSpy.mockImplementation((rcdts: string) => {
+      if (rcdts === schools[0]) {
+        return Promise.reject(new Error('boom'));
+      }
+      return Promise.resolve({
+        id: 2,
+        rcdts,
+        school_name: 'Loaded School',
+        city: 'City',
+        district: 'District',
+        school_type: 'High School',
+        county: null,
+        grades_served: null,
+        metrics: {
+          enrollment: null,
+          act: { ela_avg: null, math_avg: null, science_avg: null, overall_avg: null },
+          demographics: { el_percentage: null, low_income_percentage: null },
+          diversity: {
+            white: null,
+            black: null,
+            hispanic: null,
+            asian: null,
+            pacific_islander: null,
+            native_american: null,
+            two_or_more: null,
+            mena: null,
+          },
+        },
+      });
+    });
+
+    const { result } = renderHook(() => useComparisonSchools(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current).toHaveLength(2);
+      expect(result.current[0].rcdts).toBe(schools[0]);
+      expect(result.current[0].school_name).toMatch(/unavailable|loading/i);
+      expect(result.current[1].school_name).toBe('Loaded School');
+    });
+  });
 });
