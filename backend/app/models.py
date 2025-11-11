@@ -61,6 +61,9 @@ class SchoolMetrics(BaseModel):
     act: Optional[ACTScores] = None
     demographics: Optional[Demographics] = None
     diversity: Optional[Diversity] = None
+    iar_ela_proficiency_pct: Optional[float] = None
+    iar_math_proficiency_pct: Optional[float] = None
+    iar_overall_proficiency_pct: Optional[float] = None
 
 
 class SchoolDetail(BaseModel):

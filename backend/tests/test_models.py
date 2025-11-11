@@ -133,6 +133,25 @@ def test_school_detail_full_model():
     assert detail.metrics.act.overall_avg == 17.95
 
 
+def test_school_detail_includes_iar_metrics():
+    """SchoolDetail metrics should expose IAR proficiency values."""
+    detail = SchoolDetail(
+        id=1,
+        rcdts="11",
+        school_name="Sample",
+        city="Normal",
+        metrics=SchoolMetrics(
+            enrollment=400,
+            act=None,
+            demographics=None,
+            diversity=None,
+            iar_overall_proficiency_pct=51.75,
+        ),
+    )
+
+    assert detail.metrics.iar_overall_proficiency_pct == 51.75
+
+
 def test_search_response_wrapper():
     """SearchResponse wraps results list and total count."""
     response = SearchResponse(
