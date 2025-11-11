@@ -3,7 +3,8 @@
 
 import { render, screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { ComparisonProvider } from '@/contexts/ComparisonContext';
 import SchoolDetailView from './SchoolDetailView';
 import type { SchoolDetail } from '@/lib/api/types';
 
@@ -41,9 +42,17 @@ const mockSchoolDetail: SchoolDetail = {
   },
 };
 
+function renderWithProviders(ui: React.ReactElement) {
+  return render(<ComparisonProvider>{ui}</ComparisonProvider>);
+}
+
 describe('SchoolDetailView', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it('displays school name and basic info', () => {
-    render(<SchoolDetailView school={mockSchoolDetail} />);
+    renderWithProviders(<SchoolDetailView school={mockSchoolDetail} />);
 
     expect(screen.getByText('Elk Grove High School')).toBeInTheDocument();
     expect(screen.getByText(/Elk Grove Village/)).toBeInTheDocument();
@@ -51,14 +60,14 @@ describe('SchoolDetailView', () => {
   });
 
   it('displays school type and grades badges', () => {
-    render(<SchoolDetailView school={mockSchoolDetail} />);
+    renderWithProviders(<SchoolDetailView school={mockSchoolDetail} />);
 
     expect(screen.getByText('High School')).toBeInTheDocument();
     expect(screen.getByText('Grades 9-12')).toBeInTheDocument();
   });
 
   it('renders tabs for Overview, Academics, Demographics', () => {
-    render(<SchoolDetailView school={mockSchoolDetail} />);
+    renderWithProviders(<SchoolDetailView school={mockSchoolDetail} />);
 
     expect(screen.getByRole('tab', { name: /overview/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /academics/i })).toBeInTheDocument();
@@ -66,7 +75,7 @@ describe('SchoolDetailView', () => {
   });
 
   it('displays enrollment in Overview tab by default', () => {
-    render(<SchoolDetailView school={mockSchoolDetail} />);
+    renderWithProviders(<SchoolDetailView school={mockSchoolDetail} />);
 
     expect(screen.getByText(/enrollment/i)).toBeInTheDocument();
     expect(screen.getByText('1,775')).toBeInTheDocument();
@@ -74,7 +83,7 @@ describe('SchoolDetailView', () => {
 
   it('displays ACT scores when Academics tab is clicked', async () => {
     const user = userEvent.setup();
-    render(<SchoolDetailView school={mockSchoolDetail} />);
+    renderWithProviders(<SchoolDetailView school={mockSchoolDetail} />);
 
     const academicsTab = screen.getByRole('tab', { name: /academics/i });
     await user.click(academicsTab);
@@ -87,7 +96,7 @@ describe('SchoolDetailView', () => {
 
   it('displays ACT score progress bars', async () => {
     const user = userEvent.setup();
-    render(<SchoolDetailView school={mockSchoolDetail} />);
+    renderWithProviders(<SchoolDetailView school={mockSchoolDetail} />);
 
     const academicsTab = screen.getByRole('tab', { name: /academics/i });
     await user.click(academicsTab);
@@ -98,7 +107,7 @@ describe('SchoolDetailView', () => {
 
   it('displays demographics when Demographics tab is clicked', async () => {
     const user = userEvent.setup();
-    render(<SchoolDetailView school={mockSchoolDetail} />);
+    renderWithProviders(<SchoolDetailView school={mockSchoolDetail} />);
 
     const demographicsTab = screen.getByRole('tab', { name: /demographics/i });
     await user.click(demographicsTab);
@@ -111,12 +120,36 @@ describe('SchoolDetailView', () => {
 
   it('displays diversity progress bars', async () => {
     const user = userEvent.setup();
-    render(<SchoolDetailView school={mockSchoolDetail} />);
+    renderWithProviders(<SchoolDetailView school={mockSchoolDetail} />);
 
     const demographicsTab = screen.getByRole('tab', { name: /demographics/i });
     await user.click(demographicsTab);
 
     const progressBars = screen.getAllByRole('progressbar');
     expect(progressBars.length).toBeGreaterThan(0);
+  });
+
+  it('shows "Add to Compare" button when school not in comparison', () => {
+    renderWithProviders(<SchoolDetailView school={mockSchoolDetail} />);
+
+    expect(screen.getByRole('button', { name: /add to compare/i })).toBeInTheDocument();
+  });
+
+  it('shows "Remove from Compare" button when school in comparison', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<SchoolDetailView school={mockSchoolDetail} />);
+
+    const addButton = screen.getByRole('button', { name: /add to compare/i });
+    await user.click(addButton);
+
+    expect(screen.getByRole('button', { name: /remove from compare/i })).toBeInTheDocument();
+  });
+
+  it('disables "Add to Compare" when 5 schools already selected', () => {
+    localStorage.setItem('school-comparison', JSON.stringify(['1', '2', '3', '4', '5']));
+
+    renderWithProviders(<SchoolDetailView school={mockSchoolDetail} />);
+
+    expect(screen.getByRole('button', { name: /add to compare/i })).toBeDisabled();
   });
 });

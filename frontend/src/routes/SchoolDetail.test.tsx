@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
+import { ComparisonProvider } from '@/contexts/ComparisonContext';
 import SchoolDetail from './SchoolDetail';
 
 const toastSpy = vi.fn();
@@ -72,12 +73,14 @@ const createWrapper = (rcdts: string) => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[`/school/${rcdts}`]}>
-        <Routes>
-          <Route path="/school/:rcdts" element={<SchoolDetail />} />
-        </Routes>
-        {children}
-      </MemoryRouter>
+      <ComparisonProvider>
+        <MemoryRouter initialEntries={[`/school/${rcdts}`]}>
+          <Routes>
+            <Route path="/school/:rcdts" element={<SchoolDetail />} />
+          </Routes>
+          {children}
+        </MemoryRouter>
+      </ComparisonProvider>
     </QueryClientProvider>
   );
 };

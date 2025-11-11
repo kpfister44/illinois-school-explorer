@@ -3,8 +3,31 @@
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { useComparison } from '@/contexts/ComparisonContext';
 import App from './App';
 import * as queries from '@/lib/api/queries';
+
+let shouldRenderComparisonConsumer = false;
+let comparisonContextValue: ReturnType<typeof useComparison> | undefined;
+
+function ComparisonConsumer() {
+  comparisonContextValue = useComparison();
+  return null;
+}
+
+vi.mock('./routes/Home', () => {
+  return {
+    __esModule: true,
+    default: function MockHome() {
+      return (
+        <>
+          <div>Search for Illinois schools</div>
+          {shouldRenderComparisonConsumer ? <ComparisonConsumer /> : null}
+        </>
+      );
+    },
+  };
+});
 
 describe('App', () => {
   beforeAll(() => {
@@ -16,6 +39,8 @@ describe('App', () => {
   });
 
   beforeEach(() => {
+    shouldRenderComparisonConsumer = false;
+    comparisonContextValue = undefined;
     vi.spyOn(queries, 'useSearch').mockReturnValue({
       data: { results: [], total: 3827 },
       isLoading: false,
@@ -37,6 +62,14 @@ describe('App', () => {
     render(<App />);
     expect(screen.getByText(/search for illinois schools/i)).toBeInTheDocument();
   });
+
+  it('provides ComparisonContext to child components', () => {
+    shouldRenderComparisonConsumer = true;
+    render(<App />);
+
+    expect(comparisonContextValue).toBeDefined();
+    expect(comparisonContextValue?.comparisonList).toEqual([]);
+  });
 });
 
 describe('App - Toaster', () => {
@@ -49,6 +82,8 @@ describe('App - Toaster', () => {
   });
 
   beforeEach(() => {
+    shouldRenderComparisonConsumer = false;
+    comparisonContextValue = undefined;
     vi.spyOn(queries, 'useSearch').mockReturnValue({
       data: { results: [], total: 3827 },
       isLoading: false,
