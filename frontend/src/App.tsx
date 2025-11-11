@@ -5,7 +5,9 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from '@/components/ui/toaster';
+import ComparisonBasket from '@/components/ComparisonBasket';
 import { ComparisonProvider } from '@/contexts/ComparisonContext';
+import { useComparisonSchools } from '@/hooks/useComparisonSchools';
 import Home from './routes/Home';
 import SearchResults from './routes/SearchResults';
 import SchoolDetail from './routes/SchoolDetail';
@@ -21,31 +23,40 @@ const queryClient = new QueryClient({
   },
 });
 
+function AppRoutes() {
+  const comparisonSchools = useComparisonSchools();
+
+  return (
+    <BrowserRouter>
+      <div className="min-h-screen bg-background pb-24">
+        <header className="border-b">
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <Link to="/" className="text-3xl font-bold tracking-tight hover:text-primary">
+              Illinois School Explorer
+            </Link>
+          </div>
+        </header>
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/search" element={<SearchResults />} />
+            <Route path="/school/:rcdts" element={<SchoolDetail />} />
+            <Route path="/compare" element={<Compare />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+      </div>
+      <ComparisonBasket schools={comparisonSchools} />
+      <Toaster />
+    </BrowserRouter>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ComparisonProvider>
-        <BrowserRouter>
-          <div className="min-h-screen bg-background">
-            <header className="border-b">
-              <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                <Link to="/" className="text-3xl font-bold tracking-tight hover:text-primary">
-                  Illinois School Explorer
-                </Link>
-              </div>
-            </header>
-            <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/search" element={<SearchResults />} />
-                <Route path="/school/:rcdts" element={<SchoolDetail />} />
-                <Route path="/compare" element={<Compare />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-          </div>
-        </BrowserRouter>
-        <Toaster />
+        <AppRoutes />
       </ComparisonProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
