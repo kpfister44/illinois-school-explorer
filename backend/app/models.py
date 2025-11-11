@@ -82,6 +82,26 @@ class SchoolDetail(BaseModel):
     metrics: SchoolMetrics
 
 
+class TopScoreEntry(BaseModel):
+    """Single ranked school entry for the top scores endpoint."""
+
+    rank: int
+    rcdts: str
+    school_name: str
+    city: str
+    district: Optional[str] = None
+    school_type: Optional[str] = None
+    level: str
+    enrollment: Optional[int] = None
+    score: float
+
+
+class TopScoresResponse(BaseModel):
+    """Response wrapper for top scores endpoint."""
+
+    results: List[TopScoreEntry]
+
+
 class SearchResponse(BaseModel):
     """Response wrapper for search endpoint."""
 
