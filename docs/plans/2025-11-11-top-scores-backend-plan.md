@@ -471,10 +471,3 @@ git commit -m "docs(api): document top scores endpoint"
 3. `git status` should be clean.
 
 ---
-
-Plan complete and saved to `docs/plans/2025-11-11-top-scores-backend-plan.md`. Two execution options:
-
-1. **Subagent-Driven (this session)** – we dispatch a fresh subagent per task using `superpowers:subagent-driven-development`, reviewing between tasks for fast iteration.
-2. **Parallel Session (separate)** – open a new Codex session in this repo, load the plan, and execute it with `superpowers:executing-plans` in batches.
-
-Kyle, which approach should we use?
