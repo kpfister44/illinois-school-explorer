@@ -3,7 +3,14 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from './client';
-import type { SearchResponse, SchoolDetail, CompareResponse } from './types';
+import type {
+  SearchResponse,
+  SchoolDetail,
+  CompareResponse,
+  Assessment,
+  SchoolLevel,
+  TopScoresResponse,
+} from './types';
 
 export const searchSchools = async (query: string, limit: number = 10): Promise<SearchResponse> => {
   const { data } = await apiClient.get<SearchResponse>('/api/search', {
@@ -21,6 +28,23 @@ export async function getSchoolDetail(rcdts: string): Promise<SchoolDetail> {
 export const searchQueryKey = (query: string, limit: number) => ['search', query, limit];
 export const schoolDetailQueryKey = (rcdts: string) => ['school', rcdts];
 export const compareQueryKey = (rcdtsList: string[]) => ['compare', rcdtsList.join(',')];
+export const topScoresQueryKey = (assessment: Assessment, level: SchoolLevel, limit: number) => [
+  'top-scores',
+  assessment,
+  level,
+  limit,
+];
+
+export async function getTopScores(params: {
+  assessment: Assessment;
+  level: SchoolLevel;
+  limit?: number;
+}): Promise<TopScoresResponse> {
+  const { data } = await apiClient.get<TopScoresResponse>('/api/top-scores', {
+    params: { limit: 100, ...params },
+  });
+  return data;
+}
 
 // Search schools by name or city
 export const useSearch = (query: string, limit: number = 10, enabled?: boolean) => {

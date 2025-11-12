@@ -54,3 +54,22 @@ export interface SchoolDetail extends School {
 export interface CompareResponse {
   schools: SchoolDetail[];
 }
+
+export type Assessment = 'act' | 'iar';
+export type SchoolLevel = 'high' | 'middle' | 'elementary';
+
+export interface TopScoreEntry {
+  rank: number;
+  rcdts: string;
+  school_name: string;
+  city: string;
+  district: string | null;
+  school_type: string | null;
+  level: SchoolLevel;
+  enrollment: number | null;
+  score: number;
+}
+
+export interface TopScoresResponse {
+  results: TopScoreEntry[];
+}
