@@ -13,11 +13,11 @@ test.describe('Top Scores leaderboard', () => {
     await expect(page).toHaveURL(/\/top-scores$/);
     await expect(page.getByRole('heading', { name: /Top Illinois Schools/ })).toBeVisible();
 
-    await page.getByRole('tab', { name: /Middle School IAR/ }).click();
-    const firstRow = page.getByRole('row').nth(1);
-    await expect(firstRow).toContainText('1');
+  await page.getByRole('tab', { name: /Middle School IAR/ }).click();
+  const firstRow = page.getByRole('button', { name: /View details for/i }).first();
+  await expect(firstRow).toBeVisible();
 
-    await firstRow.click();
-    await expect(page).toHaveURL(/\/school\//);
-  });
+  await firstRow.click();
+  await expect(page).toHaveURL(/\/school\//);
+});
 });

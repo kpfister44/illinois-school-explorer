@@ -95,10 +95,10 @@ def normalize_level(school_type: Optional[str]) -> str:
         return "other"
 
     normalized = school_type.lower()
-    if "high" in normalized:
-        return "high"
     if "middle" in normalized or "junior" in normalized or "intermediate" in normalized:
         return "middle"
+    if "high" in normalized:
+        return "high"
     if "elementary" in normalized or "primary" in normalized:
         return "elementary"
     return "other"

@@ -52,6 +52,7 @@ export default function TopScoresTable({ entries, assessment }: TopScoresTablePr
                 onClick={handleNavigate}
                 onKeyDown={handleKeyDown}
                 className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                aria-label={`View details for ${entry.school_name}`}
               >
                 <TableCell>
                   <Badge variant={entry.rank <= 3 ? 'default' : 'secondary'}>{entry.rank}</Badge>
