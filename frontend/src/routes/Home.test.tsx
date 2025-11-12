@@ -57,4 +57,10 @@ describe('Home', () => {
     render(<Home />, { wrapper: createWrapper() });
     expect(screen.getByPlaceholderText(/search for schools/i)).toBeInTheDocument();
   });
+
+  it('renders top scores CTA with link', () => {
+    render(<Home />, { wrapper: createWrapper() });
+    const cta = screen.getByRole('link', { name: /Explore Top 100 Scores/i });
+    expect(cta).toHaveAttribute('href', '/top-scores');
+  });
 });
