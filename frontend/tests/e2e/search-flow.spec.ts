@@ -70,4 +70,8 @@ test.describe('Search to Detail Flow', () => {
       await expect(page).toHaveURL(/\/school\//);
     }
   });
+
+  test('top scores CTA is visible on home', async ({ page }) => {
+    await expect(page.getByRole('link', { name: /Explore Top 100 Scores/i })).toBeVisible();
+  });
 });

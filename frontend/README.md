@@ -6,7 +6,7 @@
 React + TypeScript frontend for the Illinois School Explorer application.
 
 **Tech:** React 18, TypeScript 5, Vite 5, shadcn/ui, Tailwind CSS 3
-**Testing:** 16 unit tests, 4 E2E tests (Vitest + Playwright)
+**Testing:** 16 unit tests, 5 E2E tests (Vitest + Playwright)
 **Status:** Phase 3 complete, ready for Phase 4 (Core Components)
 
 ---
@@ -33,7 +33,7 @@ React + TypeScript frontend for the Illinois School Explorer application.
 - ✅ Vitest unit testing (16 tests passing)
 - ✅ Playwright E2E testing (4 tests passing)
 - ✅ API client with TanStack Query
-- ✅ React Router with route structure
+- ✅ React Router with route structure (including `/top-scores` leaderboard)
 - ✅ SchoolCount component (demonstrates full integration)
 - ✅ Environment configuration
 - ✅ Comprehensive test coverage
@@ -81,6 +81,14 @@ npm run test:ui      # Run unit tests with UI
 npm run test:e2e     # Run E2E tests
 npm run test:e2e:ui  # Run E2E tests with UI
 ```
+
+To focus the new leaderboard journey:
+
+```bash
+npx playwright test tests/e2e/top-scores-flow.spec.ts --reporter=list
+```
+
+The spec navigates via the homepage CTA, flips between ACT/IAR tabs, and opens a school detail page to ensure the leaderboard behaves as designed.
 
 ## Project Structure
 
@@ -139,6 +147,7 @@ All components follow these patterns:
 - `/search` - Search results (placeholder)
 - `/school/:rcdts` - School detail page (placeholder)
 - `/compare` - School comparison (placeholder)
+- `/top-scores` - Top 100 leaderboard with CTA entry, filters, and table
 - `*` - 404 Not Found page
 
 **Router Configuration:**
