@@ -4,6 +4,9 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import TopScoresFilters, { TopScoresFilterOption } from '@/components/TopScoresFilters';
+import TopScoresTable from '@/components/TopScoresTable';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 import { getTopScores, topScoresQueryKey } from '@/lib/api/queries';
 
 const FILTERS: TopScoresFilterOption[] = [
@@ -38,6 +41,32 @@ export default function TopScores() {
     queryFn: () => getTopScores({ assessment: active.assessment, level: active.level, limit: 100 }),
     staleTime: 5 * 60 * 1000,
   });
+  const entries = query.data?.results ?? [];
+
+  const renderLeaderboard = () => {
+    if (query.isError) {
+      const message =
+        query.error instanceof Error ? query.error.message : 'Please try again soon.';
+      return (
+        <Alert variant="destructive">
+          <AlertTitle>Unable to load leaderboard</AlertTitle>
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
+      );
+    }
+
+    if (query.isLoading) {
+      return (
+        <div className="space-y-3 rounded-lg border bg-card p-4">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Skeleton key={index} className="h-12 w-full" />
+          ))}
+        </div>
+      );
+    }
+
+    return <TopScoresTable entries={entries} />;
+  };
 
   return (
     <section className="space-y-8">
@@ -54,9 +83,21 @@ export default function TopScores() {
         onChange={handleChange}
         onHoverOption={prefetchOption}
       />
-      <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-        {query.isLoading ? 'Loading leaderboard...' : 'Leaderboard will appear here.'}
+      <div className="space-y-3">
+        <Alert>
+          <AlertTitle>How rankings are calculated</AlertTitle>
+          <AlertDescription>
+            ACT scores use grade 11 overall averages while IAR scores use percent Meets or
+            Exceeds. Each category is normalized to a 100-point scale and ranked statewide.
+          </AlertDescription>
+        </Alert>
+        <p className="text-sm text-muted-foreground">
+          <span className="font-semibold">Legend:</span> Dark badges represent the top three
+          schools in each assessment-level slice. Enrollment values use the latest ISBE
+          reporting year.
+        </p>
       </div>
+      {renderLeaderboard()}
     </section>
   );
 }
