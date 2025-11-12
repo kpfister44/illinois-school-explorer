@@ -2,18 +2,37 @@
 // ABOUTME: Shows hero, filters, and leaderboard placeholder
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import TopScoresFilters, { TopScoresFilterOption } from '@/components/TopScoresFilters';
 import { getTopScores, topScoresQueryKey } from '@/lib/api/queries';
 
-const FILTERS = [
+const FILTERS: TopScoresFilterOption[] = [
   { id: 'act-high', assessment: 'act', level: 'high', label: 'High School ACT' },
   { id: 'iar-middle', assessment: 'iar', level: 'middle', label: 'Middle School IAR' },
   { id: 'iar-elementary', assessment: 'iar', level: 'elementary', label: 'Elementary IAR' },
-] as const;
+];
 
 export default function TopScores() {
-  const [active, setActive] = useState<(typeof FILTERS)[number]>(FILTERS[0]);
+  const queryClient = useQueryClient();
+  const [activeId, setActiveId] = useState(FILTERS[0].id);
+  const active = FILTERS.find((option) => option.id === activeId) ?? FILTERS[0];
+
+  const handleChange = (id: string) => {
+    const next = FILTERS.find((option) => option.id === id);
+    if (next) {
+      setActiveId(next.id);
+    }
+  };
+
+  const prefetchOption = (option: TopScoresFilterOption) => {
+    queryClient.prefetchQuery({
+      queryKey: topScoresQueryKey(option.assessment, option.level, 100),
+      queryFn: () =>
+        getTopScores({ assessment: option.assessment, level: option.level, limit: 100 }),
+      staleTime: 5 * 60 * 1000,
+    });
+  };
+
   const query = useQuery({
     queryKey: topScoresQueryKey(active.assessment, active.level, 100),
     queryFn: () => getTopScores({ assessment: active.assessment, level: active.level, limit: 100 }),
@@ -29,23 +48,12 @@ export default function TopScores() {
           Ranked by ACT (grade 11) and IAR % Meets/Exceeds per normalized level.
         </p>
       </header>
-      <Tabs
+      <TopScoresFilters
         value={active.id}
-        onValueChange={(id) => {
-          const next = FILTERS.find((tab) => tab.id === id);
-          if (next) {
-            setActive(next);
-          }
-        }}
-      >
-        <TabsList className="flex flex-wrap gap-2">
-          {FILTERS.map((tab) => (
-            <TabsTrigger key={tab.id} value={tab.id} className="text-sm">
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+        options={FILTERS}
+        onChange={handleChange}
+        onHoverOption={prefetchOption}
+      />
       <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
         {query.isLoading ? 'Loading leaderboard...' : 'Leaderboard will appear here.'}
       </div>
