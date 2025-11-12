@@ -32,6 +32,8 @@ def test_top_scores_returns_ranked_list(client, test_db):
     assert len(payload["results"]) == 2
     assert payload["results"][0]["rank"] == 1
     assert payload["results"][0]["score"] > payload["results"][1]["score"]
+    assert "act_ela_avg" in payload["results"][0]
+    assert "act_math_avg" in payload["results"][0]
 
 
 def test_top_scores_validates_query_params(client):

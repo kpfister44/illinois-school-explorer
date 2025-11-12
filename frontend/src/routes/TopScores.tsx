@@ -65,7 +65,7 @@ export default function TopScores() {
       );
     }
 
-    return <TopScoresTable entries={entries} />;
+    return <TopScoresTable entries={entries} assessment={active.assessment} />;
   };
 
   return (

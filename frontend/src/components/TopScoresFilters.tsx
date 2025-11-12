@@ -47,6 +47,7 @@ export default function TopScoresFilters({
             value={option.id}
             className="flex-1 min-w-[200px] text-sm"
             onMouseEnter={() => onHoverOption?.(option)}
+            onFocus={() => onHoverOption?.(option)}
           >
             {option.label}
           </TabsTrigger>

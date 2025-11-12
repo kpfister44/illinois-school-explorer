@@ -24,6 +24,8 @@ class RankedSchool:
     level: str
     enrollment: int | None
     score: float
+    act_ela_avg: float | None = None
+    act_math_avg: float | None = None
 
 
 def _act_score_clause() -> ColumnElement[float]:
@@ -56,6 +58,8 @@ def fetch_top_scores(db: Session, assessment: str, level: str, limit: int = 100)
             School.school_type,
             School.level,
             School.student_enrollment,
+            School.act_ela_avg.label("act_ela_avg"),
+            School.act_math_avg.label("act_math_avg"),
             metric_column,
         )
         .where(School.level == level)
@@ -81,6 +85,12 @@ def fetch_top_scores(db: Session, assessment: str, level: str, limit: int = 100)
                 level=row.level,
                 enrollment=row.student_enrollment,
                 score=round(float(row.score), 2),
+                act_ela_avg=float(row.act_ela_avg)
+                if row.act_ela_avg is not None
+                else None,
+                act_math_avg=float(row.act_math_avg)
+                if row.act_math_avg is not None
+                else None,
             )
         )
 

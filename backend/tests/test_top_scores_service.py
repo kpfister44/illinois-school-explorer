@@ -36,6 +36,8 @@ def test_fetch_top_scores_orders_by_metric(test_db):
     assert [row.rank for row in results] == [1, 2]
     assert results[0].school_name == schools[1].school_name
     assert results[0].score == 25.0
+    assert results[0].act_ela_avg == 25
+    assert results[0].act_math_avg == 25
 
 
 def test_fetch_top_scores_filters_by_level_and_null_scores(test_db):
@@ -59,3 +61,5 @@ def test_fetch_top_scores_filters_by_level_and_null_scores(test_db):
     assert len(results) == 1
     assert results[0].level == "middle"
     assert results[0].score == 60.0
+    assert results[0].act_ela_avg is None
+    assert results[0].act_math_avg is None

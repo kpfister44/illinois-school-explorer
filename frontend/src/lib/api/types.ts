@@ -68,6 +68,8 @@ export interface TopScoreEntry {
   level: SchoolLevel;
   enrollment: number | null;
   score: number;
+  act_ela_avg?: number | null;
+  act_math_avg?: number | null;
 }
 
 export interface TopScoresResponse {

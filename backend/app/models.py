@@ -94,6 +94,8 @@ class TopScoreEntry(BaseModel):
     level: str
     enrollment: Optional[int] = None
     score: float
+    act_ela_avg: Optional[float] = None
+    act_math_avg: Optional[float] = None
 
 
 class TopScoresResponse(BaseModel):

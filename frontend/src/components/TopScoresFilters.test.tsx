@@ -1,7 +1,7 @@
 // ABOUTME: Tests for TopScoresFilters component
 // ABOUTME: Ensures tab selection calls change handler
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import TopScoresFilters, { TopScoresFilterOption } from './TopScoresFilters';
@@ -20,4 +20,20 @@ test('invokes onChange when tab selected', async () => {
   const user = userEvent.setup();
   await user.click(screen.getByRole('tab', { name: /Middle IAR/ }));
   expect(handler).toHaveBeenCalledWith('iar-middle');
+});
+
+test('calls hover handler on focus', () => {
+  const hoverSpy = vi.fn();
+  render(
+    <TopScoresFilters
+      value={OPTIONS[0].id}
+      options={OPTIONS}
+      onChange={() => {}}
+      onHoverOption={hoverSpy}
+    />
+  );
+
+  const tab = screen.getByRole('tab', { name: /Middle IAR/ });
+  fireEvent.focus(tab);
+  expect(hoverSpy).toHaveBeenCalledWith(OPTIONS[1]);
 });
