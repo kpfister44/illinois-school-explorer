@@ -3,7 +3,8 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import TopScoresFilters, { TopScoresFilterOption } from '@/components/TopScoresFilters';
+import TopScoresFilters from '@/components/TopScoresFilters';
+import type { TopScoresFilterOption } from '@/components/TopScoresFilters';
 import TopScoresTable from '@/components/TopScoresTable';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
