@@ -133,7 +133,7 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                   <TrendDisplay
                     label="ACT ELA"
                     currentValue={school.metrics.act.ela_avg}
-                    trendData={school.metrics.trends?.act_ela}
+                    trendData={school.metrics.trends?.act}
                     metricType="score"
                     unit="points"
                   />
@@ -151,7 +151,7 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                   <TrendDisplay
                     label="ACT Math"
                     currentValue={school.metrics.act.math_avg}
-                    trendData={school.metrics.trends?.act_math}
+                    trendData={school.metrics.trends?.act}
                     metricType="score"
                     unit="points"
                   />
@@ -169,7 +169,7 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                   <TrendDisplay
                     label="ACT Science"
                     currentValue={school.metrics.act.science_avg}
-                    trendData={school.metrics.trends?.act_science}
+                    trendData={school.metrics.trends?.act}
                     metricType="score"
                     unit="points"
                   />
@@ -187,7 +187,7 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                   <TrendDisplay
                     label="ACT Overall"
                     currentValue={school.metrics.act.overall_avg}
-                    trendData={school.metrics.trends?.act_overall}
+                    trendData={school.metrics.trends?.act}
                     metricType="score"
                     unit="points"
                   />
@@ -215,7 +215,7 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                   <TrendDisplay
                     label="English Learners"
                     currentValue={school.metrics.demographics.el_percentage}
-                    trendData={school.metrics.trends?.el_percentage}
+                    trendData={school.metrics.trends?.el}
                     metricType="percentage"
                     unit="percentage points"
                   />
@@ -232,7 +232,7 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                   <TrendDisplay
                     label="Low Income"
                     currentValue={school.metrics.demographics.low_income_percentage}
-                    trendData={school.metrics.trends?.low_income_percentage}
+                    trendData={school.metrics.trends?.low_income}
                     metricType="percentage"
                     unit="percentage points"
                   />

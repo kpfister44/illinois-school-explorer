@@ -46,12 +46,9 @@ export interface TrendWindow {
 
 export interface TrendMetrics {
   enrollment?: TrendWindow;
-  act_ela?: TrendWindow;
-  act_math?: TrendWindow;
-  act_science?: TrendWindow;
-  act_overall?: TrendWindow;
-  el_percentage?: TrendWindow;
-  low_income_percentage?: TrendWindow;
+  act?: TrendWindow;
+  el?: TrendWindow;
+  low_income?: TrendWindow;
   white?: TrendWindow;
   black?: TrendWindow;
   hispanic?: TrendWindow;
