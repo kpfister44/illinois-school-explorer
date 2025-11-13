@@ -230,4 +230,38 @@ describe('Trend Display', () => {
     const trendButtons = screen.getAllByRole('button', { name: /show trends/i });
     expect(trendButtons.length).toBeGreaterThan(0);
   });
+
+  it('shows demographic trend buttons in demographics tab', async () => {
+    const user = userEvent.setup();
+    const schoolWithTrends: SchoolDetail = {
+      ...mockSchoolDetail,
+      metrics: {
+        ...mockSchoolDetail.metrics,
+        demographics: {
+          el_percentage: 29.0,
+          low_income_percentage: 38.4,
+        },
+        trends: {
+          el_percentage: {
+            one_year: 2.0,
+            three_year: 5.0,
+            five_year: null,
+          },
+          low_income_percentage: {
+            one_year: -1.5,
+            three_year: -3.0,
+            five_year: -5.0,
+          },
+        },
+      },
+    };
+
+    renderWithProviders(<SchoolDetailView school={schoolWithTrends} />);
+
+    const demographicsTab = screen.getByRole('tab', { name: /demographics/i });
+    await user.click(demographicsTab);
+
+    const trendButtons = screen.getAllByRole('button', { name: /show trends/i });
+    expect(trendButtons.length).toBeGreaterThan(0);
+  });
 });

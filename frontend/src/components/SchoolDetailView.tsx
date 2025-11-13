@@ -204,17 +204,39 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
               <CardDescription>Student support indicators</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">English Learners</span>
-                <span className="text-lg font-semibold">
-                  {formatPercent(school.metrics.demographics.el_percentage)}
-                </span>
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">English Learners</span>
+                  <span className="text-lg font-semibold">
+                    {formatPercent(school.metrics.demographics.el_percentage)}
+                  </span>
+                </div>
+                {school.metrics.demographics.el_percentage !== null && (
+                  <TrendDisplay
+                    label="English Learners"
+                    currentValue={school.metrics.demographics.el_percentage}
+                    trendData={school.metrics.trends?.el_percentage}
+                    metricType="percentage"
+                    unit="percentage points"
+                  />
+                )}
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Low Income</span>
-                <span className="text-lg font-semibold">
-                  {formatPercent(school.metrics.demographics.low_income_percentage)}
-                </span>
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Low Income</span>
+                  <span className="text-lg font-semibold">
+                    {formatPercent(school.metrics.demographics.low_income_percentage)}
+                  </span>
+                </div>
+                {school.metrics.demographics.low_income_percentage !== null && (
+                  <TrendDisplay
+                    label="Low Income"
+                    currentValue={school.metrics.demographics.low_income_percentage}
+                    trendData={school.metrics.trends?.low_income_percentage}
+                    metricType="percentage"
+                    unit="percentage points"
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
@@ -234,6 +256,13 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                     </span>
                   </div>
                   <Progress value={school.metrics.diversity.white} />
+                  <TrendDisplay
+                    label="White"
+                    currentValue={school.metrics.diversity.white}
+                    trendData={school.metrics.trends?.white}
+                    metricType="percentage"
+                    unit="percentage points"
+                  />
                 </div>
               )}
               {school.metrics.diversity.hispanic !== null && (
@@ -245,6 +274,13 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                     </span>
                   </div>
                   <Progress value={school.metrics.diversity.hispanic} />
+                  <TrendDisplay
+                    label="Hispanic"
+                    currentValue={school.metrics.diversity.hispanic}
+                    trendData={school.metrics.trends?.hispanic}
+                    metricType="percentage"
+                    unit="percentage points"
+                  />
                 </div>
               )}
               {school.metrics.diversity.asian !== null && (
@@ -256,6 +292,13 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                     </span>
                   </div>
                   <Progress value={school.metrics.diversity.asian} />
+                  <TrendDisplay
+                    label="Asian"
+                    currentValue={school.metrics.diversity.asian}
+                    trendData={school.metrics.trends?.asian}
+                    metricType="percentage"
+                    unit="percentage points"
+                  />
                 </div>
               )}
               {school.metrics.diversity.black !== null && (
@@ -267,6 +310,13 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                     </span>
                   </div>
                   <Progress value={school.metrics.diversity.black} />
+                  <TrendDisplay
+                    label="Black"
+                    currentValue={school.metrics.diversity.black}
+                    trendData={school.metrics.trends?.black}
+                    metricType="percentage"
+                    unit="percentage points"
+                  />
                 </div>
               )}
               {school.metrics.diversity.two_or_more !== null && (
@@ -278,6 +328,13 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                     </span>
                   </div>
                   <Progress value={school.metrics.diversity.two_or_more} />
+                  <TrendDisplay
+                    label="Two or More Races"
+                    currentValue={school.metrics.diversity.two_or_more}
+                    trendData={school.metrics.trends?.two_or_more}
+                    metricType="percentage"
+                    unit="percentage points"
+                  />
                 </div>
               )}
             </CardContent>
