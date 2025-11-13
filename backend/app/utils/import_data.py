@@ -164,6 +164,11 @@ def merge_school_data(
     return merged_df
 
 
+def _normalize_rcdts(rcdts: str) -> str:
+    """Remove hyphens from RCDTS for historical data lookup."""
+    return rcdts.replace("-", "")
+
+
 def build_trend_series(rcdts: str, loader: HistoricalDataLoader) -> Dict[str, Dict[int, float]]:
     """Combine demographic and ACT history for a school."""
 
@@ -181,10 +186,11 @@ def _build_demographic_series(
 ) -> Dict[str, Dict[int, float]]:
     """Return latest demographic values per metric for a school."""
 
+    normalized_rcdts = _normalize_rcdts(rcdts)
     series: Dict[str, Dict[int, float]] = {}
     for year in DEMOGRAPHIC_YEARS:
         year_data = loader.load_year(year)
-        school_data = year_data.get(rcdts)
+        school_data = year_data.get(normalized_rcdts)
         if not school_data:
             continue
 
@@ -202,11 +208,12 @@ def _build_demographic_series(
 def _build_act_series(rcdts: str, loader: HistoricalDataLoader) -> Dict[str, Dict[int, float]]:
     """Return ACT composite series including SAT conversions."""
 
+    normalized_rcdts = _normalize_rcdts(rcdts)
     series: Dict[int, float] = {}
 
     for year in SAT_SCORE_YEARS:
         year_data = loader.load_year(year)
-        school_data = year_data.get(rcdts)
+        school_data = year_data.get(normalized_rcdts)
         if not school_data:
             continue
 
@@ -217,7 +224,7 @@ def _build_act_series(rcdts: str, loader: HistoricalDataLoader) -> Dict[str, Dic
 
     for year in ACT_SCORE_YEARS:
         year_data = loader.load_year(year)
-        school_data = year_data.get(rcdts)
+        school_data = year_data.get(normalized_rcdts)
         if not school_data:
             continue
 
