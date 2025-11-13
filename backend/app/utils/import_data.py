@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal, School, init_db
 from app.utils.historical_loader import HistoricalDataLoader
 
-MAX_TREND_YEARS = 5
+MAX_TREND_YEARS = 6
 LATEST_HISTORICAL_YEAR = 2024
 EARLIEST_DEMOGRAPHIC_YEAR = 2015
 EARLIEST_ACT_YEAR = 2012
@@ -24,14 +24,14 @@ SAT_SCORE_YEARS = list(range(LATEST_HISTORICAL_YEAR, SAT_START_YEAR - 1, -1))
 ACT_SCORE_YEARS = list(range(SAT_START_YEAR - 1, EARLIEST_ACT_YEAR - 1, -1))
 
 DIVERSITY_FIELD_MAP = {
-    "white": "pct_white",
-    "black": "pct_black",
-    "hispanic": "pct_hispanic",
-    "asian": "pct_asian",
-    "pacific_islander": "pct_pacific_islander",
-    "native_american": "pct_native_american",
-    "two_or_more": "pct_two_or_more",
-    "mena": "pct_mena",
+    "white": "white",
+    "black": "black",
+    "hispanic": "hispanic",
+    "asian": "asian",
+    "pacific_islander": "pacific_islander",
+    "native_american": "native_american",
+    "two_or_more": "two_or_more",
+    "mena": "mena",
 }
 
 SAT_TO_ACT_RANGES = [
@@ -170,11 +170,9 @@ def _build_demographic_series(
         if not school_data:
             continue
 
-        _record_metric_value(series, "student_enrollment", year, school_data.get("enrollment"))
-        _record_metric_value(
-            series, "low_income_percentage", year, school_data.get("low_income_percentage")
-        )
-        _record_metric_value(series, "el_percentage", year, school_data.get("el_percentage"))
+        _record_metric_value(series, "enrollment", year, school_data.get("enrollment"))
+        _record_metric_value(series, "low_income", year, school_data.get("low_income_percentage"))
+        _record_metric_value(series, "el", year, school_data.get("el_percentage"))
 
         diversity = school_data.get("diversity") or {}
         for source_key, target_key in DIVERSITY_FIELD_MAP.items():
@@ -214,7 +212,7 @@ def _build_act_series(rcdts: str, loader: HistoricalDataLoader) -> Dict[str, Dic
         return {}
 
     ordered = dict(sorted(series.items(), key=lambda item: item[0], reverse=True))
-    return {"act_composite": ordered}
+    return {"act": ordered}
 
 
 def _record_metric_value(

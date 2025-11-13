@@ -28,7 +28,7 @@ class LoaderStub:
 
 
 def test_build_trend_series_demographics_cover_latest_years():
-    """Demographic series keeps the latest five data points per metric."""
+    """Demographic series keeps enough years for 5-year deltas and uses trend keys."""
     rcdts = "11-111-1111-11-0005"
     responses = {}
     enrollment = 700
@@ -57,21 +57,22 @@ def test_build_trend_series_demographics_cover_latest_years():
     loader = LoaderStub(responses)
     series = import_data_module._build_demographic_series(rcdts, loader)
 
-    assert series["student_enrollment"] == {
+    assert series["enrollment"] == {
         2024: 700,
         2023: 680,
         2022: 660,
         2021: 640,
         2020: 620,
+        2019: 600,
     }
-    assert series["low_income_percentage"][2024] == 40.0
-    assert series["el_percentage"][2020] == 14.0
-    assert series["pct_white"][2024] == 50.0
-    assert 2018 not in series["student_enrollment"]
+    assert series["low_income"][2024] == 40.0
+    assert series["el"][2020] == 14.0
+    assert series["white"][2024] == 50.0
+    assert 2018 not in series["enrollment"]
 
 
 def test_build_trend_series_act_helper_merges_sat_and_act_scores():
-    """ACT series combines legacy ACT data with SAT conversions."""
+    """ACT series exposes the act key with SAT conversions + legacy scores."""
     rcdts = "11-111-1111-11-0006"
     responses = {
         2016: {rcdts: {"act_scores": {"composite": 20.0}}},
@@ -83,8 +84,8 @@ def test_build_trend_series_act_helper_merges_sat_and_act_scores():
     loader = LoaderStub(responses)
     series = import_data_module._build_act_series(rcdts, loader)
 
-    assert "act_composite" in series
-    act_series = series["act_composite"]
+    assert "act" in series
+    act_series = series["act"]
     assert act_series[2018] == pytest.approx(18.0)
     assert act_series[2017] == pytest.approx(19.0)
     assert act_series[2016] == 20.0
@@ -104,11 +105,11 @@ def test_build_trend_series_combines_metrics():
     loader = LoaderStub(responses)
     trend_series = build_trend_series(rcdts, loader)
 
-    assert "student_enrollment" in trend_series
-    assert trend_series["student_enrollment"][2024] == 800
-    assert trend_series["low_income_percentage"][2023] == 42.0
-    assert trend_series["pct_white"][2024] == 55.0
-    assert trend_series["act_composite"][2017] == pytest.approx(22.0)
+    assert "enrollment" in trend_series
+    assert trend_series["enrollment"][2024] == 800
+    assert trend_series["low_income"][2023] == 42.0
+    assert trend_series["white"][2024] == 55.0
+    assert trend_series["act"][2017] == pytest.approx(22.0)
 
 
 def test_clean_percentage_converts_string():
