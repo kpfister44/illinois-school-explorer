@@ -1,0 +1,656 @@
+# ABOUTME: Historical trend data importer with improved SAT-to-ACT conversion
+# ABOUTME: Replaces historical_loader.py with comprehensive Excel parsing and trend calculation
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import pandas as pd
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from app.database import School, SessionLocal, init_db
+
+# Historical file configuration
+HISTORICAL_DATA_PATH = Path(__file__).resolve().parents[3] / "data" / "historical-report-cards"
+
+# Years to process (2025 is current, looking back)
+CURRENT_YEAR = 2025
+DEMOGRAPHIC_YEARS = [2024, 2023, 2022, 2021, 2020, 2019]
+SAT_YEARS = [2024, 2023, 2022, 2021, 2019]  # Skip 2020 (no SAT data)
+ACT_YEARS = [2017, 2016, 2015]  # Years with direct ACT data
+
+# Trend windows
+TREND_WINDOWS = [1, 3, 5]
+
+# SAT to ACT concordance table with ranges
+SAT_TO_ACT_RANGES = [
+    (1570, 1600, 36), (1530, 1560, 35), (1490, 1520, 34), (1450, 1480, 33),
+    (1420, 1440, 32), (1390, 1410, 31), (1360, 1380, 30), (1330, 1350, 29),
+    (1300, 1320, 28), (1260, 1290, 27), (1230, 1250, 26), (1200, 1220, 25),
+    (1160, 1190, 24), (1130, 1150, 23), (1100, 1120, 22), (1060, 1090, 21),
+    (1030, 1050, 20), (990, 1020, 19), (960, 980, 18), (920, 950, 17),
+    (880, 910, 16), (830, 870, 15), (780, 820, 14), (730, 770, 13),
+    (690, 720, 12), (650, 680, 11), (620, 640, 10), (590, 610, 9),
+]
+
+
+def sat_to_act_precise(sat_composite: float) -> Optional[float]:
+    """
+    Convert SAT composite (out of 1600) to ACT composite with decimal precision.
+
+    Uses linear interpolation within ranges for more accurate conversion.
+    For scores in gaps between ranges, interpolates between adjacent ACT scores.
+    """
+    if sat_composite is None:
+        return None
+
+    try:
+        score = float(sat_composite)
+    except (TypeError, ValueError):
+        return None
+
+    # Handle out-of-range scores
+    if score >= SAT_TO_ACT_RANGES[0][1]:
+        return float(SAT_TO_ACT_RANGES[0][2])
+    if score <= SAT_TO_ACT_RANGES[-1][0]:
+        return float(SAT_TO_ACT_RANGES[-1][2])
+
+    # First check if score falls in a gap between ranges
+    # Ranges are in descending SAT order, so we check if score is between adjacent ranges
+    for i in range(len(SAT_TO_ACT_RANGES) - 1):
+        current_min = SAT_TO_ACT_RANGES[i][0]
+        current_max = SAT_TO_ACT_RANGES[i][1]
+        next_min = SAT_TO_ACT_RANGES[i + 1][0]
+        next_max = SAT_TO_ACT_RANGES[i + 1][1]
+
+        # Check if score falls in the gap between this range and the next
+        # Since ranges descend: current is higher SAT, next is lower SAT
+        if next_max < score < current_min:
+            # In gap between ranges
+            lower_act = SAT_TO_ACT_RANGES[i + 1][2]  # Lower SAT → Lower ACT
+            upper_act = SAT_TO_ACT_RANGES[i][2]      # Higher SAT → Higher ACT
+
+            gap_width = current_min - next_max
+            position = score - next_max
+            progress = position / gap_width
+
+            interpolated = lower_act + (progress * (upper_act - lower_act))
+            return round(interpolated, 1)
+
+    # Find the range this score falls into
+    for i, (min_sat, max_sat, act_score) in enumerate(SAT_TO_ACT_RANGES):
+        if min_sat <= score <= max_sat:
+            # Within a defined range - interpolate within the range
+            range_width = max_sat - min_sat
+            position = score - min_sat
+
+            # Determine adjacent ACT scores for interpolation
+            if i == 0:
+                # Highest range
+                lower_act = act_score
+                upper_act = act_score
+            elif i == len(SAT_TO_ACT_RANGES) - 1:
+                # Lowest range
+                lower_act = act_score
+                upper_act = act_score
+            else:
+                # Middle ranges - interpolate toward next ACT score
+                lower_act = act_score
+                upper_act = SAT_TO_ACT_RANGES[i - 1][2]  # Higher ACT score
+
+            # Linear interpolation within range
+            if upper_act != lower_act:
+                progress = position / range_width
+                interpolated = lower_act + (progress * (upper_act - lower_act))
+                return round(interpolated, 1)
+            else:
+                return float(act_score)
+
+    return None
+
+
+def clean_percentage(value: Any) -> Optional[float]:
+    """Convert percentage-like values to float, handling asterisks and empty values."""
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped or stripped == "*":
+            return None
+        if stripped.endswith("%"):
+            stripped = stripped[:-1]
+        try:
+            return float(stripped)
+        except ValueError:
+            return None
+
+    if isinstance(value, (int, float)):
+        return float(value)
+
+    return None
+
+
+def clean_enrollment(value: Any) -> Optional[int]:
+    """Convert enrollment strings with commas to ints, handling asterisks."""
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped or stripped == "*":
+            return None
+        normalized = stripped.replace(",", "")
+        try:
+            return int(float(normalized))
+        except ValueError:
+            return None
+
+    if isinstance(value, (int, float)):
+        return int(value)
+
+    return None
+
+
+def normalize_rcdts(rcdts: str) -> str:
+    """Remove hyphens from RCDTS for consistent lookups."""
+    return rcdts.replace("-", "")
+
+
+def normalize_column_name(col: str) -> str:
+    """Normalize column names to lowercase without extra whitespace."""
+    return col.strip().lower()
+
+
+class HistoricalDataExtractor:
+    """Extract and normalize data from historical Report Card Excel files."""
+
+    def __init__(self, base_path: Path = HISTORICAL_DATA_PATH):
+        self.base_path = base_path
+        self._cache: Dict[int, Dict[str, Dict[str, Any]]] = {}
+
+    def load_year(self, year: int) -> Dict[str, Dict[str, Any]]:
+        """
+        Load all data for a given year, keyed by normalized RCDTS.
+        Returns dict of {rcdts: {metric: value, ...}}
+        """
+        if year in self._cache:
+            return self._cache[year]
+
+        file_path = self._find_file_for_year(year)
+        if not file_path:
+            self._cache[year] = {}
+            return {}
+
+        data = self._extract_from_excel(file_path)
+        self._cache[year] = data
+        return data
+
+    def _find_file_for_year(self, year: int) -> Optional[Path]:
+        """Find the Excel file for a given year."""
+        if not self.base_path.exists():
+            return None
+
+        year_str = str(year)
+        year_short = year_str[-2:]  # e.g., "24" for 2024
+
+        for file_path in self.base_path.glob("*.xlsx"):
+            filename = file_path.stem.lower()
+            if year_str in filename or year_short in filename:
+                return file_path
+
+        return None
+
+    def _extract_from_excel(self, file_path: Path) -> Dict[str, Dict[str, Any]]:
+        """Extract all relevant data from an Excel file."""
+        schools_data: Dict[str, Dict[str, Any]] = {}
+
+        try:
+            excel = pd.ExcelFile(file_path)
+
+            for sheet_name in excel.sheet_names:
+                df = pd.read_excel(excel, sheet_name=sheet_name)
+
+                if 'RCDTS' not in df.columns:
+                    continue
+
+                # Normalize column names
+                df.columns = [normalize_column_name(col) for col in df.columns]
+
+                for _, row in df.iterrows():
+                    rcdts = self._extract_rcdts(row)
+                    if not rcdts:
+                        continue
+
+                    # Initialize school data dict
+                    if rcdts not in schools_data:
+                        schools_data[rcdts] = {}
+
+                    school = schools_data[rcdts]
+
+                    # Extract data based on sheet content
+                    self._extract_demographics(row, school)
+                    self._extract_diversity(row, school)
+                    self._extract_sat(row, school)
+                    self._extract_act(row, school)
+
+        except Exception as e:
+            print(f"Error reading {file_path}: {e}")
+            return {}
+
+        return schools_data
+
+    def _extract_rcdts(self, row: pd.Series) -> Optional[str]:
+        """Extract and normalize RCDTS from a row."""
+        rcdts = row.get('rcdts')
+        if rcdts is None or (isinstance(rcdts, float) and pd.isna(rcdts)):
+            return None
+        return normalize_rcdts(str(rcdts).strip())
+
+    def _extract_demographics(self, row: pd.Series, school: Dict[str, Any]) -> None:
+        """Extract enrollment and demographic percentages."""
+        # Enrollment
+        enrollment_cols = ['# student enrollment', 'student enrollment']
+        for col in enrollment_cols:
+            if col in row.index:
+                val = clean_enrollment(row[col])
+                if val is not None:
+                    school['enrollment'] = val
+                    break
+
+        # Low income percentage
+        low_income_cols = ['% student enrollment - low income']
+        for col in low_income_cols:
+            if col in row.index:
+                val = clean_percentage(row[col])
+                if val is not None:
+                    school['low_income_percentage'] = val
+                    break
+
+        # English Learner percentage
+        el_cols = ['% student enrollment - el']
+        for col in el_cols:
+            if col in row.index:
+                val = clean_percentage(row[col])
+                if val is not None:
+                    school['el_percentage'] = val
+                    break
+
+    def _extract_diversity(self, row: pd.Series, school: Dict[str, Any]) -> None:
+        """Extract racial/ethnic diversity percentages."""
+        diversity_map = {
+            '% student enrollment - white': 'white',
+            '% student enrollment - black or african american': 'black',
+            '% student enrollment - hispanic or latino': 'hispanic',
+            '% student enrollment - asian': 'asian',
+            '% student enrollment - native hawaiian or other pacific islander': 'pacific_islander',
+            '% student enrollment - american indian or alaska native': 'native_american',
+            '% student enrollment - two or more races': 'two_or_more',
+            '% student enrollment - middle eastern or north african': 'mena',
+        }
+
+        for col, key in diversity_map.items():
+            if col in row.index:
+                val = clean_percentage(row[col])
+                if val is not None:
+                    school[key] = val
+
+    def _extract_sat(self, row: pd.Series, school: Dict[str, Any]) -> None:
+        """Extract SAT scores and compute composite."""
+        # Try multiple column name variations
+        reading_cols = [
+            'sat reading average score',
+            'sat ebrw average score',
+            'sat reading average',  # 2019 format
+        ]
+        math_cols = [
+            'sat math average score',
+            'sat math average',  # 2019 format
+        ]
+
+        reading = None
+        math = None
+
+        for col in reading_cols:
+            if col in row.index:
+                reading = clean_percentage(row[col])
+                if reading is not None:
+                    break
+
+        for col in math_cols:
+            if col in row.index:
+                math = clean_percentage(row[col])
+                if math is not None:
+                    break
+
+        if reading is not None and math is not None:
+            school['sat_composite'] = reading + math
+
+    def _extract_act(self, row: pd.Series, school: Dict[str, Any]) -> None:
+        """Extract direct ACT composite scores (for older years)."""
+        act_cols = [
+            'act composite score - grade 11',
+            'act average composite score',
+            'average act composite score',
+        ]
+
+        for col in act_cols:
+            if col in row.index:
+                val = clean_percentage(row[col])
+                if val is not None:
+                    school['act_composite'] = val
+                    break
+
+    def clear_cache(self) -> None:
+        """Clear cached data."""
+        self._cache.clear()
+
+
+class TrendCalculator:
+    """Calculate trend deltas for schools using historical data."""
+
+    def __init__(self, extractor: HistoricalDataExtractor):
+        self.extractor = extractor
+
+    def calculate_trends_for_school(
+        self,
+        rcdts: str,
+        current_data: Dict[str, Any]
+    ) -> Dict[str, float]:
+        """
+        Calculate trend deltas for all metrics.
+        Returns dict of {metric_trend_Nyr: delta, ...}
+        """
+        normalized_rcdts = normalize_rcdts(rcdts)
+        trends = {}
+
+        # Calculate ACT trends
+        act_trends = self._calculate_act_trends(normalized_rcdts, current_data)
+        trends.update(act_trends)
+
+        # Calculate demographic trends
+        demo_trends = self._calculate_demographic_trends(normalized_rcdts, current_data)
+        trends.update(demo_trends)
+
+        # Calculate diversity trends
+        diversity_trends = self._calculate_diversity_trends(normalized_rcdts, current_data)
+        trends.update(diversity_trends)
+
+        return trends
+
+    def _calculate_act_trends(
+        self,
+        rcdts: str,
+        current_data: Dict[str, Any]
+    ) -> Dict[str, float]:
+        """Calculate ACT composite trends with SAT-to-ACT conversion."""
+        # Current ACT composite (from ELA + Math / 2)
+        current_ela = current_data.get('act_ela_avg')
+        current_math = current_data.get('act_math_avg')
+
+        if current_ela is None or current_math is None:
+            return {}
+
+        current_act = (current_ela + current_math) / 2.0
+
+        # Build historical ACT series
+        historical_act = self._build_act_series(rcdts)
+
+        # Calculate trends for each window
+        trends = {}
+        for window in TREND_WINDOWS:
+            target_year = CURRENT_YEAR - window
+
+            # Find closest available year
+            historical_value = self._find_closest_historical_act(historical_act, target_year)
+
+            if historical_value is not None:
+                delta = current_act - historical_value
+                trends[f'act_trend_{window}yr'] = round(delta, 2)
+
+        return trends
+
+    def _build_act_series(self, rcdts: str) -> Dict[int, float]:
+        """Build ACT composite series from SAT conversions and direct ACT scores."""
+        series = {}
+
+        # Process SAT years (convert to ACT)
+        for year in SAT_YEARS:
+            year_data = self.extractor.load_year(year)
+            school = year_data.get(rcdts, {})
+
+            sat_composite = school.get('sat_composite')
+            if sat_composite is not None:
+                act_value = sat_to_act_precise(sat_composite)
+                if act_value is not None:
+                    series[year] = act_value
+
+        # Process direct ACT years
+        for year in ACT_YEARS:
+            year_data = self.extractor.load_year(year)
+            school = year_data.get(rcdts, {})
+
+            act_composite = school.get('act_composite')
+            if act_composite is not None:
+                series[year] = float(act_composite)
+
+        return series
+
+    def _find_closest_historical_act(
+        self,
+        series: Dict[int, float],
+        target_year: int
+    ) -> Optional[float]:
+        """
+        Find the closest available historical ACT value.
+        For 5-year (2020), fallback to 2019 if 2020 is missing.
+        """
+        if target_year in series:
+            return series[target_year]
+
+        # Fallback logic for 5-year trend
+        if target_year == 2020 and 2019 in series:
+            return series[2019]
+
+        return None
+
+    def _calculate_demographic_trends(
+        self,
+        rcdts: str,
+        current_data: Dict[str, Any]
+    ) -> Dict[str, float]:
+        """Calculate enrollment, low_income, and EL trends."""
+        trends = {}
+
+        metrics = {
+            'enrollment': 'student_enrollment',
+            'low_income': 'low_income_percentage',
+            'el': 'el_percentage',
+        }
+
+        for metric, field in metrics.items():
+            current_value = current_data.get(field)
+            if current_value is None:
+                continue
+
+            historical_series = self._build_demographic_series(rcdts, metric)
+
+            for window in TREND_WINDOWS:
+                target_year = CURRENT_YEAR - window
+
+                if target_year in historical_series:
+                    historical_value = historical_series[target_year]
+                    delta = float(current_value) - float(historical_value)
+                    trends[f'{metric}_trend_{window}yr'] = round(delta, 2)
+
+        return trends
+
+    def _build_demographic_series(self, rcdts: str, metric: str) -> Dict[int, float]:
+        """Build historical series for a demographic metric."""
+        series = {}
+
+        metric_map = {
+            'enrollment': 'enrollment',
+            'low_income': 'low_income_percentage',
+            'el': 'el_percentage',
+        }
+
+        field = metric_map.get(metric)
+        if not field:
+            return series
+
+        for year in DEMOGRAPHIC_YEARS:
+            year_data = self.extractor.load_year(year)
+            school = year_data.get(rcdts, {})
+
+            value = school.get(field)
+            if value is not None:
+                series[year] = float(value)
+
+        return series
+
+    def _calculate_diversity_trends(
+        self,
+        rcdts: str,
+        current_data: Dict[str, Any]
+    ) -> Dict[str, float]:
+        """Calculate racial/ethnic diversity trends."""
+        trends = {}
+
+        diversity_metrics = [
+            'white', 'black', 'hispanic', 'asian',
+            'pacific_islander', 'native_american', 'two_or_more', 'mena'
+        ]
+
+        for metric in diversity_metrics:
+            field = f'pct_{metric}'
+            current_value = current_data.get(field)
+
+            if current_value is None:
+                continue
+
+            historical_series = self._build_diversity_series(rcdts, metric)
+
+            for window in TREND_WINDOWS:
+                target_year = CURRENT_YEAR - window
+
+                if target_year in historical_series:
+                    historical_value = historical_series[target_year]
+                    delta = float(current_value) - float(historical_value)
+                    trends[f'{metric}_trend_{window}yr'] = round(delta, 2)
+
+        return trends
+
+    def _build_diversity_series(self, rcdts: str, metric: str) -> Dict[int, float]:
+        """Build historical series for a diversity metric."""
+        series = {}
+
+        for year in DEMOGRAPHIC_YEARS:
+            year_data = self.extractor.load_year(year)
+            school = year_data.get(rcdts, {})
+
+            value = school.get(metric)
+            if value is not None:
+                series[year] = float(value)
+
+        return series
+
+
+def update_school_trends(db: Session, excel_path: str) -> int:
+    """
+    Update trend fields for all schools in the database.
+    Reads current school data from DB, calculates trends from historical files,
+    and updates the trend columns.
+    """
+    extractor = HistoricalDataExtractor()
+    calculator = TrendCalculator(extractor)
+
+    schools = db.query(School).all()
+    updated_count = 0
+    batch_size = 100
+    updates = []
+
+    for i, school in enumerate(schools):
+        # Build current data dict from school model
+        current_data = {
+            'act_ela_avg': school.act_ela_avg,
+            'act_math_avg': school.act_math_avg,
+            'student_enrollment': school.student_enrollment,
+            'low_income_percentage': school.low_income_percentage,
+            'el_percentage': school.el_percentage,
+            'pct_white': school.pct_white,
+            'pct_black': school.pct_black,
+            'pct_hispanic': school.pct_hispanic,
+            'pct_asian': school.pct_asian,
+            'pct_pacific_islander': school.pct_pacific_islander,
+            'pct_native_american': school.pct_native_american,
+            'pct_two_or_more': school.pct_two_or_more,
+            'pct_mena': school.pct_mena,
+        }
+
+        # Calculate trends
+        trends = calculator.calculate_trends_for_school(school.rcdts, current_data)
+
+        if trends:
+            update_record = {'rcdts': school.rcdts}
+            update_record.update(trends)
+            updates.append(update_record)
+
+        updated_count += 1
+
+        # Execute batch updates using raw SQL
+        if (i + 1) % batch_size == 0 and updates:
+            _execute_batch_updates(db, updates)
+            updates = []
+            print(f"Updated {updated_count} schools...")
+
+    # Final batch
+    if updates:
+        _execute_batch_updates(db, updates)
+
+    extractor.clear_cache()
+    return updated_count
+
+
+def _execute_batch_updates(db: Session, updates: List[Dict[str, Any]]) -> None:
+    """Execute trend updates using raw SQL for reliability."""
+    for record in updates:
+        rcdts = record.pop('rcdts')
+
+        if not record:
+            continue
+
+        # Build SET clause
+        set_clauses = [f"{field} = :{field}" for field in record.keys()]
+        sql = f"UPDATE schools SET {', '.join(set_clauses)} WHERE rcdts = :rcdts"
+
+        params = record.copy()
+        params['rcdts'] = rcdts
+
+        db.execute(text(sql), params)
+
+    db.commit()
+
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) < 2:
+        print("Usage: python -m app.utils.import_historical_trends <path_to_2025_excel>")
+        sys.exit(1)
+
+    excel_path = sys.argv[1]
+
+    # Ensure database is initialized
+    init_db()
+
+    # Update trends
+    db = SessionLocal()
+    try:
+        count = update_school_trends(db, excel_path)
+        print(f"Successfully updated trends for {count} schools")
+    finally:
+        db.close()

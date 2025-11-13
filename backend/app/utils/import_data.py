@@ -11,7 +11,10 @@ import pandas as pd
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal, School, init_db
-from app.utils.historical_loader import HistoricalDataLoader
+from app.utils.import_historical_trends import (
+    HistoricalDataExtractor,
+    TrendCalculator,
+)
 
 MAX_TREND_YEARS = 6
 LATEST_HISTORICAL_YEAR = 2024
@@ -303,8 +306,7 @@ def normalize_level(school_type: Optional[str]) -> str:
 
 def prepare_school_records(
     merged_df: pd.DataFrame,
-    loader: Optional[HistoricalDataLoader] = None,
-    current_year: Optional[int] = None,
+    calculator: Optional[TrendCalculator] = None,
 ) -> List[dict]:
     """Transform merged rows into dictionaries and optionally append trend fields."""
 
@@ -347,10 +349,10 @@ def prepare_school_records(
             "pct_two_or_more": clean_percentage(row.get("% Student Enrollment - Two or More Races")),
             "pct_mena": clean_percentage(row.get("% Student Enrollment - Middle Eastern or North African")),
         }
-        if loader is not None and current_year is not None:
-            trend_series = build_trend_series(record["rcdts"], loader)
-            trend_fields = _compute_trend_fields(record, trend_series, current_year)
-            record.update(trend_fields)
+        # Use new trend calculator
+        if calculator is not None:
+            trends = calculator.calculate_trends_for_school(record["rcdts"], record)
+            record.update(trends)
 
         records.append(record)
     return records
@@ -424,19 +426,26 @@ def _calculate_trend_delta(
 def import_to_database(excel_path: str, db: Session) -> int:
     """Run full import pipeline: load, clean, and bulk insert to schools table."""
 
+    print("Loading Excel data...")
     general_df, act_df, iar_df = load_excel_data(excel_path)
     merged_df = merge_school_data(general_df, act_df, iar_df)
-    loader = HistoricalDataLoader()
-    current_year = _infer_report_year(excel_path)
-    try:
-        records = prepare_school_records(merged_df, loader=loader, current_year=current_year)
-    finally:
-        loader.close()
 
+    print("Initializing historical trend calculator...")
+    extractor = HistoricalDataExtractor()
+    calculator = TrendCalculator(extractor)
+
+    try:
+        print(f"Preparing {len(merged_df)} school records with trends...")
+        records = prepare_school_records(merged_df, calculator=calculator)
+    finally:
+        extractor.clear_cache()
+
+    print("Clearing existing database...")
     db.query(School).delete()
     db.commit()
 
     if records:
+        print(f"Inserting {len(records)} schools into database...")
         db.bulk_insert_mappings(School, records)
         db.commit()
 
