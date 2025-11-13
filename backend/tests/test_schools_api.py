@@ -28,6 +28,10 @@ def test_get_school_detail_returns_full_info(client, test_db):
         pct_white=36.8,
         pct_hispanic=48.3,
         pct_asian=8.7,
+        enrollment_trend_1yr=25.0,
+        enrollment_trend_3yr=50.0,
+        white_trend_5yr=-4.5,
+        act_trend_3yr=1.25,
     )
     test_db.add(school)
     test_db.commit()
@@ -43,6 +47,10 @@ def test_get_school_detail_returns_full_info(client, test_db):
     assert data["metrics"]["act"]["overall_avg"] == 17.95
     assert data["metrics"]["demographics"]["el_percentage"] == 29.0
     assert data["metrics"]["diversity"]["white"] == 36.8
+    assert data["metrics"]["trends"]["enrollment"]["one_year"] == 25.0
+    assert data["metrics"]["trends"]["enrollment"]["three_year"] == 50.0
+    assert data["metrics"]["trends"]["white"]["five_year"] == -4.5
+    assert data["metrics"]["trends"]["act"]["three_year"] == 1.25
 
 
 def test_get_school_detail_returns_404_when_not_found(client):
@@ -108,6 +116,7 @@ def test_compare_schools_returns_multiple_schools(client, test_db):
         student_enrollment=1000,
         act_ela_avg=20.0,
         act_math_avg=21.0,
+        enrollment_trend_1yr=15.0,
     )
     school2 = School(
         rcdts="05-016-2140-17-0002",
@@ -132,6 +141,7 @@ def test_compare_schools_returns_multiple_schools(client, test_db):
     assert data["schools"][1]["school_name"] == "School B"
     assert data["schools"][0]["metrics"]["enrollment"] == 1000
     assert data["schools"][1]["metrics"]["act"]["overall_avg"] == 18.5
+    assert data["schools"][0]["metrics"]["trends"]["enrollment"]["one_year"] == 15.0
 
 
 def test_compare_schools_requires_2_to_5_schools(client):

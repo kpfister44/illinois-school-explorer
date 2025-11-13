@@ -54,6 +54,31 @@ class Diversity(BaseModel):
     mena: Optional[float] = None
 
 
+class TrendWindow(BaseModel):
+    """Trend deltas over 1/3/5 year windows."""
+
+    one_year: Optional[float] = None
+    three_year: Optional[float] = None
+    five_year: Optional[float] = None
+
+
+class TrendMetrics(BaseModel):
+    """Collection of per-metric trend windows."""
+
+    enrollment: Optional[TrendWindow] = None
+    low_income: Optional[TrendWindow] = None
+    el: Optional[TrendWindow] = None
+    white: Optional[TrendWindow] = None
+    black: Optional[TrendWindow] = None
+    hispanic: Optional[TrendWindow] = None
+    asian: Optional[TrendWindow] = None
+    pacific_islander: Optional[TrendWindow] = None
+    native_american: Optional[TrendWindow] = None
+    two_or_more: Optional[TrendWindow] = None
+    mena: Optional[TrendWindow] = None
+    act: Optional[TrendWindow] = None
+
+
 class SchoolMetrics(BaseModel):
     """Composite metrics for a school including all categories."""
 
@@ -64,6 +89,7 @@ class SchoolMetrics(BaseModel):
     iar_ela_proficiency_pct: Optional[float] = None
     iar_math_proficiency_pct: Optional[float] = None
     iar_overall_proficiency_pct: Optional[float] = None
+    trends: Optional[TrendMetrics] = None
 
 
 class SchoolDetail(BaseModel):

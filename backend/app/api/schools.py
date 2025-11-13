@@ -14,9 +14,50 @@ from app.models import (
     Diversity,
     SchoolDetail,
     SchoolMetrics,
+    TrendMetrics,
+    TrendWindow,
 )
 
 router = APIRouter(prefix="/api/schools", tags=["schools"])
+
+TREND_FIELD_MAP = {
+    "enrollment": (
+        "enrollment_trend_1yr",
+        "enrollment_trend_3yr",
+        "enrollment_trend_5yr",
+    ),
+    "low_income": (
+        "low_income_trend_1yr",
+        "low_income_trend_3yr",
+        "low_income_trend_5yr",
+    ),
+    "el": ("el_trend_1yr", "el_trend_3yr", "el_trend_5yr"),
+    "white": ("white_trend_1yr", "white_trend_3yr", "white_trend_5yr"),
+    "black": ("black_trend_1yr", "black_trend_3yr", "black_trend_5yr"),
+    "hispanic": (
+        "hispanic_trend_1yr",
+        "hispanic_trend_3yr",
+        "hispanic_trend_5yr",
+    ),
+    "asian": ("asian_trend_1yr", "asian_trend_3yr", "asian_trend_5yr"),
+    "pacific_islander": (
+        "pacific_islander_trend_1yr",
+        "pacific_islander_trend_3yr",
+        "pacific_islander_trend_5yr",
+    ),
+    "native_american": (
+        "native_american_trend_1yr",
+        "native_american_trend_3yr",
+        "native_american_trend_5yr",
+    ),
+    "two_or_more": (
+        "two_or_more_trend_1yr",
+        "two_or_more_trend_3yr",
+        "two_or_more_trend_5yr",
+    ),
+    "mena": ("mena_trend_1yr", "mena_trend_3yr", "mena_trend_5yr"),
+    "act": ("act_trend_1yr", "act_trend_3yr", "act_trend_5yr"),
+}
 
 
 @router.get("/compare", response_model=CompareResponse)
@@ -72,6 +113,7 @@ def build_school_detail(school) -> SchoolDetail:
         iar_ela_proficiency_pct=school.iar_ela_proficiency_pct,
         iar_math_proficiency_pct=school.iar_math_proficiency_pct,
         iar_overall_proficiency_pct=school.iar_overall_proficiency_pct,
+        trends=_build_trend_metrics(school),
     )
 
     return SchoolDetail(
@@ -99,3 +141,26 @@ def get_school_detail(
         raise HTTPException(status_code=404, detail="School not found")
 
     return build_school_detail(school)
+
+
+def _build_trend_metrics(school) -> Optional[TrendMetrics]:
+    trend_payload = {}
+    for metric, fields in TREND_FIELD_MAP.items():
+        one_year = getattr(school, fields[0], None)
+        three_year = getattr(school, fields[1], None)
+        five_year = getattr(school, fields[2], None)
+        window = _build_trend_window(one_year, three_year, five_year)
+        if window is not None:
+            trend_payload[metric] = window
+
+    if not trend_payload:
+        return None
+    return TrendMetrics(**trend_payload)
+
+
+def _build_trend_window(
+    one_year: Optional[float], three_year: Optional[float], five_year: Optional[float]
+) -> Optional[TrendWindow]:
+    if all(value is None for value in (one_year, three_year, five_year)):
+        return None
+    return TrendWindow(one_year=one_year, three_year=three_year, five_year=five_year)

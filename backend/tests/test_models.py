@@ -10,6 +10,8 @@ from app.models import (
     SchoolMetrics,
     SchoolSearchResult,
     SearchResponse,
+    TrendMetrics,
+    TrendWindow,
 )
 
 
@@ -99,13 +101,28 @@ def test_school_metrics_composition():
         enrollment=1775,
         act=ACTScores(ela_avg=17.7, math_avg=18.2, science_avg=18.9),
         demographics=Demographics(el_percentage=29.0, low_income_percentage=38.4),
-        diversity=Diversity(white=36.8, hispanic=48.3, asian=8.7)
+        diversity=Diversity(white=36.8, hispanic=48.3, asian=8.7),
+        trends=TrendMetrics(
+            enrollment=TrendWindow(one_year=15, three_year=25),
+            act=TrendWindow(one_year=0.8)
+        )
     )
 
     assert metrics.enrollment == 1775
     assert metrics.act.overall_avg == 17.95
     assert metrics.demographics.el_percentage == 29.0
     assert metrics.diversity.white == 36.8
+    assert metrics.trends.enrollment.one_year == 15
+    assert metrics.trends.act.one_year == 0.8
+
+
+def test_trend_window_converts_to_dict():
+    """TrendWindow exposes optional one/three/five year deltas."""
+    trend = TrendWindow(one_year=10.0, five_year=-12.5)
+
+    assert trend.one_year == 10.0
+    assert trend.three_year is None
+    assert trend.five_year == -12.5
 
 
 def test_school_detail_full_model():
@@ -123,7 +140,10 @@ def test_school_detail_full_model():
             enrollment=1775,
             act=ACTScores(ela_avg=17.7, math_avg=18.2, science_avg=18.9),
             demographics=Demographics(el_percentage=29.0, low_income_percentage=38.4),
-            diversity=Diversity(white=36.8, hispanic=48.3)
+            diversity=Diversity(white=36.8, hispanic=48.3),
+            trends=TrendMetrics(
+                enrollment=TrendWindow(one_year=12.0, five_year=40.0)
+            ),
         )
     )
 
@@ -131,6 +151,7 @@ def test_school_detail_full_model():
     assert detail.grades_served == "9-12"
     assert detail.metrics.enrollment == 1775
     assert detail.metrics.act.overall_avg == 17.95
+    assert detail.metrics.trends.enrollment.five_year == 40.0
 
 
 def test_school_detail_includes_iar_metrics():
