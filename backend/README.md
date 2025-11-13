@@ -34,6 +34,28 @@ open http://localhost:8000/docs
 
 ---
 
+## Historical Report Card Sources
+
+Historical trend calculations pull from local files under `data/historical-report-cards/`. Place the raw Report Card downloads in that folder so the importer can build per-school time series without hitting external APIs.
+
+| Year | Filename | Path | Metrics available |
+| --- | --- | --- | --- |
+| 2019 | `2019-Report-Card-Public-Data-Set.xlsx` | `data/historical-report-cards/2019-Report-Card-Public-Data-Set.xlsx` | Enrollment, low-income %, EL %, race/ethnicity %, SAT composite |
+| 2020 | `2020-Report-Card-Public-Data-Set.xlsx` | `data/historical-report-cards/2020-Report-Card-Public-Data-Set.xlsx` | Enrollment, low-income %, EL %, race/ethnicity %, SAT composite |
+| 2022 | `2022-Report-Card-Public-Data-Set.xlsx` | `data/historical-report-cards/2022-Report-Card-Public-Data-Set.xlsx` | Enrollment, low-income %, EL %, race/ethnicity %, SAT composite |
+| 2023 | `23-RC-Pub-Data-Set.xlsx` | `data/historical-report-cards/23-RC-Pub-Data-Set.xlsx` | Enrollment, low-income %, EL %, race/ethnicity %, SAT composite |
+| 2024 | `24-RC-Pub-Data-Set.xlsx` | `data/historical-report-cards/24-RC-Pub-Data-Set.xlsx` | Enrollment, low-income %, EL %, race/ethnicity %, SAT composite |
+| 2015 | `rc15-assessment.txt` | `data/historical-report-cards/rc15-assessment.txt` | ACT composite (ELA, Math, Science, Overall) |
+| 2016 | `rc16_assessment.txt` | `data/historical-report-cards/rc16_assessment.txt` | ACT composite (ELA, Math, Science, Overall) |
+| 2017 | `rc17_assessment.txt` | `data/historical-report-cards/rc17_assessment.txt` | ACT composite (ELA, Math, Science, Overall) |
+
+*Notes*
+- Excel files share the same schema as the current 2025 dataset, so importer field mappings apply directly.
+- TXT assessment files are pipe-delimited exports that only carry ACT scores; they do not include demographics.
+- Add more years to this folder following the same naming pattern to extend the trend range.
+
+---
+
 ## API Endpoints
 
 ### Base URL
