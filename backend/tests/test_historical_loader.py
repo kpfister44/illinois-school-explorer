@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from app.utils.historical_loader import HistoricalDataLoader
+from app.utils.historical_loader import HistoricalDataLoader, _default_base_path
 
 
 def _write_excel_fixture(base_dir: Path, filename: str, general_rows, assessment_rows=None) -> Path:
@@ -162,3 +162,10 @@ def test_load_year_merges_metrics_from_multiple_files(tmp_path):
     assert metrics["enrollment"] == 600
     assert metrics["sat_composite"] == 990
     assert metrics["act_scores"]["composite"] == 19.1
+
+
+def test_default_base_path_points_to_repo_root():
+    loader = HistoricalDataLoader()
+    expected = _default_base_path()
+    assert loader.base_path == expected
+    assert loader.base_path.exists()

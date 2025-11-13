@@ -46,11 +46,16 @@ ACT_COLUMNS: Dict[str, Iterable[str]] = {
 TEXT_DELIMITERS = ("|", "\t", ",")
 
 
+def _default_base_path() -> Path:
+    return Path(__file__).resolve().parents[3] / "data" / "historical-report-cards"
+
+
 class HistoricalDataLoader:
     """Load normalized metrics from historical Excel/TXT sources."""
 
     def __init__(self, base_path: Path | str | None = None) -> None:
-        self.base_path = Path(base_path) if base_path else Path("data/historical-report-cards")
+        resolved_path = Path(base_path) if base_path else _default_base_path()
+        self.base_path = resolved_path
         self._cache: Dict[int, Dict[str, Dict[str, Any]]] = {}
 
     def load_year(self, year: int) -> Dict[str, Dict[str, Any]]:
