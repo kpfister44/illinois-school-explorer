@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from app.database import School
+import app.utils.import_data as import_data_module
 from app.utils.import_data import (
     load_excel_data,
     clean_percentage,
@@ -12,7 +13,102 @@ from app.utils.import_data import (
     merge_school_data,
     prepare_school_records,
     import_to_database,
+    build_trend_series,
 )
+
+
+class LoaderStub:
+    """Simple loader stand-in for trend helper tests."""
+
+    def __init__(self, responses):
+        self.responses = responses
+
+    def load_year(self, year):
+        return self.responses.get(year, {})
+
+
+def test_build_trend_series_demographics_cover_latest_years():
+    """Demographic series keeps the latest five data points per metric."""
+    rcdts = "11-111-1111-11-0005"
+    responses = {}
+    enrollment = 700
+    for year in range(2024, 2018, -1):
+        responses[year] = {
+            rcdts: {
+                "enrollment": enrollment,
+                "low_income_percentage": 40.0 + (2024 - year),
+                "el_percentage": 10.0 + (2024 - year),
+                "diversity": {
+                    "white": 50.0,
+                    "black": 20.0,
+                },
+            }
+        }
+        enrollment -= 20
+
+    responses[2018] = {
+        rcdts: {
+            "enrollment": 500,
+            "low_income_percentage": 55.0,
+            "el_percentage": 15.0,
+        }
+    }
+
+    loader = LoaderStub(responses)
+    series = import_data_module._build_demographic_series(rcdts, loader)
+
+    assert series["student_enrollment"] == {
+        2024: 700,
+        2023: 680,
+        2022: 660,
+        2021: 640,
+        2020: 620,
+    }
+    assert series["low_income_percentage"][2024] == 40.0
+    assert series["el_percentage"][2020] == 14.0
+    assert series["pct_white"][2024] == 50.0
+    assert 2018 not in series["student_enrollment"]
+
+
+def test_build_trend_series_act_helper_merges_sat_and_act_scores():
+    """ACT series combines legacy ACT data with SAT conversions."""
+    rcdts = "11-111-1111-11-0006"
+    responses = {
+        2016: {rcdts: {"act_scores": {"composite": 20.0}}},
+        2015: {rcdts: {"act_scores": {"composite": 19.5}}},
+        2017: {rcdts: {"sat_composite": 1010}},
+        2018: {rcdts: {"sat_composite": 980}},
+    }
+
+    loader = LoaderStub(responses)
+    series = import_data_module._build_act_series(rcdts, loader)
+
+    assert "act_composite" in series
+    act_series = series["act_composite"]
+    assert act_series[2018] == pytest.approx(18.0)
+    assert act_series[2017] == pytest.approx(19.0)
+    assert act_series[2016] == 20.0
+    assert act_series[2015] == 19.5
+
+
+def test_build_trend_series_combines_metrics():
+    """build_trend_series exposes demographic and ACT/SAT trend data."""
+    rcdts = "11-111-1111-11-0007"
+    responses = {
+        2024: {rcdts: {"enrollment": 800, "diversity": {"white": 55.0}}},
+        2023: {rcdts: {"enrollment": 780, "low_income_percentage": 42.0}},
+        2017: {rcdts: {"sat_composite": 1100}},
+        2016: {rcdts: {"act_scores": {"composite": 21.0}}},
+    }
+
+    loader = LoaderStub(responses)
+    trend_series = build_trend_series(rcdts, loader)
+
+    assert "student_enrollment" in trend_series
+    assert trend_series["student_enrollment"][2024] == 800
+    assert trend_series["low_income_percentage"][2023] == 42.0
+    assert trend_series["pct_white"][2024] == 55.0
+    assert trend_series["act_composite"][2017] == pytest.approx(22.0)
 
 
 def test_clean_percentage_converts_string():
