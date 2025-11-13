@@ -38,11 +38,36 @@ export interface Diversity {
   mena: number | null;
 }
 
+export interface TrendWindow {
+  one_year: number | null;
+  three_year: number | null;
+  five_year: number | null;
+}
+
+export interface TrendMetrics {
+  enrollment?: TrendWindow;
+  act_ela?: TrendWindow;
+  act_math?: TrendWindow;
+  act_science?: TrendWindow;
+  act_overall?: TrendWindow;
+  el_percentage?: TrendWindow;
+  low_income_percentage?: TrendWindow;
+  white?: TrendWindow;
+  black?: TrendWindow;
+  hispanic?: TrendWindow;
+  asian?: TrendWindow;
+  pacific_islander?: TrendWindow;
+  native_american?: TrendWindow;
+  two_or_more?: TrendWindow;
+  mena?: TrendWindow;
+}
+
 export interface SchoolMetrics {
   enrollment: number | null;
   act: ACTScores;
   demographics: Demographics;
   diversity: Diversity;
+  trends?: TrendMetrics;
 }
 
 export interface SchoolDetail extends School {
