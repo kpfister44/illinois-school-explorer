@@ -202,6 +202,72 @@ def test_prepare_school_records_includes_iar_fields():
     assert records[0]["iar_overall_proficiency_pct"] == 51.75
 
 
+def test_prepare_school_records_adds_trend_fields_with_loader():
+    """Trend deltas populate when loader supplies historical data."""
+    rcdts = "11-111-1111-11-0008"
+    merged_df = pd.DataFrame(
+        [
+            {
+                "RCDTS": rcdts,
+                "School Name": "Trend High",
+                "District": "District 1",
+                "City": "Chicago",
+                "County": "Cook",
+                "School Type": "High School",
+                "Level": "School",
+                "Grades Served": "9-12",
+                "# Student Enrollment": "500",
+                "% Student Enrollment - EL": "12.0%",
+                "% Student Enrollment - Low Income": "45.0%",
+                "% Student Enrollment - White": "58.0%",
+                "% Student Enrollment - Black or African American": "15.0%",
+                "% Student Enrollment - Hispanic or Latino": "20.0%",
+            }
+        ]
+    )
+
+    loader = LoaderStub(
+        {
+            2024: {
+                rcdts: {
+                    "enrollment": 480,
+                    "low_income_percentage": 40.0,
+                    "el_percentage": 10.5,
+                    "diversity": {
+                        "white": 55.0,
+                        "black": 14.5,
+                    },
+                }
+            },
+            2022: {
+                rcdts: {
+                    "enrollment": 450,
+                    "low_income_percentage": 37.0,
+                    "diversity": {
+                        "white": 53.0,
+                    },
+                }
+            },
+            2020: {
+                rcdts: {
+                    "enrollment": 430,
+                }
+            },
+        }
+    )
+
+    records = prepare_school_records(merged_df, loader=loader, current_year=2025)
+    record = records[0]
+
+    assert record["enrollment_trend_1yr"] == 20
+    assert record["enrollment_trend_3yr"] == 50
+    assert record["enrollment_trend_5yr"] == 70
+    assert record["low_income_trend_1yr"] == pytest.approx(5.0)
+    assert record["el_trend_1yr"] == pytest.approx(1.5)
+    assert record["white_trend_1yr"] == pytest.approx(3.0)
+    assert "white_trend_5yr" not in record
+
+
 @pytest.mark.slow
 def test_load_excel_data_returns_dataframes():
     """Loading Excel file yields General/ACT dataframes."""
@@ -264,6 +330,120 @@ def test_prepare_school_records_includes_district():
     records = prepare_school_records(merged_df)
 
     assert any(record.get("district") for record in records)
+
+
+def test_import_to_database_uses_historical_loader(monkeypatch, test_db):
+    """Import path instantiates loader once and closes it."""
+
+    loader_instances = []
+
+    class LoaderDouble:
+        def __init__(self):
+            self.closed = False
+            loader_instances.append(self)
+
+        def load_year(self, year):
+            return {}
+
+        def close(self):
+            self.closed = True
+
+    monkeypatch.setattr(import_data_module, "HistoricalDataLoader", LoaderDouble)
+
+    captured = {}
+
+    def fake_prepare(merged_df, loader=None, current_year=None):
+        captured["loader"] = loader
+        captured["current_year"] = current_year
+        return [
+            {
+                "rcdts": "11-111-1111-11-0010",
+                "school_name": "Loader Test",
+                "district": "Unit 5",
+                "city": "Normal",
+                "county": "McLean",
+                "school_type": "High School",
+                "level": "high",
+            }
+        ]
+
+    monkeypatch.setattr(import_data_module, "prepare_school_records", fake_prepare)
+
+    def fake_load_excel_data(path):
+        general = pd.DataFrame(
+            [
+                {
+                    "Level": "School",
+                    "RCDTS": "11-111-1111-11-0010",
+                    "School Name": "Loader Test",
+                    "District": "Unit 5",
+                    "City": "Normal",
+                    "County": "McLean",
+                    "School Type": "High School",
+                    "Grades Served": "9-12",
+                    "# Student Enrollment": "500",
+                    "% Student Enrollment - EL": "10%",
+                    "% Student Enrollment - Low Income": "40%",
+                }
+            ]
+        )
+        act = pd.DataFrame(
+            [
+                {
+                    "RCDTS": "11-111-1111-11-0010",
+                    "ACT ELA Average Score - Grade 11": 20,
+                    "ACT Math Average Score - Grade 11": 21,
+                    "ACT Science Average Score - Grade 11": 22,
+                }
+            ]
+        )
+        iar = pd.DataFrame(
+            [
+                {
+                    "RCDTS": "11-111-1111-11-0010",
+                    "IAR ELA Proficiency Rate - Total": 50,
+                    "IAR Math Proficiency Rate - Total": 45,
+                }
+            ]
+        )
+        return general, act, iar
+
+    monkeypatch.setattr(import_data_module, "load_excel_data", fake_load_excel_data)
+
+    def fake_merge(general_df, act_df, iar_df):
+        return pd.DataFrame(
+            [
+                {
+                    "RCDTS": "11-111-1111-11-0010",
+                    "School Name": "Loader Test",
+                    "District": "Unit 5",
+                    "City": "Normal",
+                    "County": "McLean",
+                    "School Type": "High School",
+                    "Level": "School",
+                    "Grades Served": "9-12",
+                    "# Student Enrollment": "500",
+                    "% Student Enrollment - EL": "10%",
+                    "% Student Enrollment - Low Income": "40%",
+                    "ACT ELA Average Score - Grade 11": 20,
+                    "ACT Math Average Score - Grade 11": 21,
+                    "ACT Science Average Score - Grade 11": 22,
+                    "IAR ELA Proficiency Rate - Total": 50,
+                    "IAR Math Proficiency Rate - Total": 45,
+                }
+            ]
+        )
+
+    monkeypatch.setattr(import_data_module, "merge_school_data", fake_merge)
+
+    import_data_module.import_to_database(
+        "../2025-Report-Card-Public-Data-Set.xlsx", test_db
+    )
+
+    assert len(loader_instances) == 1
+    assert loader_instances[0].closed is True
+    assert captured["loader"] is loader_instances[0]
+    assert captured["current_year"] == 2025
 
 
 @pytest.mark.slow

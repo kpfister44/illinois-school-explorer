@@ -228,6 +228,10 @@ class HistoricalDataLoader:
                 record.pop("act_scores")
         return records
 
+    def close(self) -> None:
+        """Release any cached data."""
+        self._cache.clear()
+
     def _detect_delimiter(self, sample: str) -> str:
         for delimiter in TEXT_DELIMITERS:
             if delimiter in sample:

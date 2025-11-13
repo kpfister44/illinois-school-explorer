@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
@@ -32,6 +34,22 @@ DIVERSITY_FIELD_MAP = {
     "native_american": "native_american",
     "two_or_more": "two_or_more",
     "mena": "mena",
+}
+
+TREND_WINDOWS = (1, 3, 5)
+
+TREND_METRIC_FIELDS = {
+    "enrollment": "student_enrollment",
+    "low_income": "low_income_percentage",
+    "el": "el_percentage",
+    "white": "pct_white",
+    "black": "pct_black",
+    "hispanic": "pct_hispanic",
+    "asian": "pct_asian",
+    "pacific_islander": "pct_pacific_islander",
+    "native_american": "pct_native_american",
+    "two_or_more": "pct_two_or_more",
+    "mena": "pct_mena",
 }
 
 SAT_TO_ACT_RANGES = [
@@ -276,8 +294,12 @@ def normalize_level(school_type: Optional[str]) -> str:
     return "other"
 
 
-def prepare_school_records(merged_df: pd.DataFrame) -> List[dict]:
-    """Transform merged DataFrame rows into dictionaries aligned with School fields."""
+def prepare_school_records(
+    merged_df: pd.DataFrame,
+    loader: Optional[HistoricalDataLoader] = None,
+    current_year: Optional[int] = None,
+) -> List[dict]:
+    """Transform merged rows into dictionaries and optionally append trend fields."""
 
     records: List[dict] = []
     for _, row in merged_df.iterrows():
@@ -318,8 +340,78 @@ def prepare_school_records(merged_df: pd.DataFrame) -> List[dict]:
             "pct_two_or_more": clean_percentage(row.get("% Student Enrollment - Two or More Races")),
             "pct_mena": clean_percentage(row.get("% Student Enrollment - Middle Eastern or North African")),
         }
+        if loader is not None and current_year is not None:
+            trend_series = build_trend_series(record["rcdts"], loader)
+            trend_fields = _compute_trend_fields(record, trend_series, current_year)
+            record.update(trend_fields)
+
         records.append(record)
     return records
+
+
+def _compute_trend_fields(
+    current_record: Dict[str, Any],
+    trend_series: Dict[str, Dict[int, float]],
+    current_year: int,
+) -> Dict[str, float]:
+    """Calculate 1/3/5-year deltas for supported metrics."""
+
+    trend_fields: Dict[str, float] = {}
+    for metric in [*TREND_METRIC_FIELDS.keys(), "act"]:
+        series = trend_series.get(metric)
+        if not series:
+            continue
+        current_value = _get_current_metric_value(current_record, metric)
+        if current_value is None:
+            continue
+
+        for window in TREND_WINDOWS:
+            delta = _calculate_trend_delta(current_value, series, current_year, window)
+            if delta is None:
+                continue
+            trend_fields[f"{metric}_trend_{window}yr"] = delta
+
+    return trend_fields
+
+
+def _get_current_metric_value(record: Dict[str, Any], metric: str) -> Optional[float]:
+    if metric == "act":
+        return _current_act_value(record)
+
+    field = TREND_METRIC_FIELDS.get(metric)
+    if not field:
+        return None
+
+    value = record.get(field)
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _current_act_value(record: Dict[str, Any]) -> Optional[float]:
+    ela = record.get("act_ela_avg")
+    math = record.get("act_math_avg")
+    if ela is None or math is None:
+        return None
+    return (float(ela) + float(math)) / 2
+
+
+def _calculate_trend_delta(
+    current_value: float,
+    series: Dict[int, float],
+    current_year: int,
+    window: int,
+) -> Optional[float]:
+    prior_year = current_year - window
+    if prior_year not in series:
+        return None
+    historical_value = series[prior_year]
+    if historical_value is None:
+        return None
+    return float(current_value) - float(historical_value)
 
 
 def import_to_database(excel_path: str, db: Session) -> int:
@@ -327,7 +419,12 @@ def import_to_database(excel_path: str, db: Session) -> int:
 
     general_df, act_df, iar_df = load_excel_data(excel_path)
     merged_df = merge_school_data(general_df, act_df, iar_df)
-    records = prepare_school_records(merged_df)
+    loader = HistoricalDataLoader()
+    current_year = _infer_report_year(excel_path)
+    try:
+        records = prepare_school_records(merged_df, loader=loader, current_year=current_year)
+    finally:
+        loader.close()
 
     db.query(School).delete()
     db.commit()
@@ -337,6 +434,16 @@ def import_to_database(excel_path: str, db: Session) -> int:
         db.commit()
 
     return len(records)
+
+
+YEAR_PATTERN = re.compile(r"(20\d{2})")
+
+
+def _infer_report_year(excel_path: str) -> int:
+    match = YEAR_PATTERN.search(Path(excel_path).name)
+    if match:
+        return int(match.group(1))
+    return LATEST_HISTORICAL_YEAR + 1
 
 
 def main() -> None:  # pragma: no cover
