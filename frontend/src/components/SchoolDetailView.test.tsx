@@ -199,4 +199,35 @@ describe('Trend Display', () => {
 
     expect(screen.getByText('+50 students')).toBeInTheDocument();
   });
+
+  it('shows ACT ELA trend button in academics tab', async () => {
+    const user = userEvent.setup();
+    const schoolWithTrends: SchoolDetail = {
+      ...mockSchoolDetail,
+      metrics: {
+        ...mockSchoolDetail.metrics,
+        act: {
+          ela_avg: 17.7,
+          math_avg: 18.2,
+          science_avg: 18.9,
+          overall_avg: 17.95,
+        },
+        trends: {
+          act_ela: {
+            one_year: -0.5,
+            three_year: -1.2,
+            five_year: 0.8,
+          },
+        },
+      },
+    };
+
+    renderWithProviders(<SchoolDetailView school={schoolWithTrends} />);
+
+    const academicsTab = screen.getByRole('tab', { name: /academics/i });
+    await user.click(academicsTab);
+
+    const trendButtons = screen.getAllByRole('button', { name: /show trends/i });
+    expect(trendButtons.length).toBeGreaterThan(0);
+  });
 });

@@ -130,6 +130,13 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                     </span>
                   </div>
                   <Progress value={(school.metrics.act.ela_avg / 36) * 100} />
+                  <TrendDisplay
+                    label="ACT ELA"
+                    currentValue={school.metrics.act.ela_avg}
+                    trendData={school.metrics.trends?.act_ela}
+                    metricType="score"
+                    unit="points"
+                  />
                 </div>
               )}
               {school.metrics.act.math_avg !== null && (
@@ -141,6 +148,13 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                     </span>
                   </div>
                   <Progress value={(school.metrics.act.math_avg / 36) * 100} />
+                  <TrendDisplay
+                    label="ACT Math"
+                    currentValue={school.metrics.act.math_avg}
+                    trendData={school.metrics.trends?.act_math}
+                    metricType="score"
+                    unit="points"
+                  />
                 </div>
               )}
               {school.metrics.act.science_avg !== null && (
@@ -152,6 +166,13 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                     </span>
                   </div>
                   <Progress value={(school.metrics.act.science_avg / 36) * 100} />
+                  <TrendDisplay
+                    label="ACT Science"
+                    currentValue={school.metrics.act.science_avg}
+                    trendData={school.metrics.trends?.act_science}
+                    metricType="score"
+                    unit="points"
+                  />
                 </div>
               )}
               {school.metrics.act.overall_avg !== null && (
@@ -163,6 +184,13 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                     </span>
                   </div>
                   <Progress value={(school.metrics.act.overall_avg / 36) * 100} />
+                  <TrendDisplay
+                    label="ACT Overall"
+                    currentValue={school.metrics.act.overall_avg}
+                    trendData={school.metrics.trends?.act_overall}
+                    metricType="score"
+                    unit="points"
+                  />
                 </div>
               )}
             </CardContent>
