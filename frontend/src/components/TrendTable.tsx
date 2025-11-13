@@ -60,13 +60,15 @@ export default function TrendTable({ currentValue, trendData, metricType, unit }
                 <td className="py-2">{row.label}</td>
                 <td className="py-2">
                   <span className="inline-flex items-center gap-1">
-                    {`${arrow} ${changeText}`}
+                    <span aria-hidden="true">{arrow}</span>
+                    <span>{changeText}</span>
                   </span>
-                  <span className="sr-only">{changeText}</span>
                 </td>
                 <td className="py-2">
-                  {arrow}{' '}
-                  <span>{percentText}</span>
+                  <span className="inline-flex items-center gap-1">
+                    <span aria-hidden="true">{arrow}</span>
+                    <span>{percentText}</span>
+                  </span>
                 </td>
               </tr>
             );

@@ -92,9 +92,13 @@ describe('TrendTable', () => {
       />
     );
 
-    expect(screen.getByText(/↑.*\+50/)).toBeInTheDocument();
-    expect(screen.getByText(/↓.*-25/)).toBeInTheDocument();
-    expect(screen.getByText(/→.*0/)).toBeInTheDocument();
+    const increaseCell = screen.getByText('+50 students').closest('td');
+    const decreaseCell = screen.getByText('-25 students').closest('td');
+    const flatCell = screen.getByText('0 students').closest('td');
+
+    expect(increaseCell?.textContent).toContain('↑');
+    expect(decreaseCell?.textContent).toContain('↓');
+    expect(flatCell?.textContent).toContain('→');
   });
 
   it('suppresses percentage when below threshold', () => {
