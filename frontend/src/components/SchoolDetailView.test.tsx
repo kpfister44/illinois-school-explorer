@@ -2,7 +2,7 @@
 // ABOUTME: Verifies tabbed interface and metric display
 
 import { render, screen } from '@testing-library/react';
-import { userEvent } from '@testing-library/user-event';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ComparisonProvider } from '@/contexts/ComparisonContext';
 import SchoolDetailView from './SchoolDetailView';
@@ -151,5 +151,52 @@ describe('SchoolDetailView', () => {
     renderWithProviders(<SchoolDetailView school={mockSchoolDetail} />);
 
     expect(screen.getByRole('button', { name: /add to compare/i })).toBeDisabled();
+  });
+});
+
+describe('Trend Display', () => {
+  it('displays trend button for enrollment', () => {
+    const schoolWithTrends: SchoolDetail = {
+      ...mockSchoolDetail,
+      metrics: {
+        ...mockSchoolDetail.metrics,
+        trends: {
+          enrollment: {
+            one_year: 50,
+            three_year: 125,
+            five_year: 200,
+          },
+        },
+      },
+    };
+
+    renderWithProviders(<SchoolDetailView school={schoolWithTrends} />);
+
+    expect(screen.getByRole('button', { name: /show trends/i })).toBeInTheDocument();
+  });
+
+  it('shows enrollment trend data when expanded', async () => {
+    const user = userEvent.setup();
+    const schoolWithTrends: SchoolDetail = {
+      ...mockSchoolDetail,
+      metrics: {
+        ...mockSchoolDetail.metrics,
+        enrollment: 1775,
+        trends: {
+          enrollment: {
+            one_year: 50,
+            three_year: 125,
+            five_year: 200,
+          },
+        },
+      },
+    };
+
+    renderWithProviders(<SchoolDetailView school={schoolWithTrends} />);
+
+    const button = screen.getByRole('button', { name: /show trends/i });
+    await user.click(button);
+
+    expect(screen.getByText('+50 students')).toBeInTheDocument();
   });
 });

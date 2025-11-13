@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Plus, Minus } from 'lucide-react';
 import { useComparison } from '@/contexts/ComparisonContext';
+import TrendDisplay from '@/components/TrendDisplay';
 import type { SchoolDetail } from '@/lib/api/types';
 
 interface SchoolDetailViewProps {
@@ -100,6 +101,15 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
               <p className="text-4xl font-bold">
                 {formatNumber(school.metrics.enrollment)}
               </p>
+              {school.metrics.enrollment !== null && (
+                <TrendDisplay
+                  label="Enrollment"
+                  currentValue={school.metrics.enrollment}
+                  trendData={school.metrics.trends?.enrollment}
+                  metricType="count"
+                  unit="students"
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>
