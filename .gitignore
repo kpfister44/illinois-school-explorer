@@ -78,3 +78,5 @@ build/
 # Private configuration (keep local only)
 CLAUDE.md
 AGENTS.md
+# Historical report card data
+/data/historical-report-cards/

@@ -63,6 +63,7 @@ Plan: `docs/plans/2025-11-06-phase1-backend-foundation.md` ✅ **EXECUTED**
 - ✅ API documentation at `/docs` (Swagger)
 - ✅ All API tests passing
 - ✅ Can query API via `curl` or Postman
+- ✅ Trend metrics sourced locally (historical files + importer)
 
 ### Dependencies
 - Phase 1 complete (database and models ready)

@@ -20,10 +20,10 @@ cd backend
 # Install dependencies
 uv sync --all-extras
 
-# Import school data
+# Import school data (requires historical files for trends)
 uv run python -m app.utils.import_data ../2025-Report-Card-Public-Data-Set.xlsx
 
-> **Schema note:** The import now stores normalized levels plus IAR proficiency columns. If you already have `data/schools.db`, delete it (or drop/recreate the table) before re-importing so the schema matches.
+> **Schema note:** The importer now writes `*_trend_{1,3,5}yr` columns (enrollment, demographics, diversity, ACT). Drop `data/schools.db` or run a migration before re-importing so SQLite picks up the added fields.
 
 # Start development server
 uv run uvicorn app.main:app --reload --port 8000
@@ -53,6 +53,7 @@ Historical trend calculations pull from local files under `data/historical-repor
 - Excel files share the same schema as the current 2025 dataset, so importer field mappings apply directly.
 - TXT assessment files are pipe-delimited exports that only carry ACT scores; they do not include demographics.
 - Add more years to this folder following the same naming pattern to extend the trend range.
+- See `docs/trend-data-workflow.md` for importer instructions and verification steps.
 
 ---
 
