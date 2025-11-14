@@ -1,17 +1,39 @@
 # Feature: Display Historical Yearly Data in Trend Dropdowns
 
+## ✅ STATUS: Backend Complete | Frontend Pending
+
+**Last Updated:** 2025-11-13
+**Backend Completion:** 100% - All data available via API
+**Frontend Completion:** 0% - Ready to implement
+
 ## Overview
 
-Add a historical yearly data table to all metric trend dropdowns, showing the actual metric values for each of the last 5 years. This table should appear between the metric bar and the trend calculations (1yr, 3yr, 5yr).
+Add a historical yearly data table to all metric trend dropdowns, showing the actual metric values for each of the last 7 years (2019-2025). This table should appear between the metric bar and the trend calculations (1yr, 3yr, 5yr).
 
-## Current State
+## Backend Implementation Status ✅
+
+**All backend work is COMPLETE and tested:**
+
+1. ✅ **Database Schema** - 140+ historical columns added (2019-2025 for all metrics)
+2. ✅ **Data Import** - Historical data extraction and storage implemented
+3. ✅ **API Models** - `HistoricalYearlyData` and `HistoricalMetrics` Pydantic models created
+4. ✅ **API Response** - `/api/schools/{rcdts}` now includes `metrics.historical` field
+5. ✅ **Testing** - All tests passing, verified with real data import (3,827 schools)
+
+**Git Branch:** `feat/historical-yearly-data-display`
+**Commits:**
+- `feat(database): add historical yearly columns for 2019-2025`
+- `feat(import): extract and store historical yearly data for all metrics`
+- `feat(api): add historical yearly data to API response models`
+
+## Current Frontend State
 
 Currently, when users click "Show trends" on any metric, they see:
 - Trend calculations (1 Year, 3 Year, 5 Year)
 - Change in points/percentage points
 - Percent change
 
-**Missing:** The actual historical values that these trends are calculated from.
+**Missing:** The actual historical values that these trends are calculated from (but this data is NOW AVAILABLE via the API).
 
 ## Desired State
 
@@ -520,26 +542,256 @@ Period  | Change        | Percent
 
 ## Success Criteria
 
-✅ All metrics show historical yearly data when trends are expanded
-✅ Data displays for last 5 available years (2024, 2023, 2022, 2021, 2019)
-✅ Missing years (like 2020 SAT) show "N/A"
-✅ Values are formatted correctly (decimals, percentages, commas)
-✅ Historical table appears BETWEEN metric bar and trend calculations
-✅ Backend includes historical data in API response
-✅ No performance degradation (data should be pre-computed during import)
+**Backend (Complete ✅):**
+- ✅ All metrics have historical yearly data stored in database
+- ✅ Data stored for 7 years (2019-2025)
+- ✅ Missing years (like 2020 SAT) stored as NULL
+- ✅ Backend includes historical data in API response
+- ✅ No performance degradation (data pre-computed during import)
 
-## Questions for Implementation
+**Frontend (Pending 🔲):**
+- 🔲 All metrics show historical yearly data when trends are expanded
+- 🔲 Historical table appears BETWEEN metric bar and trend calculations
+- 🔲 Values formatted correctly (decimals, percentages, commas)
+- 🔲 Missing years display "N/A" instead of null
+- 🔲 Consistent styling with trend tables
+- 🔲 Responsive mobile view
 
-If you encounter ambiguity during implementation:
+---
 
-1. **Database vs. On-the-Fly:** Should historical data be stored in database or computed on each API call?
-   - **Recommendation:** Store in database (Option A) for performance
+## 🚀 FRONTEND IMPLEMENTATION GUIDE
 
-2. **ACT Sub-Metrics:** Should ACT ELA, Math, Science each have their own historical data?
-   - **Answer:** Yes, each should have separate historical yearly values
+**START HERE** if you're implementing the frontend portion of this feature.
 
-3. **Styling:** Should historical table use same styling as trend table?
-   - **Answer:** Yes, consistent styling for both tables
+### Prerequisites
 
-4. **Mobile View:** How should this display on mobile?
-   - **Answer:** Follow existing responsive patterns for trend tables
+1. **Backend is complete** - All API endpoints return historical data
+2. **Branch:** Checkout `feat/historical-yearly-data-display`
+3. **Database:** Current database has all historical data populated
+
+### Quick Start: 3 Main Tasks
+
+#### Task 1: Update TypeScript Types
+
+**File:** `frontend/src/lib/api/types.ts`
+
+Add these interfaces (they match the backend Pydantic models):
+
+```typescript
+export interface HistoricalYearlyData {
+  yr_2025?: number | null;
+  yr_2024?: number | null;
+  yr_2023?: number | null;
+  yr_2022?: number | null;
+  yr_2021?: number | null;
+  yr_2020?: number | null;
+  yr_2019?: number | null;
+}
+
+export interface HistoricalMetrics {
+  enrollment?: HistoricalYearlyData;
+  act?: HistoricalYearlyData;
+  act_ela?: HistoricalYearlyData;
+  act_math?: HistoricalYearlyData;
+  act_science?: HistoricalYearlyData;
+  el?: HistoricalYearlyData;
+  low_income?: HistoricalYearlyData;
+  white?: HistoricalYearlyData;
+  black?: HistoricalYearlyData;
+  hispanic?: HistoricalYearlyData;
+  asian?: HistoricalYearlyData;
+  pacific_islander?: HistoricalYearlyData;
+  native_american?: HistoricalYearlyData;
+  two_or_more?: HistoricalYearlyData;
+  mena?: HistoricalYearlyData;
+}
+```
+
+Then update `SchoolMetrics` interface:
+```typescript
+export interface SchoolMetrics {
+  enrollment: number | null;
+  act: ACTScores | null;
+  demographics: Demographics;
+  diversity: Diversity;
+  trends?: TrendMetrics;
+  historical?: HistoricalMetrics;  // ADD THIS LINE
+}
+```
+
+#### Task 2: Create HistoricalDataTable Component
+
+**File:** `frontend/src/components/HistoricalDataTable.tsx` (NEW FILE)
+
+```typescript
+import { HistoricalYearlyData } from '@/lib/api/types';
+
+interface HistoricalDataTableProps {
+  data: HistoricalYearlyData;
+  metricType: 'score' | 'percentage' | 'count';
+}
+
+export function HistoricalDataTable({ data, metricType }: HistoricalDataTableProps) {
+  const years = [2025, 2024, 2023, 2022, 2021, 2020, 2019];
+
+  const formatValue = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) return 'N/A';
+
+    switch (metricType) {
+      case 'score':
+        return value.toFixed(1);
+      case 'percentage':
+        return `${value.toFixed(1)}%`;
+      case 'count':
+        return value.toLocaleString();
+      default:
+        return value.toString();
+    }
+  };
+
+  return (
+    <div className="mb-4">
+      <h4 className="text-sm font-semibold mb-2">Historical Data</h4>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b">
+            <th className="text-left py-1">Year</th>
+            <th className="text-right py-1">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {years.map((year) => {
+            const key = `yr_${year}` as keyof HistoricalYearlyData;
+            const value = data[key];
+
+            return (
+              <tr key={year} className="border-b border-gray-200">
+                <td className="py-1">{year}</td>
+                <td className="text-right py-1">{formatValue(value)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+```
+
+#### Task 3: Update TrendDisplay Component
+
+**File:** `frontend/src/components/TrendDisplay.tsx`
+
+1. Import the new component:
+```typescript
+import { HistoricalDataTable } from './HistoricalDataTable';
+```
+
+2. Add `historicalData` prop to the interface:
+```typescript
+interface TrendDisplayProps {
+  label: string;
+  currentValue: number | null;
+  trendData?: TrendWindow;
+  historicalData?: HistoricalYearlyData;  // ADD THIS
+  metricType: 'score' | 'percentage' | 'count';
+  unit: string;
+}
+```
+
+3. Update the component to render historical table BEFORE trends:
+```typescript
+{isOpen && (
+  <div className="mt-2 space-y-4">
+    {/* Historical Data Table - Shows FIRST */}
+    {historicalData && (
+      <HistoricalDataTable
+        data={historicalData}
+        metricType={metricType}
+      />
+    )}
+
+    {/* Trend Calculations - Shows SECOND */}
+    {trendData && (
+      <TrendTable
+        data={trendData}
+        currentValue={currentValue}
+        unit={unit}
+      />
+    )}
+  </div>
+)}
+```
+
+#### Task 4: Pass Historical Data from SchoolDetailView
+
+**File:** `frontend/src/components/SchoolDetailView.tsx`
+
+Update all `TrendDisplay` usages to pass historical data. Example for ACT:
+
+```typescript
+<TrendDisplay
+  label="ACT ELA"
+  currentValue={school.metrics.act?.ela_avg ?? null}
+  trendData={school.metrics.trends?.act}
+  historicalData={school.metrics.historical?.act_ela}  // ADD THIS
+  metricType="score"
+  unit="points"
+/>
+```
+
+Repeat for all metrics:
+- `historical?.act` → ACT composite
+- `historical?.act_ela` → ACT ELA
+- `historical?.act_math` → ACT Math
+- `historical?.act_science` → ACT Science
+- `historical?.enrollment` → Enrollment
+- `historical?.el` → English Learners
+- `historical?.low_income` → Low Income
+- `historical?.white`, `historical?.black`, etc. → Diversity metrics
+
+### Testing Your Implementation
+
+1. **Start the dev server:**
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+
+2. **Test with Elk Grove High School:**
+   - Navigate to: `http://localhost:5173/school/05-016-2140-17-0002`
+   - Click "Show trends" on ACT ELA
+   - Verify you see:
+     - Historical table with years 2025-2019
+     - 2020 shows "N/A" (COVID year)
+     - Values: 2025: 17.9, 2024: 17.8, 2023: 17.7, etc.
+     - Historical table appears ABOVE trend calculations
+
+3. **Test other metrics:**
+   - Enrollment (should show as whole numbers with commas)
+   - Demographics (should show as percentages with %)
+   - Diversity metrics (should show as percentages with %)
+
+### Styling Notes
+
+- Use existing table styling patterns from `TrendTable` component
+- Maintain consistent spacing and typography
+- Ensure mobile responsiveness (tables should stack or scroll horizontally)
+- Historical table should visually connect with Trend table below it
+
+### Common Issues & Solutions
+
+**Issue:** TypeScript errors about `historical` being undefined
+- **Solution:** Use optional chaining: `school.metrics.historical?.act`
+
+**Issue:** "N/A" not showing for null values
+- **Solution:** Check the `formatValue` function handles `null` and `undefined`
+
+**Issue:** Wrong format (e.g., percentages without %)
+- **Solution:** Ensure correct `metricType` prop is passed to each `TrendDisplay`
+
+### Questions for Implementation
+
+1. **Styling:** Historical table should match trend table styling
+2. **Mobile View:** Follow existing responsive patterns for trend tables
+3. **Animation:** Consider adding subtle expand/collapse animation if time permits
