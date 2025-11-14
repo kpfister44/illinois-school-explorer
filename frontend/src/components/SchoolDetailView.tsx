@@ -57,9 +57,9 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
       <Button
         variant="ghost"
         onClick={handleBack}
-        className="gap-2 px-0 hover:bg-transparent"
+        className="gap-2 px-0 text-base hover:bg-transparent"
       >
-        <ArrowLeft className="h-4 w-4" />
+        <ArrowLeft className="h-5 w-5" />
         Back
       </Button>
       <div className="border-b border-border pb-6">
