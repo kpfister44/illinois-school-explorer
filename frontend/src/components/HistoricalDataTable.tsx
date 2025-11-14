@@ -2,7 +2,7 @@
 // ABOUTME: Shows 7 years of historical values for a metric in table format
 
 import { Info } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { HistoricalYearlyData } from '@/lib/api/types';
 
 interface HistoricalDataTableProps {
@@ -40,16 +40,16 @@ export default function HistoricalDataTable({
       <div className="flex items-center gap-1.5 mb-2">
         <h4 className="text-sm font-medium text-muted-foreground">Historical {metricLabel}</h4>
         {isACTMetric && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button type="button" className="inline-flex">
                 <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>ACT scores for 2019-2024 are converted from SAT scores using the official ACT/SAT concordance tables</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p>ACT scores for 2019-2024 are converted from SAT scores using the official ACT/SAT concordance tables</p>
+            </TooltipContent>
+          </Tooltip>
         )}
       </div>
       <table className="w-full table-fixed">
