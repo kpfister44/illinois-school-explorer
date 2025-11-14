@@ -326,6 +326,10 @@ class HistoricalDataExtractor:
                 if math is not None:
                     break
 
+        if reading is not None:
+            school['sat_reading'] = reading
+        if math is not None:
+            school['sat_math'] = math
         if reading is not None and math is not None:
             school['sat_composite'] = reading + math
 

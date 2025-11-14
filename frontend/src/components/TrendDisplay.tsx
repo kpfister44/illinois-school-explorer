@@ -6,12 +6,14 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import TrendTable from './TrendTable';
-import type { TrendWindow } from '@/lib/api/types';
+import HistoricalDataTable from './HistoricalDataTable';
+import type { TrendWindow, HistoricalYearlyData } from '@/lib/api/types';
 
 interface TrendDisplayProps {
   label: string;
   currentValue: number;
   trendData: TrendWindow | null | undefined;
+  historicalData?: HistoricalYearlyData;
   metricType: 'count' | 'score' | 'percentage';
   unit: string;
 }
@@ -20,6 +22,7 @@ export default function TrendDisplay({
   label,
   currentValue,
   trendData,
+  historicalData,
   metricType,
   unit,
 }: TrendDisplayProps) {
@@ -66,12 +69,21 @@ export default function TrendDisplay({
       </TooltipProvider>
 
       {isExpanded && hasTrendData && (
-        <TrendTable
-          currentValue={currentValue}
-          trendData={trendData}
-          metricType={metricType}
-          unit={unit}
-        />
+        <div className="space-y-4">
+          {historicalData && (
+            <HistoricalDataTable
+              data={historicalData}
+              metricType={metricType}
+              metricLabel={label}
+            />
+          )}
+          <TrendTable
+            currentValue={currentValue}
+            trendData={trendData}
+            metricType={metricType}
+            unit={unit}
+          />
+        </div>
       )}
     </div>
   );
