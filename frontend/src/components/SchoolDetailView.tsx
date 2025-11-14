@@ -122,6 +122,25 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
               <CardDescription>Average Grade 11 performance (out of 36)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {school.metrics.act.overall_avg !== null && (
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Overall</span>
+                    <span className="text-sm font-bold">
+                      {school.metrics.act.overall_avg.toFixed(1)}
+                    </span>
+                  </div>
+                  <Progress value={(school.metrics.act.overall_avg / 36) * 100} />
+                  <TrendDisplay
+                    label="ACT Overall"
+                    currentValue={school.metrics.act.overall_avg}
+                    trendData={school.metrics.trends?.act}
+                    historicalData={school.metrics.historical?.act}
+                    metricType="score"
+                    unit="points"
+                  />
+                </div>
+              )}
               {school.metrics.act.ela_avg !== null && (
                 <div>
                   <div className="flex justify-between mb-2">
@@ -174,25 +193,6 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                     currentValue={school.metrics.act.science_avg}
                     trendData={school.metrics.trends?.act}
                     historicalData={school.metrics.historical?.act_science}
-                    metricType="score"
-                    unit="points"
-                  />
-                </div>
-              )}
-              {school.metrics.act.overall_avg !== null && (
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">Overall</span>
-                    <span className="text-sm font-bold">
-                      {school.metrics.act.overall_avg.toFixed(1)}
-                    </span>
-                  </div>
-                  <Progress value={(school.metrics.act.overall_avg / 36) * 100} />
-                  <TrendDisplay
-                    label="ACT Overall"
-                    currentValue={school.metrics.act.overall_avg}
-                    trendData={school.metrics.trends?.act}
-                    historicalData={school.metrics.historical?.act}
                     metricType="score"
                     unit="points"
                   />
