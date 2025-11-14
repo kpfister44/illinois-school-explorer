@@ -20,6 +20,7 @@ describe('TrendTable', () => {
         trendData={mockTrendData}
         metricType="count"
         unit="students"
+        metricLabel="Enrollment"
       />
     );
 
@@ -35,6 +36,7 @@ describe('TrendTable', () => {
         trendData={mockTrendData}
         metricType="count"
         unit="students"
+        metricLabel="Enrollment"
       />
     );
 
@@ -43,17 +45,18 @@ describe('TrendTable', () => {
     expect(screen.getByText('+200 students')).toBeInTheDocument();
   });
 
-  it('displays percentage changes when above threshold', () => {
+  it('displays metric-specific trends subtitle', () => {
     render(
       <TrendTable
         currentValue={1775}
         trendData={mockTrendData}
         metricType="count"
         unit="students"
+        metricLabel="Enrollment"
       />
     );
 
-    expect(screen.getByText(/\+2\.9%/)).toBeInTheDocument();
+    expect(screen.getByText('Enrollment Trends')).toBeInTheDocument();
   });
 
   it('displays N/A for null trend windows', () => {
@@ -69,11 +72,12 @@ describe('TrendTable', () => {
         trendData={partialData}
         metricType="count"
         unit="students"
+        metricLabel="Enrollment"
       />
     );
 
     const naElements = screen.getAllByText('N/A');
-    expect(naElements).toHaveLength(4);
+    expect(naElements).toHaveLength(2);
   });
 
   it('displays arrows based on trend direction', () => {
@@ -89,6 +93,7 @@ describe('TrendTable', () => {
         trendData={mixedData}
         metricType="count"
         unit="students"
+        metricLabel="Enrollment"
       />
     );
 
@@ -101,17 +106,19 @@ describe('TrendTable', () => {
     expect(flatCell?.textContent).toContain('→');
   });
 
-  it('suppresses percentage when below threshold', () => {
+  it('renders change values without percent column', () => {
     render(
       <TrendTable
         currentValue={30}
         trendData={{ one_year: 5, three_year: null, five_year: null }}
         metricType="count"
         unit="students"
+        metricLabel="Enrollment"
       />
     );
 
     expect(screen.getByText('+5 students')).toBeInTheDocument();
-    expect(screen.getByText('—')).toBeInTheDocument();
+    // Percent column no longer exists
+    expect(screen.queryByText(/\+\d+\.\d+%/)).not.toBeInTheDocument();
   });
 });

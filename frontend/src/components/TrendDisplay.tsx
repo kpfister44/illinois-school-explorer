@@ -82,6 +82,7 @@ export default function TrendDisplay({
             trendData={trendData}
             metricType={metricType}
             unit={unit}
+            metricLabel={label}
           />
         </div>
       )}
