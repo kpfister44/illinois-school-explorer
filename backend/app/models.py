@@ -79,6 +79,38 @@ class TrendMetrics(BaseModel):
     act: Optional[TrendWindow] = None
 
 
+class HistoricalYearlyData(BaseModel):
+    """Historical values by year for a single metric (2019-2025)."""
+
+    yr_2025: Optional[float] = None
+    yr_2024: Optional[float] = None
+    yr_2023: Optional[float] = None
+    yr_2022: Optional[float] = None
+    yr_2021: Optional[float] = None
+    yr_2020: Optional[float] = None
+    yr_2019: Optional[float] = None
+
+
+class HistoricalMetrics(BaseModel):
+    """Historical yearly data for all metrics."""
+
+    enrollment: Optional[HistoricalYearlyData] = None
+    act: Optional[HistoricalYearlyData] = None
+    act_ela: Optional[HistoricalYearlyData] = None
+    act_math: Optional[HistoricalYearlyData] = None
+    act_science: Optional[HistoricalYearlyData] = None
+    el: Optional[HistoricalYearlyData] = None
+    low_income: Optional[HistoricalYearlyData] = None
+    white: Optional[HistoricalYearlyData] = None
+    black: Optional[HistoricalYearlyData] = None
+    hispanic: Optional[HistoricalYearlyData] = None
+    asian: Optional[HistoricalYearlyData] = None
+    pacific_islander: Optional[HistoricalYearlyData] = None
+    native_american: Optional[HistoricalYearlyData] = None
+    two_or_more: Optional[HistoricalYearlyData] = None
+    mena: Optional[HistoricalYearlyData] = None
+
+
 class SchoolMetrics(BaseModel):
     """Composite metrics for a school including all categories."""
 
@@ -90,6 +122,7 @@ class SchoolMetrics(BaseModel):
     iar_math_proficiency_pct: Optional[float] = None
     iar_overall_proficiency_pct: Optional[float] = None
     trends: Optional[TrendMetrics] = None
+    historical: Optional[HistoricalMetrics] = None
 
 
 class SchoolDetail(BaseModel):
