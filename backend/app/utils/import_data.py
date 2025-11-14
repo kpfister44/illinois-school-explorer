@@ -349,10 +349,13 @@ def prepare_school_records(
             "pct_two_or_more": clean_percentage(row.get("% Student Enrollment - Two or More Races")),
             "pct_mena": clean_percentage(row.get("% Student Enrollment - Middle Eastern or North African")),
         }
-        # Use new trend calculator
+        # Use trend calculator to add both trends and historical yearly data
         if calculator is not None:
             trends = calculator.calculate_trends_for_school(record["rcdts"], record)
             record.update(trends)
+
+            historical_yearly = calculator.extract_historical_yearly_data(record["rcdts"], record)
+            record.update(historical_yearly)
 
         records.append(record)
     return records
