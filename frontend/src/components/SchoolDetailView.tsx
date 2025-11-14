@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, ArrowLeft } from 'lucide-react';
 import { useComparison } from '@/contexts/ComparisonContext';
+import { useNavigate } from 'react-router-dom';
 import TrendDisplay from '@/components/TrendDisplay';
 import type { SchoolDetail } from '@/lib/api/types';
 
@@ -36,6 +37,7 @@ function formatPercent(value: number | null): string {
 
 export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
   const { addToComparison, removeFromComparison, isInComparison, canAddMore } = useComparison();
+  const navigate = useNavigate();
   const inComparison = isInComparison(school.rcdts);
 
   const handleComparisonToggle = () => {
@@ -46,8 +48,20 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
     }
   };
 
+  const handleBack = () => {
+    navigate('/');
+  };
+
   return (
     <div className="space-y-6">
+      <Button
+        variant="ghost"
+        onClick={handleBack}
+        className="gap-2 px-0 hover:bg-transparent"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back
+      </Button>
       <div className="border-b border-border pb-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
