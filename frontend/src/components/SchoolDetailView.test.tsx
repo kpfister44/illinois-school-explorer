@@ -2,7 +2,7 @@
 // ABOUTME: Verifies tabbed interface and metric display
 
 import { render, screen } from '@testing-library/react';
-import { userEvent } from '@testing-library/user-event';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ComparisonProvider } from '@/contexts/ComparisonContext';
 import SchoolDetailView from './SchoolDetailView';
@@ -151,5 +151,117 @@ describe('SchoolDetailView', () => {
     renderWithProviders(<SchoolDetailView school={mockSchoolDetail} />);
 
     expect(screen.getByRole('button', { name: /add to compare/i })).toBeDisabled();
+  });
+});
+
+describe('Trend Display', () => {
+  it('displays trend button for enrollment', () => {
+    const schoolWithTrends: SchoolDetail = {
+      ...mockSchoolDetail,
+      metrics: {
+        ...mockSchoolDetail.metrics,
+        trends: {
+          enrollment: {
+            one_year: 50,
+            three_year: 125,
+            five_year: 200,
+          },
+        },
+      },
+    };
+
+    renderWithProviders(<SchoolDetailView school={schoolWithTrends} />);
+
+    expect(screen.getByRole('button', { name: /show trends/i })).toBeInTheDocument();
+  });
+
+  it('shows enrollment trend data when expanded', async () => {
+    const user = userEvent.setup();
+    const schoolWithTrends: SchoolDetail = {
+      ...mockSchoolDetail,
+      metrics: {
+        ...mockSchoolDetail.metrics,
+        enrollment: 1775,
+        trends: {
+          enrollment: {
+            one_year: 50,
+            three_year: 125,
+            five_year: 200,
+          },
+        },
+      },
+    };
+
+    renderWithProviders(<SchoolDetailView school={schoolWithTrends} />);
+
+    const button = screen.getByRole('button', { name: /show trends/i });
+    await user.click(button);
+
+    expect(screen.getByText('+50 students')).toBeInTheDocument();
+  });
+
+  it('shows ACT ELA trend button in academics tab', async () => {
+    const user = userEvent.setup();
+    const schoolWithTrends: SchoolDetail = {
+      ...mockSchoolDetail,
+      metrics: {
+        ...mockSchoolDetail.metrics,
+        act: {
+          ela_avg: 17.7,
+          math_avg: 18.2,
+          science_avg: 18.9,
+          overall_avg: 17.95,
+        },
+        trends: {
+          act_ela: {
+            one_year: -0.5,
+            three_year: -1.2,
+            five_year: 0.8,
+          },
+        },
+      },
+    };
+
+    renderWithProviders(<SchoolDetailView school={schoolWithTrends} />);
+
+    const academicsTab = screen.getByRole('tab', { name: /academics/i });
+    await user.click(academicsTab);
+
+    const trendButtons = screen.getAllByRole('button', { name: /show trends/i });
+    expect(trendButtons.length).toBeGreaterThan(0);
+  });
+
+  it('shows demographic trend buttons in demographics tab', async () => {
+    const user = userEvent.setup();
+    const schoolWithTrends: SchoolDetail = {
+      ...mockSchoolDetail,
+      metrics: {
+        ...mockSchoolDetail.metrics,
+        demographics: {
+          el_percentage: 29.0,
+          low_income_percentage: 38.4,
+        },
+        trends: {
+          el_percentage: {
+            one_year: 2.0,
+            three_year: 5.0,
+            five_year: null,
+          },
+          low_income_percentage: {
+            one_year: -1.5,
+            three_year: -3.0,
+            five_year: -5.0,
+          },
+        },
+      },
+    };
+
+    renderWithProviders(<SchoolDetailView school={schoolWithTrends} />);
+
+    const demographicsTab = screen.getByRole('tab', { name: /demographics/i });
+    await user.click(demographicsTab);
+
+    const trendButtons = screen.getAllByRole('button', { name: /show trends/i });
+    expect(trendButtons.length).toBeGreaterThan(0);
   });
 });

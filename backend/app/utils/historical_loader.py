@@ -26,7 +26,16 @@ DIVERSITY_COLUMNS: Dict[str, Iterable[str]] = {
     "mena": ["% student enrollment - middle eastern or north african"],
 }
 
-SAT_COLUMNS = [
+SAT_READING_COLUMNS = [
+    "sat reading average score",
+    "sat ebrw average score",
+]
+
+SAT_MATH_COLUMNS = [
+    "sat math average score",
+]
+
+SAT_COMPOSITE_COLUMNS = [
     "average sat composite score",
     "sat composite score - grade 11",
     "sat total score",
@@ -176,12 +185,27 @@ class HistoricalDataLoader:
             diversity[metric] = cleaned
 
     def _apply_sat(self, row: Mapping[str, Any], record: Dict[str, Any]) -> None:
-        value = self._pick_value(row, SAT_COLUMNS)
-        if value is None:
+        # Try to find pre-computed composite first
+        composite_value = self._pick_value(row, SAT_COMPOSITE_COLUMNS)
+        if composite_value is not None:
+            cleaned = self._to_float(composite_value)
+            if cleaned is not None:
+                record["sat_composite"] = cleaned
+                return
+
+        # If no composite, compute from reading + math
+        reading_value = self._pick_value(row, SAT_READING_COLUMNS)
+        math_value = self._pick_value(row, SAT_MATH_COLUMNS)
+
+        if reading_value is None or math_value is None:
             return
-        cleaned = self._to_float(value)
-        if cleaned is not None:
-            record["sat_composite"] = cleaned
+
+        reading = self._to_float(reading_value)
+        math = self._to_float(math_value)
+
+        if reading is not None and math is not None:
+            # SAT composite is the sum of reading and math (out of 1600)
+            record["sat_composite"] = reading + math
 
     def _apply_act(self, row: Mapping[str, Any], record: Dict[str, Any]) -> None:
         scores: Dict[str, float] = {}
