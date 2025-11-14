@@ -3,8 +3,8 @@
 
 export default function Footer() {
   return (
-    <footer className="border-t border-border mt-12 py-6">
-      <div className="container mx-auto px-4">
+    <footer className="border-t border-border">
+      <div className="mx-auto flex max-w-7xl items-center justify-center px-4 py-6 sm:px-6 lg:px-8">
         <p className="text-center text-sm text-muted-foreground">
           Data Source:{' '}
           <a
