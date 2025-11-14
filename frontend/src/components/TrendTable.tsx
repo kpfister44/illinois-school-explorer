@@ -30,11 +30,11 @@ export default function TrendTable({ currentValue, trendData, metricType, unit, 
   return (
     <div className="mt-2 text-sm">
       <h4 className="text-sm font-medium mb-2 text-muted-foreground">{metricLabel} Trends</h4>
-      <table className="w-full">
+      <table className="w-full table-fixed">
         <thead>
           <tr className="text-muted-foreground">
-            <th className="text-left font-medium pb-2">Period</th>
-            <th className="text-left font-medium pb-2">Change</th>
+            <th className="text-left font-medium pb-2 w-1/2">Period</th>
+            <th className="text-left font-medium pb-2 w-1/2">Change</th>
           </tr>
         </thead>
         <tbody>
@@ -42,8 +42,8 @@ export default function TrendTable({ currentValue, trendData, metricType, unit, 
             if (row.delta === null) {
               return (
                 <tr key={row.label} className="border-t border-border">
-                  <td className="py-2">{row.label}</td>
-                  <td className="py-2 text-muted-foreground">N/A</td>
+                  <td className="py-2 w-1/2">{row.label}</td>
+                  <td className="py-2 w-1/2 text-muted-foreground">N/A</td>
                 </tr>
               );
             }
@@ -53,8 +53,8 @@ export default function TrendTable({ currentValue, trendData, metricType, unit, 
 
             return (
               <tr key={row.label} className="border-t border-border">
-                <td className="py-2">{row.label}</td>
-                <td className="py-2">
+                <td className="py-2 w-1/2">{row.label}</td>
+                <td className="py-2 w-1/2">
                   <span className="inline-flex items-center gap-1">
                     <span aria-hidden="true">{arrow}</span>
                     <span>{changeText}</span>

@@ -34,11 +34,11 @@ export default function HistoricalDataTable({
   return (
     <div className="mt-2 text-sm">
       <h4 className="text-sm font-medium mb-2 text-muted-foreground">Historical {metricLabel}</h4>
-      <table className="w-full">
+      <table className="w-full table-fixed">
         <thead>
           <tr className="text-muted-foreground">
-            <th className="text-left font-medium pb-2">Year</th>
-            <th className="text-left font-medium pb-2">Value</th>
+            <th className="text-left font-medium pb-2 w-1/2">Year</th>
+            <th className="text-left font-medium pb-2 w-1/2">Value</th>
           </tr>
         </thead>
         <tbody>
@@ -48,8 +48,8 @@ export default function HistoricalDataTable({
 
             return (
               <tr key={year} className="border-t border-border">
-                <td className="py-2">{year}</td>
-                <td className="py-2">{formatValue(value)}</td>
+                <td className="py-2 w-1/2">{year}</td>
+                <td className="py-2 w-1/2">{formatValue(value)}</td>
               </tr>
             );
           })}
