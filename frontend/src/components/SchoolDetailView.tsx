@@ -136,7 +136,7 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
               <CardDescription>Average Grade 11 performance (out of 36)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {school.metrics.act?.overall_avg !== null && (
+              {school.metrics.act && school.metrics.act.overall_avg !== null && (
                 <div>
                   <div className="flex justify-between mb-2">
                     <span className="text-sm font-medium">Overall</span>
@@ -155,7 +155,7 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                   />
                 </div>
               )}
-              {school.metrics.act?.ela_avg !== null && (
+              {school.metrics.act && school.metrics.act.ela_avg !== null && (
                 <div>
                   <div className="flex justify-between mb-2">
                     <span className="text-sm font-medium">ELA</span>
@@ -174,7 +174,7 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                   />
                 </div>
               )}
-              {school.metrics.act?.math_avg !== null && (
+              {school.metrics.act && school.metrics.act.math_avg !== null && (
                 <div>
                   <div className="flex justify-between mb-2">
                     <span className="text-sm font-medium">Math</span>
@@ -193,7 +193,7 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                   />
                 </div>
               )}
-              {school.metrics.act?.science_avg !== null && (
+              {school.metrics.act && school.metrics.act.science_avg !== null && (
                 <div>
                   <div className="flex justify-between mb-2">
                     <span className="text-sm font-medium">Science</span>
