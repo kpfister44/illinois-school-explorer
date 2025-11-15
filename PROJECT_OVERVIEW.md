@@ -5,6 +5,17 @@
 
 A full-stack web application for exploring and comparing Illinois K-12 schools using official 2025 Report Card data. Search 3,827 schools, view detailed metrics, compare schools side-by-side, and browse top-performing schools by ACT or IAR scores.
 
+## 🚀 Production Deployment
+
+**Live Application:** https://illinois-school-explorer.vercel.app
+**Backend API:** https://illinois-school-explorer-production.up.railway.app
+**API Documentation:** https://illinois-school-explorer-production.up.railway.app/docs
+
+**Platforms:**
+- Frontend: Vercel (auto-deploy from `main` branch)
+- Backend: Railway (auto-deploy from `main` branch)
+- Database: SQLite (3.6MB file deployed with backend)
+
 ---
 
 ## Architecture
@@ -24,9 +35,13 @@ A full-stack web application for exploring and comparing Illinois K-12 schools u
 - Testing: pytest with in-memory test database
 
 **Communication:**
-- Frontend runs on `http://localhost:5173` (Vite dev server)
-- Backend runs on `http://localhost:8000` (uvicorn)
-- CORS pre-configured for local development
+- **Development:**
+  - Frontend: `http://localhost:5173` (Vite dev server)
+  - Backend: `http://localhost:8000` (uvicorn)
+- **Production:**
+  - Frontend: `https://illinois-school-explorer.vercel.app`
+  - Backend: `https://illinois-school-explorer-production.up.railway.app`
+- CORS configured for both local development and production
 - API contract enforced via TypeScript types matching Pydantic models
 
 See [`frontend/README.md`](frontend/README.md) and [`backend/README.md`](backend/README.md) for detailed setup, API documentation, and component patterns.
@@ -295,6 +310,64 @@ uv run python -m app.utils.import_data ../2025-Report-Card-Public-Data-Set.xlsx
 **Important:** Drop `data/schools.db` before re-importing if schema changed (trend columns, new fields, etc.)
 
 See [`backend/README.md`](backend/README.md) for database operations and troubleshooting.
+
+---
+
+## Production Deployment
+
+### Deployment Platforms
+
+**Frontend (Vercel):**
+- **URL:** https://illinois-school-explorer.vercel.app
+- **Framework:** Vite (auto-detected)
+- **Root Directory:** `frontend`
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
+- **Auto-deploy:** Enabled from `main` branch
+
+**Backend (Railway):**
+- **URL:** https://illinois-school-explorer-production.up.railway.app
+- **Framework:** Python (Nixpacks)
+- **Root Directory:** `backend`
+- **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- **Auto-deploy:** Enabled from `main` branch
+
+### Environment Variables
+
+**Frontend (Vercel):**
+```
+VITE_API_URL=https://illinois-school-explorer-production.up.railway.app
+```
+
+**Backend (Railway):**
+```
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://illinois-school-explorer.vercel.app
+```
+
+### Deployment Workflow
+
+1. **Make changes locally** - Develop and test using local dev servers
+2. **Run tests** - Ensure all tests pass before deploying
+3. **Commit and push to `main`** - Both platforms auto-deploy on push
+4. **Monitor deployments:**
+   - Railway: https://railway.app/dashboard
+   - Vercel: https://vercel.com/dashboard
+5. **Verify production** - Test deployed app at https://illinois-school-explorer.vercel.app
+
+**Deployment Times:**
+- Backend (Railway): 2-3 minutes (includes `uv sync` and build)
+- Frontend (Vercel): 1-2 minutes (includes `npm install` and build)
+
+### Configuration Files
+
+**Backend:**
+- `backend/Procfile` - Process configuration
+- `backend/railway.toml` - Railway settings (health check, restart policy)
+- `backend/nixpacks.toml` - Build configuration (Python 3.11, uv)
+
+**Frontend:**
+- `frontend/tsconfig.app.json` - TypeScript build config
+- `frontend/vite.config.ts` - Vite build settings
 
 ---
 

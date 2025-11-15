@@ -4,6 +4,12 @@ A full-stack web application for searching and comparing Illinois K-12 schools u
 
 **Live Data:** 3,827 schools with enrollment, test scores, demographics, diversity, trends, and 7 years of historical data (2019-2025).
 
+## 🚀 Live Production App
+
+**Frontend:** https://illinois-school-explorer.vercel.app
+**Backend API:** https://illinois-school-explorer-production.up.railway.app
+**API Docs:** https://illinois-school-explorer-production.up.railway.app/docs
+
 ---
 
 ## Quick Start
@@ -126,8 +132,9 @@ See [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) for complete details.
 
 ## API Endpoints
 
-**Base URL:** http://localhost:8000
-**Interactive Docs:** http://localhost:8000/docs
+**Development:** http://localhost:8000
+**Production:** https://illinois-school-explorer-production.up.railway.app
+**Interactive Docs:** http://localhost:8000/docs (dev) | https://illinois-school-explorer-production.up.railway.app/docs (prod)
 
 | Endpoint | Description |
 |----------|-------------|
@@ -220,11 +227,34 @@ See [CLAUDE.md](CLAUDE.md) for complete development guidelines.
 
 ---
 
+## Production Deployment
+
+**Frontend (Vercel):**
+- **URL:** https://illinois-school-explorer.vercel.app
+- **Deploy:** Auto-deploys from `main` branch on GitHub
+- **Environment Variables:**
+  - `VITE_API_URL`: `https://illinois-school-explorer-production.up.railway.app`
+
+**Backend (Railway):**
+- **URL:** https://illinois-school-explorer-production.up.railway.app
+- **Deploy:** Auto-deploys from `main` branch on GitHub
+- **Environment Variables:**
+  - `ALLOWED_ORIGINS`: Comma-separated list of allowed frontend URLs
+- **Database:** SQLite with 3.6MB data file deployed with app
+
+**Deployment Process:**
+1. Push changes to `main` branch
+2. Railway auto-deploys backend (2-3 min build)
+3. Vercel auto-deploys frontend (1-2 min build)
+4. Both services automatically restart with new code
+
+---
+
 ## Future Enhancements
 
 **Data:**
 - Add graduation rates, teacher statistics
-- Disceplenary data (suspension, expulsions)
+- Disciplinary data (suspension, expulsions)
 - School ratings and designations
 
 **Features:**
@@ -234,9 +264,9 @@ See [CLAUDE.md](CLAUDE.md) for complete development guidelines.
 - User accounts and saved comparisons
 
 **Infrastructure:**
-- Deploy to production (Vercel + Railway/Render)
 - API authentication and rate limiting
-- Performance monitoring
+- Performance monitoring and analytics
+- CDN for static assets
 
 ---
 
