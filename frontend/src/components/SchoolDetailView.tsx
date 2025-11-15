@@ -130,90 +130,136 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
         </TabsContent>
 
         <TabsContent value="academics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>ACT Scores</CardTitle>
-              <CardDescription>Average Grade 11 performance (out of 36)</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {school.metrics.act && school.metrics.act.overall_avg !== null && (
+          {/* Show ACT Scores for high schools */}
+          {school.metrics.act && (
+            <Card>
+              <CardHeader>
+                <CardTitle>ACT Scores</CardTitle>
+                <CardDescription>Average Grade 11 performance (out of 36)</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {school.metrics.act.overall_avg !== null && (
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">Overall</span>
+                      <span className="text-sm font-bold">
+                        {school.metrics.act.overall_avg.toFixed(1)}
+                      </span>
+                    </div>
+                    <Progress value={(school.metrics.act.overall_avg / 36) * 100} />
+                    <TrendDisplay
+                      label="ACT Overall"
+                      currentValue={school.metrics.act.overall_avg}
+                      trendData={school.metrics.trends?.act}
+                      historicalData={school.metrics.historical?.act}
+                      metricType="score"
+                      unit="points"
+                    />
+                  </div>
+                )}
+                {school.metrics.act.ela_avg !== null && (
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">ELA</span>
+                      <span className="text-sm font-bold">
+                        {school.metrics.act.ela_avg.toFixed(1)}
+                      </span>
+                    </div>
+                    <Progress value={(school.metrics.act.ela_avg / 36) * 100} />
+                    <TrendDisplay
+                      label="ACT ELA"
+                      currentValue={school.metrics.act.ela_avg}
+                      trendData={school.metrics.trends?.act}
+                      historicalData={school.metrics.historical?.act_ela}
+                      metricType="score"
+                      unit="points"
+                    />
+                  </div>
+                )}
+                {school.metrics.act.math_avg !== null && (
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">Math</span>
+                      <span className="text-sm font-bold">
+                        {school.metrics.act.math_avg.toFixed(1)}
+                      </span>
+                    </div>
+                    <Progress value={(school.metrics.act.math_avg / 36) * 100} />
+                    <TrendDisplay
+                      label="ACT Math"
+                      currentValue={school.metrics.act.math_avg}
+                      trendData={school.metrics.trends?.act}
+                      historicalData={school.metrics.historical?.act_math}
+                      metricType="score"
+                      unit="points"
+                    />
+                  </div>
+                )}
+                {school.metrics.act.science_avg !== null && (
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">Science</span>
+                      <span className="text-sm font-bold">
+                        {school.metrics.act.science_avg.toFixed(1)}
+                      </span>
+                    </div>
+                    <Progress value={(school.metrics.act.science_avg / 36) * 100} />
+                    <TrendDisplay
+                      label="ACT Science"
+                      currentValue={school.metrics.act.science_avg}
+                      trendData={school.metrics.trends?.act}
+                      historicalData={school.metrics.historical?.act_science}
+                      metricType="score"
+                      unit="points"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Show IAR Scores for elementary/middle schools */}
+          {school.metrics.iar_overall_proficiency_pct !== null && (
+            <Card>
+              <CardHeader>
+                <CardTitle>IAR Scores</CardTitle>
+                <CardDescription>Illinois Assessment of Readiness proficiency rates</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">Overall</span>
+                    <span className="text-sm font-medium">Overall Proficiency</span>
                     <span className="text-sm font-bold">
-                      {school.metrics.act.overall_avg.toFixed(1)}
+                      {school.metrics.iar_overall_proficiency_pct.toFixed(1)}%
                     </span>
                   </div>
-                  <Progress value={(school.metrics.act.overall_avg / 36) * 100} />
-                  <TrendDisplay
-                    label="ACT Overall"
-                    currentValue={school.metrics.act.overall_avg}
-                    trendData={school.metrics.trends?.act}
-                    historicalData={school.metrics.historical?.act}
-                    metricType="score"
-                    unit="points"
-                  />
+                  <Progress value={school.metrics.iar_overall_proficiency_pct} />
                 </div>
-              )}
-              {school.metrics.act && school.metrics.act.ela_avg !== null && (
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">ELA</span>
-                    <span className="text-sm font-bold">
-                      {school.metrics.act.ela_avg.toFixed(1)}
-                    </span>
+                {school.metrics.iar_ela_proficiency_pct !== null && (
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">ELA Proficiency</span>
+                      <span className="text-sm font-bold">
+                        {school.metrics.iar_ela_proficiency_pct.toFixed(1)}%
+                      </span>
+                    </div>
+                    <Progress value={school.metrics.iar_ela_proficiency_pct} />
                   </div>
-                  <Progress value={(school.metrics.act.ela_avg / 36) * 100} />
-                  <TrendDisplay
-                    label="ACT ELA"
-                    currentValue={school.metrics.act.ela_avg}
-                    trendData={school.metrics.trends?.act}
-                    historicalData={school.metrics.historical?.act_ela}
-                    metricType="score"
-                    unit="points"
-                  />
-                </div>
-              )}
-              {school.metrics.act && school.metrics.act.math_avg !== null && (
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">Math</span>
-                    <span className="text-sm font-bold">
-                      {school.metrics.act.math_avg.toFixed(1)}
-                    </span>
+                )}
+                {school.metrics.iar_math_proficiency_pct !== null && (
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">Math Proficiency</span>
+                      <span className="text-sm font-bold">
+                        {school.metrics.iar_math_proficiency_pct.toFixed(1)}%
+                      </span>
+                    </div>
+                    <Progress value={school.metrics.iar_math_proficiency_pct} />
                   </div>
-                  <Progress value={(school.metrics.act.math_avg / 36) * 100} />
-                  <TrendDisplay
-                    label="ACT Math"
-                    currentValue={school.metrics.act.math_avg}
-                    trendData={school.metrics.trends?.act}
-                    historicalData={school.metrics.historical?.act_math}
-                    metricType="score"
-                    unit="points"
-                  />
-                </div>
-              )}
-              {school.metrics.act && school.metrics.act.science_avg !== null && (
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">Science</span>
-                    <span className="text-sm font-bold">
-                      {school.metrics.act.science_avg.toFixed(1)}
-                    </span>
-                  </div>
-                  <Progress value={(school.metrics.act.science_avg / 36) * 100} />
-                  <TrendDisplay
-                    label="ACT Science"
-                    currentValue={school.metrics.act.science_avg}
-                    trendData={school.metrics.trends?.act}
-                    historicalData={school.metrics.historical?.act_science}
-                    metricType="score"
-                    unit="points"
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="demographics" className="space-y-4">

@@ -90,6 +90,9 @@ export interface HistoricalMetrics {
 export interface SchoolMetrics {
   enrollment: number | null;
   act: ACTScores | null;
+  iar_ela_proficiency_pct: number | null;
+  iar_math_proficiency_pct: number | null;
+  iar_overall_proficiency_pct: number | null;
   demographics: Demographics;
   diversity: Diversity;
   trends?: TrendMetrics;
