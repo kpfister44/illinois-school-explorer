@@ -308,6 +308,15 @@ def create_fts_index(target_engine):
                 """
             )
         )
+        # Populate FTS table with existing data from schools table
+        conn.execute(
+            text(
+                """
+                INSERT INTO schools_fts(rowid, school_name, city, district)
+                SELECT id, school_name, city, district FROM schools
+                """
+            )
+        )
         conn.commit()
 
 
