@@ -6,8 +6,8 @@
 React + TypeScript frontend for the Illinois School Explorer application.
 
 **Tech:** React 18, TypeScript 5, Vite 5, shadcn/ui, Tailwind CSS 3
-**Testing:** 16 unit tests, 5 E2E tests (Vitest + Playwright)
-**Status:** Phase 3 complete, ready for Phase 4 (Core Components)
+**Testing:** 23 unit test files, 6 E2E test files (Vitest + Playwright)
+**Status:** Fully implemented with search, detail views, comparison, leaderboards, and historical data visualization
 
 ---
 
@@ -25,20 +25,24 @@ React + TypeScript frontend for the Illinois School Explorer application.
 
 ---
 
-## Current Implementation Status
+## Features Implemented
 
-**Phase 3 Complete:**
-- ✅ React + Vite + TypeScript project initialized
-- ✅ shadcn/ui + Tailwind CSS 3 configured
-- ✅ Vitest unit testing (16 tests passing)
-- ✅ Playwright E2E testing (4 tests passing)
-- ✅ API client with TanStack Query
-- ✅ React Router with route structure (including `/top-scores` leaderboard)
-- ✅ SchoolCount component (demonstrates full integration)
-- ✅ Environment configuration
-- ✅ Comprehensive test coverage
+**Core Features:**
+- ✅ Full-text school search with autocomplete
+- ✅ School detail pages with all metrics
+- ✅ Multi-school comparison (2-5 schools)
+- ✅ Top 100 leaderboards (ACT/IAR by level)
+- ✅ Historical data visualization (2019-2025)
+- ✅ Trend analysis (1/3/5 year windows)
+- ✅ Comparison basket with persistent selection
+- ✅ Responsive design with shadcn/ui components
 
-**Phase 4 Next:** SearchBar, SchoolCard, SchoolDetail components
+**Technical:**
+- ✅ React Router navigation with header/footer
+- ✅ TanStack Query for server state
+- ✅ Toast notifications for user feedback
+- ✅ Comprehensive test coverage (23 unit + 6 E2E)
+- ✅ Type-safe API integration matching backend
 
 ---
 
@@ -116,44 +120,66 @@ frontend/
 
 ## Components
 
-### Implemented Components
+### Core Components
 
-**SchoolCount** (`src/components/SchoolCount.tsx`)
-- Fetches total school count from backend API
-- Demonstrates full integration: component → TanStack Query → API client → backend
-- Handles loading, error, and success states
-- Example usage in `src/routes/Home.tsx`
+**Search & Navigation:**
+- `SearchBar` (`src/components/SearchBar.tsx`) - Autocomplete search with keyboard navigation
+- `Footer` (`src/components/Footer.tsx`) - Application footer
+
+**School Display:**
+- `SchoolCard` (`src/components/SchoolCard.tsx`) - School summary card with add-to-compare button
+- `SchoolDetailView` (`src/components/SchoolDetailView.tsx`) - Complete school information display
+- `SchoolCount` (`src/components/SchoolCount.tsx`) - Total school count indicator
+
+**Comparison:**
+- `ComparisonBasket` (`src/components/ComparisonBasket.tsx`) - Persistent floating basket for selected schools
+- `ComparisonView` (`src/components/ComparisonView.tsx`) - Side-by-side school comparison table
+
+**Leaderboards:**
+- `TopScoresFilters` (`src/components/TopScoresFilters.tsx`) - Assessment/level filter tabs
+- `TopScoresTable` (`src/components/TopScoresTable.tsx`) - Ranked school listing
+
+**Data Visualization:**
+- `TrendDisplay` (`src/components/TrendDisplay.tsx`) - Trend indicator with color coding
+- `TrendTable` (`src/components/TrendTable.tsx`) - Multi-metric trend comparison
+- `HistoricalDataTable` (`src/components/HistoricalDataTable.tsx`) - Yearly data charts
 
 **shadcn/ui Components** (`src/components/ui/`)
-- Button (with variants: default, destructive, outline, ghost)
-- More components to be added in Phase 4
+- `button`, `card`, `table`, `tabs`, `badge`, `dialog`, `toast`, `input`, `skeleton`, `alert`, `progress`, `tooltip`, `command`
 
 ### Component Patterns
 
 All components follow these patterns:
 - TypeScript for type safety
 - ABOUTME comments at file top
-- TanStack Query for API calls
+- TanStack Query for API calls (where applicable)
 - Proper loading/error/success state handling
 - Unit tests with React Testing Library
-- E2E tests with Playwright (for user flows)
+- E2E tests with Playwright (for critical user flows)
 
 ---
 
 ## Routing Structure
 
-**Current Routes** (Phase 3):
-- `/` - Home page with search instructions
-- `/search` - Search results (placeholder)
-- `/school/:rcdts` - School detail page (placeholder)
-- `/compare` - School comparison (placeholder)
-- `/top-scores` - Top 100 leaderboard with CTA entry, filters, and table
+**Routes:**
+- `/` - Home page with search bar and introduction
+- `/search` - Search results with school cards
+- `/school/:rcdts` - School detail page with all metrics, trends, and historical data
+- `/compare` - Multi-school comparison table
+- `/top-scores` - Top 100 leaderboard (ACT/IAR filtered by level)
 - `*` - 404 Not Found page
 
+**Layout:**
+- Global header with site title and "Top Scores" nav link
+- Main content area with max-width container
+- Global footer with attribution
+- Floating comparison basket (persistent across pages)
+- Toast notifications for user feedback
+
 **Router Configuration:**
-- React Router v7
-- BrowserRouter for clean URLs
+- React Router v7 with BrowserRouter
 - TanStack Query provider wraps entire app
+- ComparisonContext for basket state
 - React Query DevTools enabled in development
 
 ---
@@ -215,8 +241,11 @@ test('user can search for schools', async ({ page }) => {
 
 **Types:** `src/lib/api/types.ts`
 - TypeScript interfaces matching backend Pydantic models
-- `School`, `SchoolDetail`, `SearchResponse`, `CompareResponse`
-- All metric types: `ACTScores`, `Demographics`, `Diversity`, `SchoolMetrics`
+- **Basic Types:** `School`, `SchoolDetail`, `SearchResponse`, `CompareResponse`
+- **Metrics:** `ACTScores`, `Demographics`, `Diversity`, `SchoolMetrics`
+- **Trends:** `TrendWindow`, `TrendMetrics`
+- **Historical:** `HistoricalYearlyData`, `HistoricalMetrics`
+- **Leaderboards:** `TopScoreEntry`, `TopScoresResponse`, `Assessment`, `SchoolLevel`
 
 ### TanStack Query Hooks
 
@@ -328,6 +357,45 @@ function ComparisonComponent({ rcdtsList }: { rcdtsList: string[] }) {
 
 ---
 
+#### 4. useTopScores - Top Scores Leaderboard
+
+Note: This hook is not yet exported from `queries.ts`. Use the `getTopScores` function directly with `useQuery`:
+
+```tsx
+import { useQuery } from '@tanstack/react-query';
+import { getTopScores, topScoresQueryKey } from '@/lib/api/queries';
+
+function TopScoresComponent() {
+  const { data, isLoading } = useQuery({
+    queryKey: topScoresQueryKey('act', 'high', 100),
+    queryFn: () => getTopScores({ assessment: 'act', level: 'high', limit: 100 }),
+  });
+
+  if (isLoading) return <div>Loading...</div>;
+
+  return (
+    <div>
+      {data?.results.map((entry, idx) => (
+        <div key={entry.rcdts}>
+          #{entry.rank} - {entry.school_name} - {entry.score}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+**Parameters:**
+- `assessment: 'act' | 'iar'` - Assessment type
+- `level: 'high' | 'middle' | 'elementary'` - School level
+- `limit: number` - Max results (default: 100, max: 100)
+
+**Returns:** `TopScoresResponse` with ranked `results` array
+
+**Caching:** Managed by TanStack Query
+
+---
+
 ### Query Key Factories
 
 For manual cache invalidation or prefetching:
@@ -336,13 +404,15 @@ For manual cache invalidation or prefetching:
 import {
   searchQueryKey,
   schoolDetailQueryKey,
-  compareQueryKey
+  compareQueryKey,
+  topScoresQueryKey
 } from '@/lib/api/queries';
 
 // Generate query keys
-const key1 = searchQueryKey('query', 10);      // ['search', 'query', 10]
-const key2 = schoolDetailQueryKey('rcdts');    // ['school', 'rcdts']
-const key3 = compareQueryKey(['r1', 'r2']);    // ['compare', 'r1,r2']
+const key1 = searchQueryKey('query', 10);           // ['search', 'query', 10]
+const key2 = schoolDetailQueryKey('rcdts');         // ['school', 'rcdts']
+const key3 = compareQueryKey(['r1', 'r2']);         // ['compare', 'r1,r2']
+const key4 = topScoresQueryKey('act', 'high', 100); // ['top-scores', 'act', 'high', 100]
 
 // Invalidate cache
 queryClient.invalidateQueries({ queryKey: searchQueryKey('elk', 10) });
@@ -395,9 +465,23 @@ const apiUrl = import.meta.env.VITE_API_URL;
 - Clear Vitest cache: `npx vitest --clearCache`
 - Update Playwright browsers: `npx playwright install`
 
-## Next Steps
+## Architecture Notes
 
-- Phase 4: Core Components (SearchBar, SchoolCard, SchoolDetail)
-- Phase 5: Comparison Feature
+**State Management:**
+- Server state: TanStack Query (caching, background refetch)
+- Comparison basket: React Context (`ComparisonContext`)
+- URL state: React Router (search params, route params)
 
-See `docs/plans/IMPLEMENTATION-ROADMAP.md` for full project plan.
+**Data Flow:**
+1. User interaction triggers query hook
+2. TanStack Query checks cache
+3. Cache miss → API client fetches from backend
+4. Response validated against TypeScript types
+5. Component re-renders with data
+
+**Key Patterns:**
+- Optimistic updates for comparison basket
+- Skeleton loaders during data fetch
+- Toast notifications for user feedback
+- Null-safe rendering for suppressed data
+- Color-coded trend indicators (green/red/gray)

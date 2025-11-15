@@ -51,33 +51,7 @@ illinois-school-explorer/
 └── README.md             # This file
 ```
 
-## Getting Started
-
-### For Implementation
-
-This project uses **phased implementation** with Claude Code's planning skills:
-
-1. **Start with Phase 1:**
-   - Open `docs/PROMPTS.md`
-   - Copy the "Phase 1: Backend Foundation" prompt
-   - Use `/superpowers:write-plan` in Claude Code
-   - Execute the generated plan
-
-2. **Continue through phases:**
-   - Phase 1: Backend Foundation (3 days)
-   - Phase 2: Backend API (2 days)
-   - Phase 3: Frontend Foundation (2 days)
-   - Phase 4: Core Components (3 days)
-   - Phase 5: Comparison Feature (2 days)
-
-3. **Review at each phase:**
-   - Verify all tests pass
-   - Check deliverables complete
-   - Use `/superpowers:request-code-review`
-
-See [IMPLEMENTATION-ROADMAP.md](docs/plans/IMPLEMENTATION-ROADMAP.md) for details.
-
-### For Running (After Implementation)
+### For Running
 
 ```bash
 # Backend
@@ -113,7 +87,7 @@ Visit http://localhost:5173
 - **File:** `data/2025-Report-Card-Public-Data-Set.xlsx`
 - **Size:** 39MB, 4,692 school records
 - **Sheets Used:** "General" (demographics, enrollment) + "ACT" (test scores)
-- **Source:** Illinois State Board of Education (2025 Report Card)
+- **Source:** Illinois State Board of Education (Report Cards)
 
 ## Future Enhancements
 
