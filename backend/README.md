@@ -59,235 +59,61 @@ Historical trend calculations pull from local files under `data/historical-repor
 
 ## API Endpoints
 
+**For complete API documentation, see [`docs/API_ENDPOINTS.md`](docs/API_ENDPOINTS.md)**
+
 ### Base URL
 - **Development:** `http://localhost:8000`
 - **API Docs:** `http://localhost:8000/docs` (Swagger UI)
 
-### 1. Health Check
+### Quick Reference
+
+| Endpoint | Method | Description | Details |
+|----------|--------|-------------|---------|
+| `/health` | GET | Health check | [→](docs/API_ENDPOINTS.md#health-check) |
+| `/api/search` | GET | Search schools by name, city, or district | [→](docs/API_ENDPOINTS.md#search-schools) |
+| `/api/schools/{rcdts}` | GET | Get complete school information | [→](docs/API_ENDPOINTS.md#get-school-detail) |
+| `/api/schools/compare` | GET | Compare 2-5 schools side-by-side | [→](docs/API_ENDPOINTS.md#compare-schools) |
+| `/api/top-scores` | GET | Ranked list of top schools by assessment | [→](docs/API_ENDPOINTS.md#get-top-scores) |
+
+### Common Examples
+
+#### Search Schools
 
 ```http
-GET /health
+GET /api/search?q=elk+grove&limit=5
 ```
 
-**Response:**
-```json
-{
-  "status": "ok"
-}
-```
+Quick search with FTS5 full-text indexing. See [full documentation](docs/API_ENDPOINTS.md#search-schools).
 
----
-
-### 2. Search Schools
+#### Get School Detail
 
 ```http
-GET /api/search?q={query}&limit={limit}
+GET /api/schools/05-016-2140-17-0002
 ```
 
-**Description:** Full-text search across school names, cities, and districts using SQLite FTS5.
+Returns complete school data including metrics, trends, and historical data. See [full documentation](docs/API_ENDPOINTS.md#get-school-detail).
 
-**Query Parameters:**
-- `q` (required): Search query string (min length: 1)
-- `limit` (optional): Max results (default: 10, max: 50)
-
-**Example Request:**
-```bash
-curl "http://localhost:8000/api/search?q=elk+grove&limit=5"
-```
-
-**Example Response:**
-```json
-{
-  "results": [
-    {
-      "id": 123,
-      "rcdts": "05-016-2140-17-0002",
-      "school_name": "Elk Grove High School",
-      "city": "Elk Grove Village",
-      "district": "Township HSD 214",
-      "school_type": "High School"
-    }
-  ],
-  "total": 1
-}
-```
-
-**Search Behavior:**
-- Case-insensitive
-- Searches: school name, city, district
-- Results ranked by relevance
-- Special characters automatically sanitized
-- Returns empty array if no matches
-
-**Error Responses:**
-- `422`: Missing or invalid query parameter
-
----
-
-### 3. Get School Detail
+#### Compare Schools
 
 ```http
-GET /api/schools/{rcdts}
+GET /api/schools/compare?rcdts=05-016-2140-17-0001,05-016-2140-17-0002
 ```
 
-**Description:** Retrieve complete school information including all metrics.
+Side-by-side comparison of 2-5 schools. See [full documentation](docs/API_ENDPOINTS.md#compare-schools).
 
-**Path Parameters:**
-- `rcdts` (required): School RCDTS identifier (e.g., `05-016-2140-17-0002`)
-
-**Example Request:**
-```bash
-curl "http://localhost:8000/api/schools/05-016-2140-17-0002"
-```
-
-**Example Response:**
-```json
-{
-  "id": 123,
-  "rcdts": "05-016-2140-17-0002",
-  "school_name": "Elk Grove High School",
-  "city": "Elk Grove Village",
-  "district": "Township HSD 214",
-  "county": "Cook",
-  "school_type": "High School",
-  "grades_served": "9-12",
-  "metrics": {
-    "enrollment": 1775,
-    "act": {
-      "ela_avg": 17.7,
-      "math_avg": 18.2,
-      "science_avg": 18.9,
-      "overall_avg": 17.95
-    },
-    "demographics": {
-      "el_percentage": 29.0,
-      "low_income_percentage": 38.4
-    },
-    "diversity": {
-      "white": 36.8,
-      "black": 1.9,
-      "hispanic": 48.3,
-      "asian": 8.7,
-      "pacific_islander": null,
-      "native_american": null,
-      "two_or_more": 3.0,
-      "mena": null
-    }
-  }
-}
-```
-
-**Metrics Details:**
-- `enrollment`: Total student count
-- `act.overall_avg`: Computed as `(ela_avg + math_avg) / 2`
-- `null` values: Suppressed data (asterisks in source file)
-- `act` field: `null` for elementary schools without ACT data
-
-**Error Responses:**
-- `404`: School not found
-- `503`: Database unavailable
-
----
-
-### 4. Compare Schools
+#### Top Scores Leaderboard
 
 ```http
-GET /api/schools/compare?rcdts={rcdts1},{rcdts2},{rcdts3}
+GET /api/top-scores?assessment=act&level=high&limit=100
 ```
 
-**Description:** Compare 2-5 schools side-by-side.
-
-**Query Parameters:**
-- `rcdts` (required): Comma-separated RCDTS codes (2-5 schools)
-
-**Example Request:**
-```bash
-curl "http://localhost:8000/api/schools/compare?rcdts=05-016-2140-17-0001,05-016-2140-17-0002"
-```
-
-**Example Response:**
-```json
-{
-  "schools": [
-    {
-      "id": 1,
-      "rcdts": "05-016-2140-17-0001",
-      "school_name": "School A",
-      "city": "Chicago",
-      "metrics": { /* full metrics object */ }
-    },
-    {
-      "id": 2,
-      "rcdts": "05-016-2140-17-0002",
-      "school_name": "School B",
-      "city": "Springfield",
-      "metrics": { /* full metrics object */ }
-    }
-  ]
-}
-```
-
-**Behavior:**
-- Validates 2-5 RCDTS codes
-- Silently skips non-existent schools
-- Returns found schools in request order
-- Each school has full detail structure
-
-**Error Responses:**
-- `400`: Less than 2 or more than 5 RCDTS codes provided
-- `503`: Database unavailable
-
----
-
-### 5. Get Top Scores
-
-```http
-GET /api/top-scores?assessment={act|iar}&level={high|middle|elementary}&limit={1-100}
-```
-
-**Description:** Ranked list of the top 100 (max) Illinois schools for ACT composites or IAR proficiency. Levels use the normalized categories generated during import (`high`, `middle`, `elementary`).
-
-**Query Parameters:**
-- `assessment` (required): `act` or `iar`
-- `level` (required): Normalized school level (`high`, `middle`, `elementary`)
-- `limit` (optional): Result count (default 100, max 100)
-
-**Example Request:**
-```bash
-curl "http://localhost:8000/api/top-scores?assessment=act&level=high&limit=5"
-```
-
-**Example Response:**
-```json
-{
-  "results": [
-    {
-      "rank": 1,
-      "rcdts": "05-016-2140-17-0002",
-      "school_name": "Elk Grove High School",
-      "city": "Elk Grove Village",
-      "district": "Township HSD 214",
-      "school_type": "High School",
-      "level": "high",
-      "enrollment": 1775,
-      "score": 25.1
-    }
-  ]
-}
-```
-
-**Behavior Notes:**
-- `score` is ACT composite (ELA+Math / 2) or IAR overall proficiency percent, rounded to two decimals
-- Schools missing required assessment data are excluded
-- Ranking sorts descending by score, breaking ties alphabetically by school name
-
-**Error Responses:**
-- `422`: Missing/invalid query parameters
-- `503`: Database unavailable
+Ranked list of top schools by ACT or IAR. See [full documentation](docs/API_ENDPOINTS.md#get-top-scores)
 
 ---
 
 ## Data Models
+
+**For complete database schema documentation, see [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md)**
 
 ### School (Database Model)
 
@@ -318,6 +144,11 @@ class School(Base):
     act_math_avg: float
     act_science_avg: float
 
+    # IAR Proficiency Rates
+    iar_ela_proficiency_pct: float
+    iar_math_proficiency_pct: float
+    iar_overall_proficiency_pct: float
+
     # Diversity Percentages
     pct_white: float
     pct_black: float
@@ -328,8 +159,118 @@ class School(Base):
     pct_two_or_more: float
     pct_mena: float         # Middle Eastern/North African
 
+    # Trend Metrics (1/3/5 year deltas)
+    enrollment_trend_1yr: float
+    enrollment_trend_3yr: float
+    enrollment_trend_5yr: float
+    low_income_trend_1yr: float
+    low_income_trend_3yr: float
+    low_income_trend_5yr: float
+    el_trend_1yr: float
+    el_trend_3yr: float
+    el_trend_5yr: float
+    white_trend_1yr: float
+    white_trend_3yr: float
+    white_trend_5yr: float
+    black_trend_1yr: float
+    black_trend_3yr: float
+    black_trend_5yr: float
+    hispanic_trend_1yr: float
+    hispanic_trend_3yr: float
+    hispanic_trend_5yr: float
+    asian_trend_1yr: float
+    asian_trend_3yr: float
+    asian_trend_5yr: float
+    pacific_islander_trend_1yr: float
+    pacific_islander_trend_3yr: float
+    pacific_islander_trend_5yr: float
+    native_american_trend_1yr: float
+    native_american_trend_3yr: float
+    native_american_trend_5yr: float
+    two_or_more_trend_1yr: float
+    two_or_more_trend_3yr: float
+    two_or_more_trend_5yr: float
+    mena_trend_1yr: float
+    mena_trend_3yr: float
+    mena_trend_5yr: float
+    act_trend_1yr: float
+    act_trend_3yr: float
+    act_trend_5yr: float
+
+    # Historical Yearly Data (2019-2025)
+    # Enrollment by year
+    enrollment_hist_2025: int
+    enrollment_hist_2024: int
+    enrollment_hist_2023: int
+    enrollment_hist_2022: int
+    enrollment_hist_2021: int
+    enrollment_hist_2020: int
+    enrollment_hist_2019: int
+
+    # ACT composite by year
+    act_hist_2025: float
+    act_hist_2024: float
+    act_hist_2023: float
+    act_hist_2022: float
+    act_hist_2021: float
+    act_hist_2020: float
+    act_hist_2019: float
+
+    # ACT ELA by year
+    act_ela_hist_2025: float
+    act_ela_hist_2024: float
+    act_ela_hist_2023: float
+    act_ela_hist_2022: float
+    act_ela_hist_2021: float
+    act_ela_hist_2020: float
+    act_ela_hist_2019: float
+
+    # ACT Math by year
+    act_math_hist_2025: float
+    act_math_hist_2024: float
+    act_math_hist_2023: float
+    act_math_hist_2022: float
+    act_math_hist_2021: float
+    act_math_hist_2020: float
+    act_math_hist_2019: float
+
+    # ACT Science by year
+    act_science_hist_2025: float
+    act_science_hist_2024: float
+    act_science_hist_2023: float
+    act_science_hist_2022: float
+    act_science_hist_2021: float
+    act_science_hist_2020: float
+    act_science_hist_2019: float
+
+    # English Learners by year
+    el_hist_2025: float
+    el_hist_2024: float
+    el_hist_2023: float
+    el_hist_2022: float
+    el_hist_2021: float
+    el_hist_2020: float
+    el_hist_2019: float
+
+    # Low Income by year
+    low_income_hist_2025: float
+    low_income_hist_2024: float
+    low_income_hist_2023: float
+    low_income_hist_2022: float
+    low_income_hist_2021: float
+    low_income_hist_2020: float
+    low_income_hist_2019: float
+
+    # Diversity percentages by year (White, Black, Hispanic, Asian, Pacific Islander, Native American, Two or More, MENA)
+    # Each diversity category has *_hist_2025 through *_hist_2019
+    # (119 total historical columns across all metrics)
+
     created_at: datetime
 ```
+
+**Note:** Historical yearly data columns exist for all diversity categories (white, black, hispanic, asian, pacific_islander, native_american, two_or_more, mena) following the same pattern as shown above for enrollment and ACT scores.
+
+**Full Schema:** See [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) for complete column listing, data types, constraints, indexes, and relationships.
 
 ### Pydantic Response Models
 
@@ -337,14 +278,31 @@ class School(Base):
 
 All API responses use Pydantic models for validation and serialization:
 
+**Search & Basic Info:**
 - `SchoolSearchResult`: Search endpoint results (basic info only)
+- `SearchResponse`: Wrapper for search results + total count
+- `CompareResponse`: Wrapper for array of school details
+
+**School Details:**
 - `SchoolDetail`: Full school information with nested metrics
 - `SchoolMetrics`: Container for all metric categories
+
+**Current Metrics:**
 - `ACTScores`: ACT scores with computed `overall_avg` property
 - `Demographics`: EL and low-income percentages
 - `Diversity`: Racial/ethnic diversity breakdown
-- `SearchResponse`: Wrapper for search results + total count
-- `CompareResponse`: Wrapper for array of school details
+
+**Trend Data:**
+- `TrendWindow`: Contains 1/3/5 year trend deltas for a single metric
+- `TrendMetrics`: Collection of trend windows for all metrics (enrollment, demographics, diversity, ACT)
+
+**Historical Data:**
+- `HistoricalYearlyData`: Yearly values 2019-2025 for a single metric
+- `HistoricalMetrics`: Historical yearly data for all metrics
+
+**Top Scores:**
+- `TopScoreEntry`: Single ranked school entry with rank, score, and basic info
+- `TopScoresResponse`: Wrapper for top scores results array
 
 ---
 
@@ -368,7 +326,7 @@ def my_route(db: Session = Depends(get_db)):
 
 ### Full-Text Search
 
-FTS5 virtual table for fast search:
+FTS5 virtual table for fast search. See [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md#full-text-search-fts5) for complete details.
 
 ```sql
 CREATE VIRTUAL TABLE schools_fts USING fts5(
@@ -418,21 +376,31 @@ backend/
 │   ├── api/
 │   │   ├── __init__.py
 │   │   ├── search.py        # GET /api/search
-│   │   └── schools.py       # GET /api/schools/{rcdts}, /compare
+│   │   ├── schools.py       # GET /api/schools/{rcdts}, /compare
+│   │   └── top_scores.py    # GET /api/top-scores
+│   ├── services/
+│   │   ├── __init__.py
+│   │   └── top_scores.py    # Top scores business logic
 │   └── utils/
 │       ├── __init__.py
 │       └── import_data.py   # Excel → SQLite import script
 ├── tests/
-│   ├── conftest.py          # Pytest fixtures (test_db, client)
-│   ├── test_database.py     # Database layer tests
-│   ├── test_import_data.py  # Data import tests
-│   ├── test_main.py         # FastAPI app tests
-│   ├── test_models.py       # Pydantic model tests
-│   ├── test_search_api.py   # Search endpoint tests
-│   ├── test_schools_api.py  # School detail & compare tests
-│   └── test_integration.py  # End-to-end integration tests
+│   ├── conftest.py                      # Pytest fixtures (test_db, client)
+│   ├── test_database.py                 # Database layer tests
+│   ├── test_import_data.py              # Data import tests
+│   ├── test_main.py                     # FastAPI app tests
+│   ├── test_models.py                   # Pydantic model tests
+│   ├── test_search_api.py               # Search endpoint tests
+│   ├── test_schools_api.py              # School detail & compare tests
+│   ├── test_top_scores_api.py           # Top scores endpoint tests
+│   ├── test_top_scores_service.py       # Top scores service tests
+│   ├── test_historical_loader.py        # Historical data loading tests
+│   ├── test_historical_yearly_data.py   # Historical yearly data tests
+│   ├── test_import_historical_yearly_data.py  # Historical import tests
+│   └── test_integration.py              # End-to-end integration tests
 ├── data/
-│   └── schools.db           # SQLite database (gitignored)
+│   ├── schools.db                       # SQLite database (gitignored)
+│   └── historical-report-cards/         # Historical Excel/TXT files (gitignored)
 ├── pyproject.toml           # uv project config
 ├── pytest.ini               # pytest configuration
 └── README.md                # This file
@@ -497,9 +465,14 @@ uv run python -c "from app.database import SessionLocal, search_schools; db = Se
 **File:** `app/main.py`
 
 ```python
+allowed_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite dev server
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -507,37 +480,22 @@ app.add_middleware(
 ```
 
 **For frontend development:**
-- Frontend runs on `http://localhost:5173` (Vite default)
+- Frontend runs on `http://localhost:5173` or `http://127.0.0.1:5173` (Vite dev server)
 - Backend runs on `http://localhost:8000`
-- CORS pre-configured for local development
+- CORS pre-configured for local development with both localhost and 127.0.0.1
 
 ---
 
 ## Error Handling
 
-### Global Exception Handlers
+All endpoints return consistent error formats. See [`docs/API_ENDPOINTS.md#error-handling`](docs/API_ENDPOINTS.md#common-patterns) for complete error documentation including:
+- Validation errors (422)
+- Business logic errors (400, 404)
+- Server errors (503)
+- Endpoint-specific error codes
 
-**Database errors** (connection failures):
-```json
-{
-  "detail": "Service temporarily unavailable"
-}
-```
-HTTP Status: `503`
-
-### Endpoint-Specific Errors
-
-**Search endpoint:**
-- `422`: Missing or invalid `q` parameter
-- `422`: `limit` out of range (1-50)
-
-**School detail endpoint:**
-- `404`: School not found (invalid RCDTS)
-- `503`: Database connection error
-
-**Compare endpoint:**
-- `400`: Less than 2 or more than 5 RCDTS codes
-- `503`: Database connection error
+**Global Exception Handler:**
+Database connection errors return `503 Service Unavailable` across all endpoints.
 
 ---
 
@@ -563,18 +521,27 @@ def client(test_db):
 - `test_database.py`: Database models, search, FTS5
 - `test_models.py`: Pydantic model serialization
 - `test_import_data.py`: Data cleaning and import
+- `test_historical_loader.py`: Historical data loading logic
+- `test_historical_yearly_data.py`: Historical yearly data model tests
+- `test_import_historical_yearly_data.py`: Historical data import tests
 
 **API Tests:**
 - `test_main.py`: App initialization, CORS, health check
 - `test_search_api.py`: Search endpoint, pagination, validation
 - `test_schools_api.py`: Detail & compare endpoints, error cases
+- `test_top_scores_api.py`: Top scores endpoint, filters, ranking
+
+**Service Tests:**
+- `test_top_scores_service.py`: Top scores business logic, ranking algorithms
 
 **Integration Tests:**
 - `test_integration.py`: Full pipeline, end-to-end flows (marked `@pytest.mark.slow`)
 
+**Total:** 13 test files with comprehensive coverage
+
 ### Coverage Targets
 
-- Phase 2 API modules: 100%
+- All API modules: >95%
 - Overall: >90%
 
 ---

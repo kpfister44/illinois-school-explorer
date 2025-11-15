@@ -12,6 +12,8 @@ from app.models import (
     CompareResponse,
     Demographics,
     Diversity,
+    HistoricalMetrics,
+    HistoricalYearlyData,
     SchoolDetail,
     SchoolMetrics,
     TrendMetrics,
@@ -57,6 +59,24 @@ TREND_FIELD_MAP = {
     ),
     "mena": ("mena_trend_1yr", "mena_trend_3yr", "mena_trend_5yr"),
     "act": ("act_trend_1yr", "act_trend_3yr", "act_trend_5yr"),
+}
+
+HISTORICAL_FIELD_MAP = {
+    "enrollment": "enrollment_hist",
+    "act": "act_hist",
+    "act_ela": "act_ela_hist",
+    "act_math": "act_math_hist",
+    "act_science": "act_science_hist",
+    "el": "el_hist",
+    "low_income": "low_income_hist",
+    "white": "white_hist",
+    "black": "black_hist",
+    "hispanic": "hispanic_hist",
+    "asian": "asian_hist",
+    "pacific_islander": "pacific_islander_hist",
+    "native_american": "native_american_hist",
+    "two_or_more": "two_or_more_hist",
+    "mena": "mena_hist",
 }
 
 
@@ -114,6 +134,7 @@ def build_school_detail(school) -> SchoolDetail:
         iar_math_proficiency_pct=school.iar_math_proficiency_pct,
         iar_overall_proficiency_pct=school.iar_overall_proficiency_pct,
         trends=_build_trend_metrics(school),
+        historical=_build_historical_metrics(school),
     )
 
     return SchoolDetail(
@@ -164,3 +185,33 @@ def _build_trend_window(
     if all(value is None for value in (one_year, three_year, five_year)):
         return None
     return TrendWindow(one_year=one_year, three_year=three_year, five_year=five_year)
+
+
+def _build_historical_metrics(school) -> Optional[HistoricalMetrics]:
+    """Build historical yearly data from school database columns."""
+    historical_payload = {}
+
+    for metric, field_prefix in HISTORICAL_FIELD_MAP.items():
+        yearly_data = _build_historical_yearly_data(school, field_prefix)
+        if yearly_data is not None:
+            historical_payload[metric] = yearly_data
+
+    if not historical_payload:
+        return None
+    return HistoricalMetrics(**historical_payload)
+
+
+def _build_historical_yearly_data(school, field_prefix: str) -> Optional[HistoricalYearlyData]:
+    """Extract historical yearly values for a metric from database columns."""
+    years = [2025, 2024, 2023, 2022, 2021, 2020, 2019]
+    year_values = {}
+
+    for year in years:
+        field_name = f"{field_prefix}_{year}"
+        value = getattr(school, field_name, None)
+        if value is not None:
+            year_values[f"yr_{year}"] = value
+
+    if not year_values:
+        return None
+    return HistoricalYearlyData(**year_values)

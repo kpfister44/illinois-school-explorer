@@ -89,6 +89,142 @@ class School(Base):
     act_trend_3yr = Column(Float)
     act_trend_5yr = Column(Float)
 
+    # Historical Yearly Data (last 7 years: 2019-2025)
+    # Enrollment
+    enrollment_hist_2025 = Column(Integer)
+    enrollment_hist_2024 = Column(Integer)
+    enrollment_hist_2023 = Column(Integer)
+    enrollment_hist_2022 = Column(Integer)
+    enrollment_hist_2021 = Column(Integer)
+    enrollment_hist_2020 = Column(Integer)
+    enrollment_hist_2019 = Column(Integer)
+
+    # ACT Composite (Overall)
+    act_hist_2025 = Column(Float)
+    act_hist_2024 = Column(Float)
+    act_hist_2023 = Column(Float)
+    act_hist_2022 = Column(Float)
+    act_hist_2021 = Column(Float)
+    act_hist_2020 = Column(Float)
+    act_hist_2019 = Column(Float)
+
+    # ACT ELA
+    act_ela_hist_2025 = Column(Float)
+    act_ela_hist_2024 = Column(Float)
+    act_ela_hist_2023 = Column(Float)
+    act_ela_hist_2022 = Column(Float)
+    act_ela_hist_2021 = Column(Float)
+    act_ela_hist_2020 = Column(Float)
+    act_ela_hist_2019 = Column(Float)
+
+    # ACT Math
+    act_math_hist_2025 = Column(Float)
+    act_math_hist_2024 = Column(Float)
+    act_math_hist_2023 = Column(Float)
+    act_math_hist_2022 = Column(Float)
+    act_math_hist_2021 = Column(Float)
+    act_math_hist_2020 = Column(Float)
+    act_math_hist_2019 = Column(Float)
+
+    # ACT Science
+    act_science_hist_2025 = Column(Float)
+    act_science_hist_2024 = Column(Float)
+    act_science_hist_2023 = Column(Float)
+    act_science_hist_2022 = Column(Float)
+    act_science_hist_2021 = Column(Float)
+    act_science_hist_2020 = Column(Float)
+    act_science_hist_2019 = Column(Float)
+
+    # English Learners
+    el_hist_2025 = Column(Float)
+    el_hist_2024 = Column(Float)
+    el_hist_2023 = Column(Float)
+    el_hist_2022 = Column(Float)
+    el_hist_2021 = Column(Float)
+    el_hist_2020 = Column(Float)
+    el_hist_2019 = Column(Float)
+
+    # Low Income
+    low_income_hist_2025 = Column(Float)
+    low_income_hist_2024 = Column(Float)
+    low_income_hist_2023 = Column(Float)
+    low_income_hist_2022 = Column(Float)
+    low_income_hist_2021 = Column(Float)
+    low_income_hist_2020 = Column(Float)
+    low_income_hist_2019 = Column(Float)
+
+    # White
+    white_hist_2025 = Column(Float)
+    white_hist_2024 = Column(Float)
+    white_hist_2023 = Column(Float)
+    white_hist_2022 = Column(Float)
+    white_hist_2021 = Column(Float)
+    white_hist_2020 = Column(Float)
+    white_hist_2019 = Column(Float)
+
+    # Black
+    black_hist_2025 = Column(Float)
+    black_hist_2024 = Column(Float)
+    black_hist_2023 = Column(Float)
+    black_hist_2022 = Column(Float)
+    black_hist_2021 = Column(Float)
+    black_hist_2020 = Column(Float)
+    black_hist_2019 = Column(Float)
+
+    # Hispanic
+    hispanic_hist_2025 = Column(Float)
+    hispanic_hist_2024 = Column(Float)
+    hispanic_hist_2023 = Column(Float)
+    hispanic_hist_2022 = Column(Float)
+    hispanic_hist_2021 = Column(Float)
+    hispanic_hist_2020 = Column(Float)
+    hispanic_hist_2019 = Column(Float)
+
+    # Asian
+    asian_hist_2025 = Column(Float)
+    asian_hist_2024 = Column(Float)
+    asian_hist_2023 = Column(Float)
+    asian_hist_2022 = Column(Float)
+    asian_hist_2021 = Column(Float)
+    asian_hist_2020 = Column(Float)
+    asian_hist_2019 = Column(Float)
+
+    # Pacific Islander
+    pacific_islander_hist_2025 = Column(Float)
+    pacific_islander_hist_2024 = Column(Float)
+    pacific_islander_hist_2023 = Column(Float)
+    pacific_islander_hist_2022 = Column(Float)
+    pacific_islander_hist_2021 = Column(Float)
+    pacific_islander_hist_2020 = Column(Float)
+    pacific_islander_hist_2019 = Column(Float)
+
+    # Native American
+    native_american_hist_2025 = Column(Float)
+    native_american_hist_2024 = Column(Float)
+    native_american_hist_2023 = Column(Float)
+    native_american_hist_2022 = Column(Float)
+    native_american_hist_2021 = Column(Float)
+    native_american_hist_2020 = Column(Float)
+    native_american_hist_2019 = Column(Float)
+
+    # Two or More
+    two_or_more_hist_2025 = Column(Float)
+    two_or_more_hist_2024 = Column(Float)
+    two_or_more_hist_2023 = Column(Float)
+    two_or_more_hist_2022 = Column(Float)
+    two_or_more_hist_2021 = Column(Float)
+    two_or_more_hist_2020 = Column(Float)
+    two_or_more_hist_2019 = Column(Float)
+
+    # MENA
+    mena_hist_2025 = Column(Float)
+    mena_hist_2024 = Column(Float)
+    mena_hist_2023 = Column(Float)
+    mena_hist_2022 = Column(Float)
+    mena_hist_2021 = Column(Float)
+    mena_hist_2020 = Column(Float)
+    mena_hist_2019 = Column(Float)
+
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     def __repr__(self):

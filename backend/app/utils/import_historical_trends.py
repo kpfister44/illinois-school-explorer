@@ -326,6 +326,10 @@ class HistoricalDataExtractor:
                 if math is not None:
                     break
 
+        if reading is not None:
+            school['sat_reading'] = reading
+        if math is not None:
+            school['sat_math'] = math
         if reading is not None and math is not None:
             school['sat_composite'] = reading + math
 
@@ -557,6 +561,129 @@ class TrendCalculator:
                 series[year] = float(value)
 
         return series
+
+    def extract_historical_yearly_data(
+        self,
+        rcdts: str,
+        current_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Extract historical yearly values for all metrics (2019-2025).
+        Returns dict with keys like enrollment_hist_2024, act_hist_2023, etc.
+        Year 2025 is the current year from current_data.
+        """
+        normalized_rcdts = normalize_rcdts(rcdts)
+        historical = {}
+
+        # Years to extract (excluding current year 2025)
+        historical_years = [2024, 2023, 2022, 2021, 2020, 2019]
+
+        # Add current year (2025) data
+        self._add_current_year_historical(historical, current_data)
+
+        # Extract enrollment historical data
+        enrollment_series = self._build_demographic_series(normalized_rcdts, 'enrollment')
+        for year in historical_years:
+            if year in enrollment_series:
+                historical[f'enrollment_hist_{year}'] = int(enrollment_series[year])
+
+        # Extract ACT historical data (composite, ELA, Math, Science)
+        self._extract_act_historical_data(normalized_rcdts, historical, historical_years)
+
+        # Extract demographics historical data (EL, Low Income)
+        el_series = self._build_demographic_series(normalized_rcdts, 'el')
+        low_income_series = self._build_demographic_series(normalized_rcdts, 'low_income')
+
+        for year in historical_years:
+            if year in el_series:
+                historical[f'el_hist_{year}'] = round(el_series[year], 1)
+            if year in low_income_series:
+                historical[f'low_income_hist_{year}'] = round(low_income_series[year], 1)
+
+        # Extract diversity historical data
+        diversity_metrics = [
+            'white', 'black', 'hispanic', 'asian',
+            'pacific_islander', 'native_american', 'two_or_more', 'mena'
+        ]
+
+        for metric in diversity_metrics:
+            diversity_series = self._build_diversity_series(normalized_rcdts, metric)
+            for year in historical_years:
+                if year in diversity_series:
+                    historical[f'{metric}_hist_{year}'] = round(diversity_series[year], 1)
+
+        return historical
+
+    def _add_current_year_historical(self, historical: Dict, current_data: Dict[str, Any]) -> None:
+        """Add current year (2025) data to historical dict."""
+        # Enrollment
+        if current_data.get('student_enrollment') is not None:
+            historical['enrollment_hist_2025'] = current_data['student_enrollment']
+
+        # ACT scores
+        if current_data.get('act_ela_avg') is not None:
+            historical['act_ela_hist_2025'] = round(current_data['act_ela_avg'], 1)
+        if current_data.get('act_math_avg') is not None:
+            historical['act_math_hist_2025'] = round(current_data['act_math_avg'], 1)
+        if current_data.get('act_science_avg') is not None:
+            historical['act_science_hist_2025'] = round(current_data['act_science_avg'], 1)
+
+        # ACT composite
+        if current_data.get('act_ela_avg') is not None and current_data.get('act_math_avg') is not None:
+            act_composite = (current_data['act_ela_avg'] + current_data['act_math_avg']) / 2.0
+            historical['act_hist_2025'] = round(act_composite, 1)
+
+        # Demographics
+        if current_data.get('el_percentage') is not None:
+            historical['el_hist_2025'] = round(current_data['el_percentage'], 1)
+        if current_data.get('low_income_percentage') is not None:
+            historical['low_income_hist_2025'] = round(current_data['low_income_percentage'], 1)
+
+        # Diversity
+        diversity_metrics = [
+            'white', 'black', 'hispanic', 'asian',
+            'pacific_islander', 'native_american', 'two_or_more', 'mena'
+        ]
+        for metric in diversity_metrics:
+            field = f'pct_{metric}'
+            if current_data.get(field) is not None:
+                historical[f'{metric}_hist_2025'] = round(current_data[field], 1)
+
+    def _extract_act_historical_data(
+        self,
+        rcdts: str,
+        historical: Dict,
+        years: List[int]
+    ) -> None:
+        """Extract ACT composite, ELA, Math, Science for historical years."""
+        for year in years:
+            year_data = self.extractor.load_year(year)
+            school = year_data.get(rcdts, {})
+
+            # Extract SAT composite and convert to ACT
+            sat_composite = school.get('sat_composite')
+            if sat_composite is not None:
+                act_value = sat_to_act_precise(sat_composite)
+                if act_value is not None:
+                    historical[f'act_hist_{year}'] = round(act_value, 1)
+
+            # Extract individual SAT scores and convert to ACT
+            sat_reading = school.get('sat_reading')
+            sat_math = school.get('sat_math')
+
+            if sat_reading is not None:
+                # SAT reading maps to ACT ELA
+                act_ela = sat_to_act_precise(sat_reading * 2)  # Convert section score to composite scale
+                if act_ela is not None:
+                    historical[f'act_ela_hist_{year}'] = round(act_ela, 1)
+
+            if sat_math is not None:
+                # SAT math maps to ACT Math
+                act_math = sat_to_act_precise(sat_math * 2)  # Convert section score to composite scale
+                if act_math is not None:
+                    historical[f'act_math_hist_{year}'] = round(act_math, 1)
+
+            # Note: SAT doesn't have Science, so act_science_hist will be None for SAT years
 
 
 def update_school_trends(db: Session, excel_path: str) -> int:

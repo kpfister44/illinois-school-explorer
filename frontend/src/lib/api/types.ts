@@ -59,12 +59,44 @@ export interface TrendMetrics {
   mena?: TrendWindow;
 }
 
+export interface HistoricalYearlyData {
+  yr_2025?: number | null;
+  yr_2024?: number | null;
+  yr_2023?: number | null;
+  yr_2022?: number | null;
+  yr_2021?: number | null;
+  yr_2020?: number | null;
+  yr_2019?: number | null;
+}
+
+export interface HistoricalMetrics {
+  enrollment?: HistoricalYearlyData;
+  act?: HistoricalYearlyData;
+  act_ela?: HistoricalYearlyData;
+  act_math?: HistoricalYearlyData;
+  act_science?: HistoricalYearlyData;
+  el?: HistoricalYearlyData;
+  low_income?: HistoricalYearlyData;
+  white?: HistoricalYearlyData;
+  black?: HistoricalYearlyData;
+  hispanic?: HistoricalYearlyData;
+  asian?: HistoricalYearlyData;
+  pacific_islander?: HistoricalYearlyData;
+  native_american?: HistoricalYearlyData;
+  two_or_more?: HistoricalYearlyData;
+  mena?: HistoricalYearlyData;
+}
+
 export interface SchoolMetrics {
   enrollment: number | null;
-  act: ACTScores;
+  act: ACTScores | null;
+  iar_ela_proficiency_pct: number | null;
+  iar_math_proficiency_pct: number | null;
+  iar_overall_proficiency_pct: number | null;
   demographics: Demographics;
   diversity: Diversity;
   trends?: TrendMetrics;
+  historical?: HistoricalMetrics;
 }
 
 export interface SchoolDetail extends School {
