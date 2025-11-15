@@ -33,20 +33,38 @@ const metrics: MetricRow[] = [
   },
   {
     label: 'ACT ELA Average',
-    getValue: (s) => s.metrics.act.ela_avg,
+    getValue: (s) => s.metrics.act?.ela_avg ?? null,
     format: (v) => (v === null ? 'N/A' : v.toFixed(1)),
     higherIsBetter: true,
   },
   {
     label: 'ACT Math Average',
-    getValue: (s) => s.metrics.act.math_avg,
+    getValue: (s) => s.metrics.act?.math_avg ?? null,
     format: (v) => (v === null ? 'N/A' : v.toFixed(1)),
     higherIsBetter: true,
   },
   {
     label: 'ACT Science Average',
-    getValue: (s) => s.metrics.act.science_avg,
+    getValue: (s) => s.metrics.act?.science_avg ?? null,
     format: (v) => (v === null ? 'N/A' : v.toFixed(1)),
+    higherIsBetter: true,
+  },
+  {
+    label: 'IAR Overall Proficiency %',
+    getValue: (s) => s.metrics.iar_overall_proficiency_pct,
+    format: (v) => (v === null ? 'N/A' : `${v.toFixed(1)}%`),
+    higherIsBetter: true,
+  },
+  {
+    label: 'IAR ELA Proficiency %',
+    getValue: (s) => s.metrics.iar_ela_proficiency_pct,
+    format: (v) => (v === null ? 'N/A' : `${v.toFixed(1)}%`),
+    higherIsBetter: true,
+  },
+  {
+    label: 'IAR Math Proficiency %',
+    getValue: (s) => s.metrics.iar_math_proficiency_pct,
+    format: (v) => (v === null ? 'N/A' : `${v.toFixed(1)}%`),
     higherIsBetter: true,
   },
   {
