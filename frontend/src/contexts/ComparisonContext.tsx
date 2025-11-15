@@ -1,7 +1,7 @@
 // ABOUTME: Context for managing school comparison state
 // ABOUTME: Handles add/remove operations and localStorage persistence
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
 interface ComparisonContextType {
   comparisonList: string[];
