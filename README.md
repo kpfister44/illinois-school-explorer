@@ -224,7 +224,7 @@ See [CLAUDE.md](CLAUDE.md) for complete development guidelines.
 
 **Data:**
 - Add graduation rates, teacher statistics
-- SAT scores (in addition to ACT)
+- Disceplenary data (suspension, expulsions)
 - School ratings and designations
 
 **Features:**
