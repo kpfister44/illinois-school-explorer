@@ -84,29 +84,33 @@ describe('ComparisonView', () => {
   it('renders school names as column headers', () => {
     renderWithProviders(<ComparisonView schools={mockSchools} />);
 
-    expect(screen.getByText('Elk Grove High School')).toBeInTheDocument();
-    expect(screen.getByText('Rolling Meadows High School')).toBeInTheDocument();
+    // Both mobile and desktop views render the school names
+    expect(screen.getAllByText('Elk Grove High School').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Rolling Meadows High School').length).toBeGreaterThan(0);
   });
 
   it('displays enrollment data for each school', () => {
     renderWithProviders(<ComparisonView schools={mockSchools} />);
 
-    expect(screen.getByText('1,775')).toBeInTheDocument();
-    expect(screen.getByText('1,850')).toBeInTheDocument();
+    // Both mobile and desktop views render the data
+    expect(screen.getAllByText('1,775').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('1,850').length).toBeGreaterThan(0);
   });
 
   it('displays ACT scores for each school', () => {
     renderWithProviders(<ComparisonView schools={mockSchools} />);
 
-    expect(screen.getByText('17.7')).toBeInTheDocument();
-    expect(screen.getByText('18.5')).toBeInTheDocument();
+    // Both mobile and desktop views render the scores
+    expect(screen.getAllByText('17.7').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('18.5').length).toBeGreaterThan(0);
   });
 
   it('displays demographics percentages', () => {
     renderWithProviders(<ComparisonView schools={mockSchools} />);
 
-    expect(screen.getByText('29.0%')).toBeInTheDocument();
-    expect(screen.getByText('15.0%')).toBeInTheDocument();
+    // Both mobile and desktop views render the percentages
+    expect(screen.getAllByText('29.0%').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('15.0%').length).toBeGreaterThan(0);
   });
 
   it('handles null values gracefully', () => {
@@ -141,10 +145,11 @@ describe('ComparisonView', () => {
   it('renders metric labels in first column', () => {
     renderWithProviders(<ComparisonView schools={mockSchools} />);
 
-    expect(screen.getByText('Enrollment')).toBeInTheDocument();
-    expect(screen.getByText('ACT ELA Average')).toBeInTheDocument();
-    expect(screen.getByText('ACT Math Average')).toBeInTheDocument();
-    expect(screen.getByText('English Learner %')).toBeInTheDocument();
-    expect(screen.getByText('Low Income %')).toBeInTheDocument();
+    // Both mobile and desktop views render metric labels
+    expect(screen.getAllByText('Enrollment').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('ACT ELA Average').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('ACT Math Average').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('English Learner %').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Low Income %').length).toBeGreaterThan(0);
   });
 });
