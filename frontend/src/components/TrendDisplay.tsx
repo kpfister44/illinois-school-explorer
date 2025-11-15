@@ -20,12 +20,11 @@ interface TrendDisplayProps {
 
 export default function TrendDisplay({
   label,
-  currentValue,
   trendData,
   historicalData,
   metricType,
   unit,
-}: TrendDisplayProps) {
+}: Omit<TrendDisplayProps, 'currentValue'>) {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasTrendData = trendData !== null && trendData !== undefined;
 
