@@ -78,9 +78,7 @@ export default function TrendDisplay({
             />
           )}
           <TrendTable
-            currentValue={currentValue}
             trendData={trendData}
-            metricType={metricType}
             unit={unit}
             metricLabel={label}
           />
