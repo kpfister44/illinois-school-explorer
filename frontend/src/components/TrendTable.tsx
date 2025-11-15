@@ -20,7 +20,7 @@ interface TrendRow {
   delta: number | null;
 }
 
-export default function TrendTable({ trendData, unit, metricLabel }: Omit<TrendTableProps, 'currentValue' | 'metricType'>) {
+export default function TrendTable({ currentValue, trendData, metricType, unit, metricLabel }: TrendTableProps) {
   const rows: TrendRow[] = [
     { label: '1 Year', delta: trendData.one_year },
     { label: '3 Year', delta: trendData.three_year },

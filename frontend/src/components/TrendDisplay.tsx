@@ -20,11 +20,12 @@ interface TrendDisplayProps {
 
 export default function TrendDisplay({
   label,
+  currentValue,
   trendData,
   historicalData,
   metricType,
   unit,
-}: Omit<TrendDisplayProps, 'currentValue'>) {
+}: TrendDisplayProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasTrendData = trendData !== null && trendData !== undefined;
 
@@ -77,7 +78,9 @@ export default function TrendDisplay({
             />
           )}
           <TrendTable
+            currentValue={currentValue}
             trendData={trendData}
+            metricType={metricType}
             unit={unit}
             metricLabel={label}
           />
