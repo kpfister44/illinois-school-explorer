@@ -1,8 +1,15 @@
 // ABOUTME: Filter tabs for Top Scores page
-// ABOUTME: Provides assessment/level selection UI
+// ABOUTME: Provides assessment/level selection UI with mobile-optimized dropdown
 
 import { useEffect, useRef } from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { Assessment, SchoolLevel } from '@/lib/api/types';
 
 export interface TopScoresFilterOption {
@@ -38,21 +45,45 @@ export default function TopScoresFilters({
     }
   };
 
+  const selectedOption = options.find((opt) => opt.id === value);
+
   return (
-    <Tabs value={value} onValueChange={notifyChange} className="w-full">
-      <TabsList className="flex flex-wrap gap-2">
-        {options.map((option) => (
-          <TabsTrigger
-            key={option.id}
-            value={option.id}
-            className="flex-1 min-w-[200px] text-sm"
-            onMouseEnter={() => onHoverOption?.(option)}
-            onFocus={() => onHoverOption?.(option)}
-          >
-            {option.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    <div className="w-full">
+      {/* Mobile: Dropdown Select */}
+      <div className="md:hidden">
+        <Select value={value} onValueChange={notifyChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue>
+              {selectedOption?.label ?? 'Select assessment'}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.id} value={option.id}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Desktop: Tabs */}
+      <div className="hidden md:block">
+        <Tabs value={value} onValueChange={notifyChange} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            {options.map((option) => (
+              <TabsTrigger
+                key={option.id}
+                value={option.id}
+                onMouseEnter={() => onHoverOption?.(option)}
+                onFocus={() => onHoverOption?.(option)}
+              >
+                {option.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
+    </div>
   );
 }
