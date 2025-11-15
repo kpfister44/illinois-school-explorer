@@ -89,7 +89,7 @@ export interface HistoricalMetrics {
 
 export interface SchoolMetrics {
   enrollment: number | null;
-  act: ACTScores;
+  act: ACTScores | null;
   demographics: Demographics;
   diversity: Diversity;
   trends?: TrendMetrics;
