@@ -1,6 +1,7 @@
 # ABOUTME: FastAPI application entry point with CORS and route configuration
 # ABOUTME: Initializes app, registers routers, and configures middleware
 
+import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -16,10 +17,10 @@ app = FastAPI(
     version="1.0.0",
 )
 
-allowed_origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+# Configure CORS origins from environment variable or use defaults
+default_origins = "http://localhost:5173,http://127.0.0.1:5173"
+origins_str = os.environ.get("ALLOWED_ORIGINS", default_origins)
+allowed_origins = [origin.strip() for origin in origins_str.split(",")]
 
 app.add_middleware(
     CORSMiddleware,
