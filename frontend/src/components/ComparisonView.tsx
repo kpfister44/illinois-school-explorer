@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { SchoolDetail } from '@/lib/api/types';
 import { cn } from '@/lib/utils';
 
@@ -163,10 +163,10 @@ export default function ComparisonView({ schools }: ComparisonViewProps) {
   return (
     <>
       {/* Mobile: Swipeable Card Carousel */}
-      <div className="md:hidden -mx-4 sm:-mx-6">
-        <div className="relative px-4 sm:px-6">
+      <div className="md:hidden w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
+        <div className="relative">
           {/* Navigation Header */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 px-6">
             <Button
               variant="outline"
               size="icon"
@@ -191,7 +191,7 @@ export default function ComparisonView({ schools }: ComparisonViewProps) {
           </div>
 
           {/* Swipeable Card */}
-          <div className="relative overflow-hidden px-4 sm:px-6" style={{ minHeight: '500px' }}>
+          <div className="relative" style={{ minHeight: '500px' }}>
             <AnimatePresence initial={false} custom={direction} mode="wait">
               <motion.div
                 key={currentIndex}
@@ -230,9 +230,9 @@ export default function ComparisonView({ schools }: ComparisonViewProps) {
                     navigate(-1);
                   }
                 }}
-                className="absolute w-full px-2"
+                className="absolute inset-x-0 w-full"
               >
-                <Card>
+                <Card className="w-full">
                   <CardHeader>
                     <CardTitle>{currentSchool.school_name}</CardTitle>
                     <CardDescription>
@@ -270,15 +270,15 @@ export default function ComparisonView({ schools }: ComparisonViewProps) {
                       })}
                     </div>
                   </CardContent>
+                  <CardFooter className="justify-center">
+                    <p className="text-xs text-center text-muted-foreground">
+                      Swipe or use arrows to compare schools
+                    </p>
+                  </CardFooter>
                 </Card>
               </motion.div>
             </AnimatePresence>
           </div>
-
-          {/* Swipe Hint */}
-          <p className="text-xs text-center text-muted-foreground mt-4 px-4 sm:px-6">
-            Swipe or use arrows to compare schools
-          </p>
         </div>
       </div>
 
