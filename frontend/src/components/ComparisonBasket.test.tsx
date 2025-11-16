@@ -79,7 +79,7 @@ describe('ComparisonBasket', () => {
 
     renderWithProviders(<ComparisonBasket schools={[mockSchools[0]]} />);
 
-    const compareButton = screen.getByRole('button', { name: /compare/i });
+    const compareButton = screen.getByRole('button', { name: 'Compare' });
     expect(compareButton).toHaveAttribute('aria-disabled', 'true');
   });
 
@@ -88,8 +88,9 @@ describe('ComparisonBasket', () => {
 
     renderWithProviders(<ComparisonBasket schools={mockSchools} />);
 
-    const compareButton = screen.getByRole('button', { name: /compare/i });
-    expect(compareButton).not.toBeDisabled();
+    const compareButton = screen.getByRole('button', { name: 'Compare' });
+    expect(compareButton).toHaveAttribute('aria-disabled', 'false');
+    expect(compareButton).toHaveAttribute('href', '/compare');
   });
 
   it('clears all schools when Clear All clicked', () => {
@@ -97,8 +98,8 @@ describe('ComparisonBasket', () => {
 
     const { container } = renderWithProviders(<ComparisonBasket schools={mockSchools} />);
 
-    const clearButton = screen.getByRole('button', { name: /clear all/i });
-    fireEvent.click(clearButton);
+    const clearButtons = screen.getAllByRole('button', { name: /clear all/i });
+    fireEvent.click(clearButtons[0]);
 
     expect(container.firstChild).toBeNull();
   });
@@ -108,7 +109,7 @@ describe('ComparisonBasket', () => {
 
     renderWithProviders(<ComparisonBasket schools={mockSchools} />);
 
-    const compareButton = screen.getByRole('button', { name: /compare/i });
+    const compareButton = screen.getByRole('button', { name: 'Compare' });
     expect(compareButton).toHaveAttribute('href', '/compare');
   });
 });
