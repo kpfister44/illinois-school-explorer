@@ -163,8 +163,8 @@ export default function ComparisonView({ schools }: ComparisonViewProps) {
   return (
     <>
       {/* Mobile: Swipeable Card Carousel */}
-      <div className="md:hidden">
-        <div className="relative">
+      <div className="md:hidden -mx-4 sm:-mx-6">
+        <div className="relative px-4 sm:px-6">
           {/* Navigation Header */}
           <div className="flex items-center justify-between mb-4">
             <Button
@@ -191,7 +191,7 @@ export default function ComparisonView({ schools }: ComparisonViewProps) {
           </div>
 
           {/* Swipeable Card */}
-          <div className="relative overflow-hidden" style={{ minHeight: '500px' }}>
+          <div className="relative overflow-hidden px-4 sm:px-6" style={{ minHeight: '500px' }}>
             <AnimatePresence initial={false} custom={direction} mode="wait">
               <motion.div
                 key={currentIndex}
@@ -230,7 +230,7 @@ export default function ComparisonView({ schools }: ComparisonViewProps) {
                     navigate(-1);
                   }
                 }}
-                className="absolute w-full"
+                className="absolute w-full px-2"
               >
                 <Card>
                   <CardHeader>
@@ -276,7 +276,7 @@ export default function ComparisonView({ schools }: ComparisonViewProps) {
           </div>
 
           {/* Swipe Hint */}
-          <p className="text-xs text-center text-muted-foreground mt-4">
+          <p className="text-xs text-center text-muted-foreground mt-4 px-4 sm:px-6">
             Swipe or use arrows to compare schools
           </p>
         </div>
