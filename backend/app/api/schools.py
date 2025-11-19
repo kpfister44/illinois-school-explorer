@@ -203,7 +203,7 @@ def _build_historical_metrics(school) -> Optional[HistoricalMetrics]:
 
 def _build_historical_yearly_data(school, field_prefix: str) -> Optional[HistoricalYearlyData]:
     """Extract historical yearly values for a metric from database columns."""
-    years = [2025, 2024, 2023, 2022, 2021, 2020, 2019]
+    years = [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010]
     year_values = {}
 
     for year in years:

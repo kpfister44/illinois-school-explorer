@@ -16,11 +16,11 @@ from app.database import School, SessionLocal, init_db
 # Historical file configuration
 HISTORICAL_DATA_PATH = Path(__file__).resolve().parents[3] / "data" / "historical-report-cards"
 
-# Years to process (2025 is current, looking back)
+# Years to process (2025 is current, looking back 15 years to 2010)
 CURRENT_YEAR = 2025
-DEMOGRAPHIC_YEARS = [2024, 2023, 2022, 2021, 2020, 2019]
+DEMOGRAPHIC_YEARS = [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010]
 SAT_YEARS = [2024, 2023, 2022, 2021, 2019]  # Skip 2020 (no SAT data)
-ACT_YEARS = [2017, 2016, 2015]  # Years with direct ACT data
+ACT_YEARS = [2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010]  # Years with direct ACT data (pre-SAT era)
 
 # Trend windows
 TREND_WINDOWS = [1, 3, 5]
@@ -197,12 +197,27 @@ class HistoricalDataExtractor:
         year_str = str(year)
         year_short = year_str[-2:]  # e.g., "24" for 2024
 
+        # Collect all candidate files, excluding temp/layout files
+        candidates = []
         for file_path in self.base_path.glob("*.xlsx"):
             filename = file_path.stem.lower()
-            if year_str in filename or year_short in filename:
-                return file_path
 
-        return None
+            # Skip temp files and layout files
+            if filename.startswith('~$') or 'layout' in filename or filename.startswith('school_'):
+                continue
+
+            # Check for year match
+            if year_str in filename:
+                # Prioritize files starting with the 4-digit year
+                if filename.startswith(year_str):
+                    return file_path  # Exact match at start - return immediately
+                candidates.append(file_path)
+            elif year >= 2023 and f'{year_short}-' in filename:
+                # For recent years, match "YY-RC" pattern (e.g., "24-RC-Pub-Data-Set.xlsx")
+                candidates.append(file_path)
+
+        # Return first candidate if any found
+        return candidates[0] if candidates else None
 
     def _extract_from_excel(self, file_path: Path) -> Dict[str, Dict[str, Any]]:
         """Extract all relevant data from an Excel file."""
@@ -212,7 +227,31 @@ class HistoricalDataExtractor:
             excel = pd.ExcelFile(file_path)
 
             for sheet_name in excel.sheet_names:
-                df = pd.read_excel(excel, sheet_name=sheet_name)
+                # Read completely raw to handle column shift
+                df_raw = pd.read_excel(excel, sheet_name=sheet_name, header=None)
+
+                if len(df_raw) == 0:
+                    continue
+
+                # Extract headers from first row
+                headers = list(df_raw.iloc[0])
+
+                # Check if there's a column shift (column 1 all NaN in data rows)
+                has_shift = False
+                if len(df_raw.columns) > 1 and len(df_raw) > 1:
+                    if df_raw.iloc[1:11, 1].isna().all():  # Check first 10 data rows
+                        has_shift = True
+
+                if has_shift:
+                    # Drop the unnamed data column (index 1)
+                    df_raw = df_raw.drop(df_raw.columns[1], axis=1)
+                    # Also remove the header for that column
+                    headers = [headers[i] for i in range(len(headers)) if i != 1]
+
+                # Now create dataframe with corrected headers
+                df = df_raw.iloc[1:].copy()  # Skip header row
+                df.columns = headers
+                df = df.reset_index(drop=True)
 
                 if 'RCDTS' not in df.columns:
                     continue
@@ -261,8 +300,12 @@ class HistoricalDataExtractor:
                     school['enrollment'] = val
                     break
 
-        # Low income percentage
-        low_income_cols = ['% student enrollment - low income']
+        # Low income percentage (try both new and old formats)
+        low_income_cols = [
+            '% student enrollment - low income',  # 2019+ format
+            '% low-income',  # 2010-2017 format
+            '% low income',  # Alternative old format
+        ]
         for col in low_income_cols:
             if col in row.index:
                 val = clean_percentage(row[col])
@@ -270,8 +313,12 @@ class HistoricalDataExtractor:
                     school['low_income_percentage'] = val
                     break
 
-        # English Learner percentage
-        el_cols = ['% student enrollment - el']
+        # English Learner percentage (try both new and old formats)
+        el_cols = [
+            '% student enrollment - el',  # 2019+ format
+            '% el',  # 2010-2017 format (if exists)
+            '% english learners',  # Alternative old format
+        ]
         for col in el_cols:
             if col in row.index:
                 val = clean_percentage(row[col])
@@ -281,22 +328,25 @@ class HistoricalDataExtractor:
 
     def _extract_diversity(self, row: pd.Series, school: Dict[str, Any]) -> None:
         """Extract racial/ethnic diversity percentages."""
-        diversity_map = {
-            '% student enrollment - white': 'white',
-            '% student enrollment - black or african american': 'black',
-            '% student enrollment - hispanic or latino': 'hispanic',
-            '% student enrollment - asian': 'asian',
-            '% student enrollment - native hawaiian or other pacific islander': 'pacific_islander',
-            '% student enrollment - american indian or alaska native': 'native_american',
-            '% student enrollment - two or more races': 'two_or_more',
-            '% student enrollment - middle eastern or north african': 'mena',
-        }
+        # Map: [(column_name_variants, key), ...]
+        diversity_cols = [
+            (['% student enrollment - white', '% white'], 'white'),
+            (['% student enrollment - black or african american', '% black'], 'black'),
+            (['% student enrollment - hispanic or latino', '% hispanic'], 'hispanic'),
+            (['% student enrollment - asian', '% asian'], 'asian'),
+            (['% student enrollment - native hawaiian or other pacific islander', '% native hawaiian or other pacific islander'], 'pacific_islander'),
+            (['% student enrollment - american indian or alaska native', '% native american', '% american indian or alaska native'], 'native_american'),
+            (['% student enrollment - two or more races', '% two or more races'], 'two_or_more'),
+            (['% student enrollment - middle eastern or north african', '% mena'], 'mena'),
+        ]
 
-        for col, key in diversity_map.items():
-            if col in row.index:
-                val = clean_percentage(row[col])
-                if val is not None:
-                    school[key] = val
+        for col_variants, key in diversity_cols:
+            for col in col_variants:
+                if col in row.index:
+                    val = clean_percentage(row[col])
+                    if val is not None:
+                        school[key] = val
+                        break
 
     def _extract_sat(self, row: pd.Series, school: Dict[str, Any]) -> None:
         """Extract SAT scores and compute composite."""
@@ -334,18 +384,62 @@ class HistoricalDataExtractor:
             school['sat_composite'] = reading + math
 
     def _extract_act(self, row: pd.Series, school: Dict[str, Any]) -> None:
-        """Extract direct ACT composite scores (for older years)."""
-        act_cols = [
-            'act composite score - grade 11',
+        """Extract direct ACT scores (composite, ELA, Math, Science for older years)."""
+        # ACT Composite
+        composite_cols = [
+            'act composite score - grade 11',  # Newer format
             'act average composite score',
             'average act composite score',
+            'act composite',  # 2010-2017 format
         ]
-
-        for col in act_cols:
+        for col in composite_cols:
             if col in row.index:
                 val = clean_percentage(row[col])
                 if val is not None:
                     school['act_composite'] = val
+                    break
+
+        # ACT ELA/Reading
+        ela_cols = [
+            'act ela average score - grade 11',
+            'act ela',  # 2010-2017 format
+            'act reading',  # Alternative old format
+        ]
+        for col in ela_cols:
+            if col in row.index:
+                val = clean_percentage(row[col])
+                if val is not None:
+                    if 'act_scores' not in school:
+                        school['act_scores'] = {}
+                    school['act_scores']['ela'] = val
+                    break
+
+        # ACT Math
+        math_cols = [
+            'act math average score - grade 11',
+            'act math',  # 2010-2017 format
+        ]
+        for col in math_cols:
+            if col in row.index:
+                val = clean_percentage(row[col])
+                if val is not None:
+                    if 'act_scores' not in school:
+                        school['act_scores'] = {}
+                    school['act_scores']['math'] = val
+                    break
+
+        # ACT Science
+        science_cols = [
+            'act science average score - grade 11',
+            'act science',  # 2010-2017 format
+        ]
+        for col in science_cols:
+            if col in row.index:
+                val = clean_percentage(row[col])
+                if val is not None:
+                    if 'act_scores' not in school:
+                        school['act_scores'] = {}
+                    school['act_scores']['science'] = val
                     break
 
     def clear_cache(self) -> None:
@@ -575,8 +669,8 @@ class TrendCalculator:
         normalized_rcdts = normalize_rcdts(rcdts)
         historical = {}
 
-        # Years to extract (excluding current year 2025)
-        historical_years = [2024, 2023, 2022, 2021, 2020, 2019]
+        # Years to extract (excluding current year 2025) - 15 years total (2010-2024)
+        historical_years = [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010]
 
         # Add current year (2025) data
         self._add_current_year_historical(historical, current_data)
@@ -660,30 +754,47 @@ class TrendCalculator:
             year_data = self.extractor.load_year(year)
             school = year_data.get(rcdts, {})
 
-            # Extract SAT composite and convert to ACT
-            sat_composite = school.get('sat_composite')
-            if sat_composite is not None:
-                act_value = sat_to_act_precise(sat_composite)
-                if act_value is not None:
-                    historical[f'act_hist_{year}'] = round(act_value, 1)
+            # First, try to extract direct ACT scores (for years with native ACT data)
+            act_composite = school.get('act_composite')
+            if act_composite is not None:
+                historical[f'act_hist_{year}'] = round(float(act_composite), 1)
 
-            # Extract individual SAT scores and convert to ACT
-            sat_reading = school.get('sat_reading')
-            sat_math = school.get('sat_math')
+            # Extract ACT ELA/Math/Science from act_scores dict (if present)
+            act_scores = school.get('act_scores', {})
+            if act_scores:
+                if 'ela' in act_scores:
+                    historical[f'act_ela_hist_{year}'] = round(float(act_scores['ela']), 1)
+                if 'math' in act_scores:
+                    historical[f'act_math_hist_{year}'] = round(float(act_scores['math']), 1)
+                if 'science' in act_scores:
+                    historical[f'act_science_hist_{year}'] = round(float(act_scores['science']), 1)
 
-            if sat_reading is not None:
-                # SAT reading maps to ACT ELA
-                act_ela = sat_to_act_precise(sat_reading * 2)  # Convert section score to composite scale
-                if act_ela is not None:
-                    historical[f'act_ela_hist_{year}'] = round(act_ela, 1)
+            # If no direct ACT data, try SAT and convert to ACT
+            if act_composite is None:
+                sat_composite = school.get('sat_composite')
+                if sat_composite is not None:
+                    act_value = sat_to_act_precise(sat_composite)
+                    if act_value is not None:
+                        historical[f'act_hist_{year}'] = round(act_value, 1)
 
-            if sat_math is not None:
-                # SAT math maps to ACT Math
-                act_math = sat_to_act_precise(sat_math * 2)  # Convert section score to composite scale
-                if act_math is not None:
-                    historical[f'act_math_hist_{year}'] = round(act_math, 1)
+            # Extract individual SAT scores and convert to ACT (only if no direct ACT scores)
+            if not act_scores:
+                sat_reading = school.get('sat_reading')
+                sat_math = school.get('sat_math')
 
-            # Note: SAT doesn't have Science, so act_science_hist will be None for SAT years
+                if sat_reading is not None:
+                    # SAT reading maps to ACT ELA
+                    act_ela = sat_to_act_precise(sat_reading * 2)  # Convert section score to composite scale
+                    if act_ela is not None:
+                        historical[f'act_ela_hist_{year}'] = round(act_ela, 1)
+
+                if sat_math is not None:
+                    # SAT math maps to ACT Math
+                    act_math = sat_to_act_precise(sat_math * 2)  # Convert section score to composite scale
+                    if act_math is not None:
+                        historical[f'act_math_hist_{year}'] = round(act_math, 1)
+
+                # Note: SAT doesn't have Science, so act_science_hist will be None for SAT years
 
 
 def update_school_trends(db: Session, excel_path: str) -> int:

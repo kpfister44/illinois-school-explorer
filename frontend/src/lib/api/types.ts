@@ -67,6 +67,15 @@ export interface HistoricalYearlyData {
   yr_2021?: number | null;
   yr_2020?: number | null;
   yr_2019?: number | null;
+  yr_2018?: number | null;
+  yr_2017?: number | null;
+  yr_2016?: number | null;
+  yr_2015?: number | null;
+  yr_2014?: number | null;
+  yr_2013?: number | null;
+  yr_2012?: number | null;
+  yr_2011?: number | null;
+  yr_2010?: number | null;
 }
 
 export interface HistoricalMetrics {
