@@ -176,21 +176,71 @@ class HistoricalDataExtractor:
         """
         Load all data for a given year, keyed by normalized RCDTS.
         Returns dict of {rcdts: {metric: value, ...}}
+
+        For years with multiple data files (e.g., 2018 has both Report Card and PARCC-SAT files),
+        merges data from all files.
         """
         if year in self._cache:
             return self._cache[year]
 
-        file_path = self._find_file_for_year(year)
-        if not file_path:
+        file_paths = self._find_files_for_year(year)
+        if not file_paths:
             self._cache[year] = {}
             return {}
 
-        data = self._extract_from_excel(file_path)
-        self._cache[year] = data
-        return data
+        # Process all files and merge data
+        merged_data: Dict[str, Dict[str, Any]] = {}
+        for file_path in file_paths:
+            file_data = self._extract_from_excel(file_path)
+
+            # Merge data for each school
+            for rcdts, school_data in file_data.items():
+                if rcdts not in merged_data:
+                    merged_data[rcdts] = {}
+                # Update with new data, preserving existing values
+                merged_data[rcdts].update(school_data)
+
+        self._cache[year] = merged_data
+        return merged_data
+
+    def _find_files_for_year(self, year: int) -> List[Path]:
+        """
+        Find all Excel files for a given year.
+        Returns list of matching files (may be multiple for years like 2018).
+        """
+        if not self.base_path.exists():
+            return []
+
+        year_str = str(year)
+        year_short = year_str[-2:]  # e.g., "24" for 2024
+
+        # Collect all candidate files, excluding temp/layout files
+        candidates = []
+        for file_path in self.base_path.glob("*.xlsx"):
+            filename = file_path.stem.lower()
+
+            # Skip temp files and layout files
+            if filename.startswith('~$') or 'layout' in filename or filename.startswith('school_'):
+                continue
+
+            # Check for year match
+            if year_str in filename:
+                candidates.append(file_path)
+            elif year >= 2023 and f'{year_short}-' in filename:
+                # For recent years, match "YY-RC" pattern (e.g., "24-RC-Pub-Data-Set.xlsx")
+                candidates.append(file_path)
+
+        # Sort to ensure consistent ordering (Report Card files before PARCC/supplemental)
+        # This ensures base data loads first, then supplemental data merges in
+        candidates.sort(key=lambda p: (
+            0 if 'report-card' in p.stem.lower() else 1,  # Report Card files first
+            p.stem.lower()  # Then alphabetically
+        ))
+
+        return candidates
 
     def _find_file_for_year(self, year: int) -> Optional[Path]:
-        """Find the Excel file for a given year."""
+        """Find the Excel file for a given year (returns first match only)."""
         if not self.base_path.exists():
             return None
 
@@ -226,15 +276,25 @@ class HistoricalDataExtractor:
         try:
             excel = pd.ExcelFile(file_path)
 
+            # Special handling for 2018 PARCC-SAT file (multi-header format)
+            is_2018_parcc = 'parcc' in file_path.stem.lower() and '2018' in file_path.stem.lower()
+
             for sheet_name in excel.sheet_names:
+                # Skip notes/metadata sheets
+                if sheet_name.lower() in ['notes', 'important notes']:
+                    continue
+
                 # Read completely raw to handle column shift
+                header_row = 6 if is_2018_parcc else 0
                 df_raw = pd.read_excel(excel, sheet_name=sheet_name, header=None)
 
                 if len(df_raw) == 0:
                     continue
 
-                # Extract headers from first row
-                headers = list(df_raw.iloc[0])
+                # Extract headers from appropriate row
+                if header_row >= len(df_raw):
+                    continue
+                headers = list(df_raw.iloc[header_row])
 
                 # Check if there's a column shift (column 1 all NaN in data rows)
                 has_shift = False
@@ -249,7 +309,9 @@ class HistoricalDataExtractor:
                     headers = [headers[i] for i in range(len(headers)) if i != 1]
 
                 # Now create dataframe with corrected headers
-                df = df_raw.iloc[1:].copy()  # Skip header row
+                # For 2018 PARCC, start after header row (row 7); for others, start at row 1
+                data_start_row = header_row + 1
+                df = df_raw.iloc[data_start_row:].copy()
                 df.columns = headers
                 df = df.reset_index(drop=True)
 
@@ -292,7 +354,11 @@ class HistoricalDataExtractor:
     def _extract_demographics(self, row: pd.Series, school: Dict[str, Any]) -> None:
         """Extract enrollment and demographic percentages."""
         # Enrollment
-        enrollment_cols = ['# student enrollment', 'student enrollment']
+        enrollment_cols = [
+            '# student enrollment',
+            'student enrollment',
+            'student enrollment - total',  # 2018 format
+        ]
         for col in enrollment_cols:
             if col in row.index:
                 val = clean_enrollment(row[col])
@@ -303,6 +369,7 @@ class HistoricalDataExtractor:
         # Low income percentage (try both new and old formats)
         low_income_cols = [
             '% student enrollment - low income',  # 2019+ format
+            'student enrollment - low income %',  # 2018 format
             '% low-income',  # 2010-2017 format
             '% low income',  # Alternative old format
         ]
@@ -316,6 +383,7 @@ class HistoricalDataExtractor:
         # English Learner percentage (try both new and old formats)
         el_cols = [
             '% student enrollment - el',  # 2019+ format
+            'student enrollment - el %',  # 2018 format
             '% el',  # 2010-2017 format (if exists)
             '% english learners',  # Alternative old format
         ]
@@ -330,14 +398,14 @@ class HistoricalDataExtractor:
         """Extract racial/ethnic diversity percentages."""
         # Map: [(column_name_variants, key), ...]
         diversity_cols = [
-            (['% student enrollment - white', '% white'], 'white'),
-            (['% student enrollment - black or african american', '% black'], 'black'),
-            (['% student enrollment - hispanic or latino', '% hispanic'], 'hispanic'),
-            (['% student enrollment - asian', '% asian'], 'asian'),
-            (['% student enrollment - native hawaiian or other pacific islander', '% native hawaiian or other pacific islander'], 'pacific_islander'),
-            (['% student enrollment - american indian or alaska native', '% native american', '% american indian or alaska native'], 'native_american'),
-            (['% student enrollment - two or more races', '% two or more races'], 'two_or_more'),
-            (['% student enrollment - middle eastern or north african', '% mena'], 'mena'),
+            (['% student enrollment - white', 'student enrollment - white %', '% white'], 'white'),
+            (['% student enrollment - black or african american', 'student enrollment - black or african american %', '% black'], 'black'),
+            (['% student enrollment - hispanic or latino', 'student enrollment - hispanic or latino %', '% hispanic'], 'hispanic'),
+            (['% student enrollment - asian', 'student enrollment - asian %', '% asian'], 'asian'),
+            (['% student enrollment - native hawaiian or other pacific islander', 'student enrollment - native hawaiian or other pacific islander %', '% native hawaiian or other pacific islander'], 'pacific_islander'),
+            (['% student enrollment - american indian or alaska native', 'student enrollment - american indian or alaska native %', '% native american', '% american indian or alaska native'], 'native_american'),
+            (['% student enrollment - two or more races', 'student enrollment - two or more races %', '% two or more races'], 'two_or_more'),
+            (['% student enrollment - middle eastern or north african', 'student enrollment - middle eastern or north african %', '% mena'], 'mena'),
         ]
 
         for col_variants, key in diversity_cols:
@@ -355,10 +423,12 @@ class HistoricalDataExtractor:
             'sat reading average score',
             'sat ebrw average score',
             'sat reading average',  # 2019 format
+            'ela',  # 2018 PARCC-SAT file format (last column)
         ]
         math_cols = [
             'sat math average score',
             'sat math average',  # 2019 format
+            'math',  # 2018 PARCC-SAT file format (last column)
         ]
 
         reading = None

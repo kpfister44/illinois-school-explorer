@@ -72,3 +72,30 @@ def test_historical_yearly_data_has_correct_years():
 
     finally:
         extractor.clear_cache()
+
+
+def test_2018_sat_data_loads_from_parcc_file():
+    """Test that 2018 SAT data loads from the 2018-PARCC-SAT-Proficient.xlsx file."""
+    extractor = HistoricalDataExtractor()
+
+    # Load 2018 data
+    data_2018 = extractor.load_year(2018)
+
+    # Elk Grove High School should exist (RCDTS normalized without hyphens)
+    elk_grove_rcdts = "050162140170002"
+    assert elk_grove_rcdts in data_2018, f"Elk Grove not found in 2018 data. Keys: {list(data_2018.keys())[:5]}"
+
+    elk_grove = data_2018[elk_grove_rcdts]
+
+    # Should have SAT scores (stored as individual keys)
+    assert "sat_reading" in elk_grove, f"No sat_reading in Elk Grove data. Keys: {list(elk_grove.keys())}"
+    assert "sat_math" in elk_grove, f"No sat_math in Elk Grove data"
+    assert "sat_composite" in elk_grove, f"No sat_composite in Elk Grove data"
+
+    # Verify actual values match what we found in the file
+    # Elk Grove 2018: ELA=517.4, Math=530.9
+    assert elk_grove["sat_reading"] == pytest.approx(517.4, abs=0.1)
+    assert elk_grove["sat_math"] == pytest.approx(530.9, abs=0.1)
+    assert elk_grove["sat_composite"] == pytest.approx(1048.3, abs=0.1)
+
+    extractor.clear_cache()

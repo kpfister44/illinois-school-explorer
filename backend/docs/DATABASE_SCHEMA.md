@@ -15,10 +15,10 @@ Complete schema reference for the Illinois School Explorer SQLite database.
 **Model Definition:** `backend/app/database.py`
 
 **Key Features:**
-- Single `schools` table with 200+ columns
+- Single `schools` table with 270+ columns
 - FTS5 virtual table for full-text search
 - Automatic triggers for search index synchronization
-- Historical data spanning 2019-2025
+- Historical data spanning **2010-2025** (16 years)
 - Trend calculations for 1, 3, and 5-year windows
 
 ---
@@ -148,11 +148,11 @@ Each diversity category has three trend columns following the pattern `{category
 
 ---
 
-### Historical Yearly Data (2019-2025)
+### Historical Yearly Data (2010-2025)
 
 Historical columns store actual values for each year. Format: `{metric}_hist_{year}`
 
-**Years Available:** 2019, 2020, 2021, 2022, 2023, 2024, 2025
+**Years Available:** 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025 (16 years)
 
 #### Enrollment History
 
@@ -161,10 +161,12 @@ Historical columns store actual values for each year. Format: `{metric}_hist_{ye
 | `enrollment_hist_2025` | INTEGER | 2025 enrollment |
 | `enrollment_hist_2024` | INTEGER | 2024 enrollment |
 | `enrollment_hist_2023` | INTEGER | 2023 enrollment |
-| `enrollment_hist_2022` | INTEGER | 2022 enrollment |
-| `enrollment_hist_2021` | INTEGER | 2021 enrollment |
-| `enrollment_hist_2020` | INTEGER | 2020 enrollment |
-| `enrollment_hist_2019` | INTEGER | 2019 enrollment |
+| ... | INTEGER | (continues for all years) |
+| `enrollment_hist_2012` | INTEGER | 2012 enrollment |
+| `enrollment_hist_2011` | INTEGER | 2011 enrollment |
+| `enrollment_hist_2010` | INTEGER | 2010 enrollment |
+
+**Total:** 16 columns (2010-2025)
 
 #### ACT Composite History
 
@@ -173,48 +175,60 @@ Historical columns store actual values for each year. Format: `{metric}_hist_{ye
 | `act_hist_2025` | FLOAT | 2025 ACT composite average |
 | `act_hist_2024` | FLOAT | 2024 ACT composite average |
 | `act_hist_2023` | FLOAT | 2023 ACT composite average |
-| `act_hist_2022` | FLOAT | 2022 ACT composite average |
-| `act_hist_2021` | FLOAT | 2021 ACT composite average |
-| `act_hist_2020` | FLOAT | 2020 ACT composite average |
-| `act_hist_2019` | FLOAT | 2019 ACT composite average |
+| ... | FLOAT | (continues for all years) |
+| `act_hist_2012` | FLOAT | 2012 ACT composite average |
+| `act_hist_2011` | FLOAT | 2011 ACT composite average |
+| `act_hist_2010` | FLOAT | 2010 ACT composite average |
+
+**Total:** 16 columns (2010-2025)
+
+**Note:** 2020 often NULL due to COVID-19 testing disruptions
 
 #### ACT Subject Scores History
 
-Each ACT subject has 7 yearly columns: `{subject}_hist_{year}`
+Each ACT subject has 16 yearly columns: `{subject}_hist_{year}`
 
 **Subjects:**
-- `act_ela_hist_2025` through `act_ela_hist_2019` (7 columns)
-- `act_math_hist_2025` through `act_math_hist_2019` (7 columns)
-- `act_science_hist_2025` through `act_science_hist_2019` (7 columns)
+- `act_ela_hist_2025` through `act_ela_hist_2010` (16 columns)
+- `act_math_hist_2025` through `act_math_hist_2010` (16 columns)
+- `act_science_hist_2025` through `act_science_hist_2010` (16 columns)
 
-**Total ACT Historical Columns:** 28
+**Total ACT Historical Columns:** 64 (4 metrics × 16 years)
+
+**Coverage:**
+- **2010-2017**: Direct ACT scores from converted TXT files
+- **2018**: Native XLSX file (may have mixed data)
+- **2019-2024**: SAT scores converted to ACT using concordance table
+- **2025**: Current year ACT scores
 
 #### Demographics History
 
 | Metric | Columns | Type |
 |--------|---------|------|
-| English Learners | `el_hist_2025` ... `el_hist_2019` | FLOAT |
-| Low Income | `low_income_hist_2025` ... `low_income_hist_2019` | FLOAT |
+| English Learners | `el_hist_2025` ... `el_hist_2010` | FLOAT |
+| Low Income | `low_income_hist_2025` ... `low_income_hist_2010` | FLOAT |
 
-**Total Demographics Historical Columns:** 14
+**Total Demographics Historical Columns:** 32 (2 metrics × 16 years)
 
 #### Diversity History
 
-Each diversity category has 7 yearly columns: `{category}_hist_{year}`
+Each diversity category has 16 yearly columns: `{category}_hist_{year}`
 
 **Categories:** white, black, hispanic, asian, pacific_islander, native_american, two_or_more, mena
 
 **Example columns:**
-- `white_hist_2025` through `white_hist_2019`
-- `black_hist_2025` through `black_hist_2019`
-- (56 total diversity historical columns)
+- `white_hist_2025` through `white_hist_2010` (16 columns)
+- `black_hist_2025` through `black_hist_2010` (16 columns)
+- `hispanic_hist_2025` through `hispanic_hist_2010` (16 columns)
+- (8 categories × 16 years = 128 total diversity historical columns)
 
-**Total Historical Columns:** 119
+**Total Historical Columns:** 240 (16 enrollment + 64 ACT + 32 demographics + 128 diversity)
 
 **Data Sources:**
-- Historical Excel files in `data/historical-report-cards/`
-- TXT assessment files for ACT data (2015-2017)
-- See `docs/trend-data-workflow.md` for import process
+- **2010-2017**: Legacy TXT files converted to XLSX via `backend/app/utils/convert_txt_to_xlsx.py`
+- **2018-2024**: Native XLSX files in `data/historical-report-cards/`
+- **2025**: Current year from main dataset
+- See `data/historical-report-cards/HISTORICAL_MAPPING.md` for complete import documentation
 
 ---
 
@@ -326,16 +340,22 @@ These fields are computed once during data import:
 
 ## Table Statistics
 
-**Total Columns:** 200+
+**Total Columns:** 270+
 - Primary info: 10 columns
 - Current metrics: 19 columns
 - Trend metrics: 30 columns
-- Historical data: 119 columns
+- Historical data: 240 columns (16 years × 15 metrics)
 - Metadata: 1 column (`created_at`)
 
 **Total Schools:** ~3,827 (as of 2025 dataset)
 
 **Database Size:** ~50-100 MB (with full historical data)
+
+**Historical Coverage:** Complete 16-year time series (2010-2025) for:
+- Enrollment (15 years complete)
+- ACT scores (14 years, missing 2020 due to COVID)
+- Demographics (14-15 years)
+- Diversity (15 years)
 
 ---
 
@@ -372,8 +392,36 @@ For production, consider:
 - **Model Implementation:** `backend/app/database.py`
 - **API Models:** `backend/app/models.py` (Pydantic schemas)
 - **Data Import:** `backend/app/utils/import_data.py`
+- **Historical Import System:** `data/historical-report-cards/HISTORICAL_MAPPING.md` (complete documentation)
 - **Trend Workflow:** `docs/trend-data-workflow.md`
 - **API Reference:** `backend/README.md`
+
+---
+
+## Expected Data Coverage Notes
+
+Based on verification with real schools in the database:
+
+**Complete Coverage (15-16 years)**:
+- Enrollment: 2010-2025 (15 years for most schools)
+- Low Income %: 2010-2025 (15 years)
+- All Diversity %: 2010-2025 (15 years)
+
+**Nearly Complete Coverage (14 years)**:
+- ACT Composite: 2010-2025, missing 2020 (COVID-19 testing disruption)
+- ACT ELA: 2010-2025, missing 2020
+- ACT Math: 2010-2025, missing 2020
+- EL %: 2010-2025 (14 years for most schools)
+
+**Partial Coverage**:
+- ACT Science: 9-10 years (not all years included science testing)
+- MENA %: Limited (category added in recent years)
+
+**Data Quality Notes**:
+- NULL values indicate either suppressed data (privacy) or unavailable data (school didn't exist, testing not conducted)
+- 2020 has widespread NULL values for test scores due to COVID-19
+- Older schools (opened before 2010) generally have complete 16-year history
+- Newer schools have NULL for years before they opened
 
 ---
 
@@ -416,16 +464,29 @@ ORDER BY (act_ela_avg + act_math_avg) / 2 DESC
 LIMIT 100;
 ```
 
-### Historical enrollment for a school
+### Historical enrollment for a school (16-year time series)
 ```sql
 SELECT school_name,
-       enrollment_hist_2019,
-       enrollment_hist_2020,
-       enrollment_hist_2021,
-       enrollment_hist_2022,
-       enrollment_hist_2023,
-       enrollment_hist_2024,
-       enrollment_hist_2025
+       enrollment_hist_2025, enrollment_hist_2024, enrollment_hist_2023,
+       enrollment_hist_2022, enrollment_hist_2021, enrollment_hist_2020,
+       enrollment_hist_2019, enrollment_hist_2018, enrollment_hist_2017,
+       enrollment_hist_2016, enrollment_hist_2015, enrollment_hist_2014,
+       enrollment_hist_2013, enrollment_hist_2012, enrollment_hist_2011,
+       enrollment_hist_2010
 FROM schools
 WHERE rcdts = '05-016-2140-17-0002';
+```
+
+### ACT historical trends for a school
+```sql
+SELECT school_name,
+       act_hist_2025, act_hist_2024, act_hist_2023,
+       act_hist_2022, act_hist_2021, act_hist_2020,
+       act_hist_2019, act_hist_2018, act_hist_2017,
+       act_hist_2016, act_hist_2015, act_hist_2014,
+       act_hist_2013, act_hist_2012, act_hist_2011,
+       act_hist_2010
+FROM schools
+WHERE rcdts = '05-016-2140-17-0002'
+  AND level = 'high';
 ```
