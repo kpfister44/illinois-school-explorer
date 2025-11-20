@@ -142,8 +142,13 @@ export default function ComparisonView({ schools }: ComparisonViewProps) {
     );
   }
 
+  // Filter metrics to only show those where at least one school has data
+  const visibleMetrics = metrics.filter((metric) =>
+    schools.some((school) => metric.getValue(school) !== null)
+  );
+
   const currentSchool = schools[currentIndex];
-  const allValues = metrics.map((metric) => schools.map((s) => metric.getValue(s)));
+  const allValues = visibleMetrics.map((metric) => schools.map((s) => metric.getValue(s)));
 
   const navigate = (newDirection: number) => {
     setDirection(newDirection);
@@ -247,7 +252,7 @@ export default function ComparisonView({ schools }: ComparisonViewProps) {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {metrics.map((metric, idx) => {
+                      {visibleMetrics.map((metric, idx) => {
                         const value = metric.getValue(currentSchool);
                         const values = allValues[idx];
                         const colorClass = getColorClass(value, values, metric.higherIsBetter);
@@ -306,7 +311,7 @@ export default function ComparisonView({ schools }: ComparisonViewProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {metrics.map((metric) => {
+            {visibleMetrics.map((metric) => {
               const values = schools.map((s) => metric.getValue(s));
 
               return (
