@@ -27,38 +27,86 @@ TREND_FIELD_MAP = {
         "enrollment_trend_1yr",
         "enrollment_trend_3yr",
         "enrollment_trend_5yr",
+        "enrollment_trend_10yr",
+        "enrollment_trend_15yr",
     ),
     "low_income": (
         "low_income_trend_1yr",
         "low_income_trend_3yr",
         "low_income_trend_5yr",
+        "low_income_trend_10yr",
+        "low_income_trend_15yr",
     ),
-    "el": ("el_trend_1yr", "el_trend_3yr", "el_trend_5yr"),
-    "white": ("white_trend_1yr", "white_trend_3yr", "white_trend_5yr"),
-    "black": ("black_trend_1yr", "black_trend_3yr", "black_trend_5yr"),
+    "el": (
+        "el_trend_1yr",
+        "el_trend_3yr",
+        "el_trend_5yr",
+        "el_trend_10yr",
+        "el_trend_15yr",
+    ),
+    "white": (
+        "white_trend_1yr",
+        "white_trend_3yr",
+        "white_trend_5yr",
+        "white_trend_10yr",
+        "white_trend_15yr",
+    ),
+    "black": (
+        "black_trend_1yr",
+        "black_trend_3yr",
+        "black_trend_5yr",
+        "black_trend_10yr",
+        "black_trend_15yr",
+    ),
     "hispanic": (
         "hispanic_trend_1yr",
         "hispanic_trend_3yr",
         "hispanic_trend_5yr",
+        "hispanic_trend_10yr",
+        "hispanic_trend_15yr",
     ),
-    "asian": ("asian_trend_1yr", "asian_trend_3yr", "asian_trend_5yr"),
+    "asian": (
+        "asian_trend_1yr",
+        "asian_trend_3yr",
+        "asian_trend_5yr",
+        "asian_trend_10yr",
+        "asian_trend_15yr",
+    ),
     "pacific_islander": (
         "pacific_islander_trend_1yr",
         "pacific_islander_trend_3yr",
         "pacific_islander_trend_5yr",
+        "pacific_islander_trend_10yr",
+        "pacific_islander_trend_15yr",
     ),
     "native_american": (
         "native_american_trend_1yr",
         "native_american_trend_3yr",
         "native_american_trend_5yr",
+        "native_american_trend_10yr",
+        "native_american_trend_15yr",
     ),
     "two_or_more": (
         "two_or_more_trend_1yr",
         "two_or_more_trend_3yr",
         "two_or_more_trend_5yr",
+        "two_or_more_trend_10yr",
+        "two_or_more_trend_15yr",
     ),
-    "mena": ("mena_trend_1yr", "mena_trend_3yr", "mena_trend_5yr"),
-    "act": ("act_trend_1yr", "act_trend_3yr", "act_trend_5yr"),
+    "mena": (
+        "mena_trend_1yr",
+        "mena_trend_3yr",
+        "mena_trend_5yr",
+        "mena_trend_10yr",
+        "mena_trend_15yr",
+    ),
+    "act": (
+        "act_trend_1yr",
+        "act_trend_3yr",
+        "act_trend_5yr",
+        "act_trend_10yr",
+        "act_trend_15yr",
+    ),
 }
 
 HISTORICAL_FIELD_MAP = {
@@ -170,7 +218,9 @@ def _build_trend_metrics(school) -> Optional[TrendMetrics]:
         one_year = getattr(school, fields[0], None)
         three_year = getattr(school, fields[1], None)
         five_year = getattr(school, fields[2], None)
-        window = _build_trend_window(one_year, three_year, five_year)
+        ten_year = getattr(school, fields[3], None)
+        fifteen_year = getattr(school, fields[4], None)
+        window = _build_trend_window(one_year, three_year, five_year, ten_year, fifteen_year)
         if window is not None:
             trend_payload[metric] = window
 
@@ -180,11 +230,21 @@ def _build_trend_metrics(school) -> Optional[TrendMetrics]:
 
 
 def _build_trend_window(
-    one_year: Optional[float], three_year: Optional[float], five_year: Optional[float]
+    one_year: Optional[float],
+    three_year: Optional[float],
+    five_year: Optional[float],
+    ten_year: Optional[float],
+    fifteen_year: Optional[float],
 ) -> Optional[TrendWindow]:
-    if all(value is None for value in (one_year, three_year, five_year)):
+    if all(value is None for value in (one_year, three_year, five_year, ten_year, fifteen_year)):
         return None
-    return TrendWindow(one_year=one_year, three_year=three_year, five_year=five_year)
+    return TrendWindow(
+        one_year=one_year,
+        three_year=three_year,
+        five_year=five_year,
+        ten_year=ten_year,
+        fifteen_year=fifteen_year,
+    )
 
 
 def _build_historical_metrics(school) -> Optional[HistoricalMetrics]:

@@ -12,6 +12,8 @@ describe('TrendDisplay', () => {
     one_year: 50,
     three_year: 125,
     five_year: 200,
+    ten_year: 300,
+    fifteen_year: 400,
   };
 
   it('renders show trends button by default', () => {
@@ -60,6 +62,8 @@ describe('TrendDisplay', () => {
     expect(screen.getByText('1 Year')).toBeInTheDocument();
     expect(screen.getByText('3 Year')).toBeInTheDocument();
     expect(screen.getByText('5 Year')).toBeInTheDocument();
+    expect(screen.getByText('10 Year')).toBeInTheDocument();
+    expect(screen.getByText('15 Year')).toBeInTheDocument();
   });
 
   it('changes button text to hide trends when expanded', async () => {

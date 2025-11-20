@@ -199,12 +199,16 @@ curl "http://localhost:8000/api/schools/05-016-2140-17-0002"
       "enrollment": {
         "one_year": -2.5,
         "three_year": -8.1,
-        "five_year": -12.3
+        "five_year": -12.3,
+        "ten_year": -25.0,
+        "fifteen_year": -40.5
       },
       "act": {
         "one_year": 1.2,
         "three_year": 0.8,
-        "five_year": null
+        "five_year": null,
+        "ten_year": 2.5,
+        "fifteen_year": null
       }
     },
     "historical": {
@@ -256,8 +260,8 @@ See [`../app/models.py`](../app/models.py) for complete type definitions:
 - `iar_*_proficiency_pct` (float | null) - IAR proficiency rates (null for high schools)
 
 **Trends:**
-- `trends` (object | null) - Percentage changes over 1/3/5 year windows
-- Each metric has: `one_year`, `three_year`, `five_year` (float | null)
+- `trends` (object | null) - Percentage changes over 1/3/5/10/15 year windows
+- Each metric has: `one_year`, `three_year`, `five_year`, `ten_year`, `fifteen_year` (float | null)
 - Available for: enrollment, demographics, diversity, ACT
 - See [`docs/DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md#trend-metrics-year-over-year-changes) for calculation details
 

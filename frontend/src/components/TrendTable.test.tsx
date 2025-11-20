@@ -11,9 +11,11 @@ describe('TrendTable', () => {
     one_year: 50,
     three_year: 125,
     five_year: 200,
+    ten_year: 300,
+    fifteen_year: 400,
   };
 
-  it('renders all three time windows', () => {
+  it('renders all five time windows', () => {
     render(
       <TrendTable
         currentValue={1775}
@@ -27,6 +29,8 @@ describe('TrendTable', () => {
     expect(screen.getByText('1 Year')).toBeInTheDocument();
     expect(screen.getByText('3 Year')).toBeInTheDocument();
     expect(screen.getByText('5 Year')).toBeInTheDocument();
+    expect(screen.getByText('10 Year')).toBeInTheDocument();
+    expect(screen.getByText('15 Year')).toBeInTheDocument();
   });
 
   it('displays formatted trend values with units', () => {
@@ -43,6 +47,8 @@ describe('TrendTable', () => {
     expect(screen.getByText('+50 students')).toBeInTheDocument();
     expect(screen.getByText('+125 students')).toBeInTheDocument();
     expect(screen.getByText('+200 students')).toBeInTheDocument();
+    expect(screen.getByText('+300 students')).toBeInTheDocument();
+    expect(screen.getByText('+400 students')).toBeInTheDocument();
   });
 
   it('displays metric-specific trends subtitle', () => {
@@ -64,6 +70,8 @@ describe('TrendTable', () => {
       one_year: 50,
       three_year: null,
       five_year: null,
+      ten_year: null,
+      fifteen_year: null,
     };
 
     render(
@@ -77,7 +85,7 @@ describe('TrendTable', () => {
     );
 
     const naElements = screen.getAllByText('N/A');
-    expect(naElements).toHaveLength(2);
+    expect(naElements).toHaveLength(4);
   });
 
   it('displays arrows based on trend direction', () => {
@@ -85,6 +93,8 @@ describe('TrendTable', () => {
       one_year: 50,
       three_year: -25,
       five_year: 0,
+      ten_year: 100,
+      fifteen_year: -50,
     };
 
     render(
@@ -110,7 +120,7 @@ describe('TrendTable', () => {
     render(
       <TrendTable
         currentValue={30}
-        trendData={{ one_year: 5, three_year: null, five_year: null }}
+        trendData={{ one_year: 5, three_year: null, five_year: null, ten_year: null, fifteen_year: null }}
         metricType="count"
         unit="students"
         metricLabel="Enrollment"

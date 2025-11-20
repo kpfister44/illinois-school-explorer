@@ -55,11 +55,13 @@ class Diversity(BaseModel):
 
 
 class TrendWindow(BaseModel):
-    """Trend deltas over 1/3/5 year windows."""
+    """Trend deltas over 1/3/5/10/15 year windows."""
 
     one_year: Optional[float] = None
     three_year: Optional[float] = None
     five_year: Optional[float] = None
+    ten_year: Optional[float] = None
+    fifteen_year: Optional[float] = None
 
 
 class TrendMetrics(BaseModel):

@@ -117,12 +117,14 @@ def test_school_metrics_composition():
 
 
 def test_trend_window_converts_to_dict():
-    """TrendWindow exposes optional one/three/five year deltas."""
-    trend = TrendWindow(one_year=10.0, five_year=-12.5)
+    """TrendWindow exposes optional one/three/five/ten/fifteen year deltas."""
+    trend = TrendWindow(one_year=10.0, five_year=-12.5, ten_year=20.0, fifteen_year=-30.5)
 
     assert trend.one_year == 10.0
     assert trend.three_year is None
     assert trend.five_year == -12.5
+    assert trend.ten_year == 20.0
+    assert trend.fifteen_year == -30.5
 
 
 def test_school_detail_full_model():

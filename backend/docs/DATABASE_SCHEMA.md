@@ -103,6 +103,8 @@ Trend columns store percentage change relative to prior years. Format: `{metric}
 - `1yr`: 1-year change (2024 → 2025)
 - `3yr`: 3-year change (2022 → 2025)
 - `5yr`: 5-year change (2020 → 2025)
+- `10yr`: 10-year change (2015 → 2025)
+- `15yr`: 15-year change (2010 → 2025)
 
 #### Enrollment Trends
 
@@ -111,6 +113,8 @@ Trend columns store percentage change relative to prior years. Format: `{metric}
 | `enrollment_trend_1yr` | FLOAT | 1-year enrollment change (%) |
 | `enrollment_trend_3yr` | FLOAT | 3-year enrollment change (%) |
 | `enrollment_trend_5yr` | FLOAT | 5-year enrollment change (%) |
+| `enrollment_trend_10yr` | FLOAT | 10-year enrollment change (%) |
+| `enrollment_trend_15yr` | FLOAT | 15-year enrollment change (%) |
 
 #### Demographics Trends
 
@@ -119,20 +123,24 @@ Trend columns store percentage change relative to prior years. Format: `{metric}
 | `low_income_trend_1yr` | FLOAT | 1-year low-income % change |
 | `low_income_trend_3yr` | FLOAT | 3-year low-income % change |
 | `low_income_trend_5yr` | FLOAT | 5-year low-income % change |
+| `low_income_trend_10yr` | FLOAT | 10-year low-income % change |
+| `low_income_trend_15yr` | FLOAT | 15-year low-income % change |
 | `el_trend_1yr` | FLOAT | 1-year English Learner % change |
 | `el_trend_3yr` | FLOAT | 3-year English Learner % change |
 | `el_trend_5yr` | FLOAT | 5-year English Learner % change |
+| `el_trend_10yr` | FLOAT | 10-year English Learner % change |
+| `el_trend_15yr` | FLOAT | 15-year English Learner % change |
 
 #### Diversity Trends
 
-Each diversity category has three trend columns following the pattern `{category}_trend_{window}`:
+Each diversity category has five trend columns following the pattern `{category}_trend_{window}`:
 
 **Categories:** white, black, hispanic, asian, pacific_islander, native_american, two_or_more, mena
 
 **Example columns:**
-- `white_trend_1yr`, `white_trend_3yr`, `white_trend_5yr`
-- `black_trend_1yr`, `black_trend_3yr`, `black_trend_5yr`
-- (24 total diversity trend columns)
+- `white_trend_1yr`, `white_trend_3yr`, `white_trend_5yr`, `white_trend_10yr`, `white_trend_15yr`
+- `black_trend_1yr`, `black_trend_3yr`, `black_trend_5yr`, `black_trend_10yr`, `black_trend_15yr`
+- (40 total diversity trend columns)
 
 #### ACT Trends
 
@@ -141,8 +149,10 @@ Each diversity category has three trend columns following the pattern `{category
 | `act_trend_1yr` | FLOAT | 1-year ACT composite change |
 | `act_trend_3yr` | FLOAT | 3-year ACT composite change |
 | `act_trend_5yr` | FLOAT | 5-year ACT composite change |
+| `act_trend_10yr` | FLOAT | 10-year ACT composite change |
+| `act_trend_15yr` | FLOAT | 15-year ACT composite change |
 
-**Total Trend Columns:** 30
+**Total Trend Columns:** 54
 
 **Calculation:** Trends are computed during data import by comparing current year values to historical values. See `docs/trend-data-workflow.md` for details.
 
@@ -340,10 +350,10 @@ These fields are computed once during data import:
 
 ## Table Statistics
 
-**Total Columns:** 270+
+**Total Columns:** 294+
 - Primary info: 10 columns
 - Current metrics: 19 columns
-- Trend metrics: 30 columns
+- Trend metrics: 54 columns
 - Historical data: 240 columns (16 years × 15 metrics)
 - Metadata: 1 column (`created_at`)
 

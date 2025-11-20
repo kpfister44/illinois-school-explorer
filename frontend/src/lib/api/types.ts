@@ -42,6 +42,8 @@ export interface TrendWindow {
   one_year: number | null;
   three_year: number | null;
   five_year: number | null;
+  ten_year: number | null;
+  fifteen_year: number | null;
 }
 
 export interface TrendMetrics {

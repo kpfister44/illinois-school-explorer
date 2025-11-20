@@ -85,8 +85,8 @@ Illinois suppresses certain metrics when student counts are too low (privacy pro
 
 The app displays multi-year trends for enrollment, demographics, and test scores:
 - **Data source:** Historical Report Card files in `data/historical-report-cards/`
-- **Years available:** 2015-2024 (varies by metric)
-- **Trend columns:** `*_trend_1yr`, `*_trend_3yr`, `*_trend_5yr` in database
+- **Years available:** 2010-2024 (varies by metric)
+- **Trend columns:** `*_trend_1yr`, `*_trend_3yr`, `*_trend_5yr`, `*_trend_10yr`, `*_trend_15yr` in database
 - **Calculation:** Year-over-year percentage change
 - **Import process:** See `docs/trend-data-workflow.md`
 
@@ -109,7 +109,7 @@ Trends are computed during data import and stored as pre-calculated values. Not 
   - ACT scores (ELA, Math, Science, Overall composite)
   - Demographics (English Learner %, Low Income %)
   - Diversity breakdown (8 racial/ethnic categories)
-  - Historical trends (1-year, 3-year, 5-year)
+  - Historical trends (1-year, 3-year, 5-year, 10-year, 15-year)
 
 ### 3. School Comparison
 - Compare 2-5 schools side-by-side

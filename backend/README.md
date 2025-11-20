@@ -159,43 +159,67 @@ class School(Base):
     pct_two_or_more: float
     pct_mena: float         # Middle Eastern/North African
 
-    # Trend Metrics (1/3/5 year deltas)
+    # Trend Metrics (1/3/5/10/15 year deltas)
     enrollment_trend_1yr: float
     enrollment_trend_3yr: float
     enrollment_trend_5yr: float
+    enrollment_trend_10yr: float
+    enrollment_trend_15yr: float
     low_income_trend_1yr: float
     low_income_trend_3yr: float
     low_income_trend_5yr: float
+    low_income_trend_10yr: float
+    low_income_trend_15yr: float
     el_trend_1yr: float
     el_trend_3yr: float
     el_trend_5yr: float
+    el_trend_10yr: float
+    el_trend_15yr: float
     white_trend_1yr: float
     white_trend_3yr: float
     white_trend_5yr: float
+    white_trend_10yr: float
+    white_trend_15yr: float
     black_trend_1yr: float
     black_trend_3yr: float
     black_trend_5yr: float
+    black_trend_10yr: float
+    black_trend_15yr: float
     hispanic_trend_1yr: float
     hispanic_trend_3yr: float
     hispanic_trend_5yr: float
+    hispanic_trend_10yr: float
+    hispanic_trend_15yr: float
     asian_trend_1yr: float
     asian_trend_3yr: float
     asian_trend_5yr: float
+    asian_trend_10yr: float
+    asian_trend_15yr: float
     pacific_islander_trend_1yr: float
     pacific_islander_trend_3yr: float
     pacific_islander_trend_5yr: float
+    pacific_islander_trend_10yr: float
+    pacific_islander_trend_15yr: float
     native_american_trend_1yr: float
     native_american_trend_3yr: float
     native_american_trend_5yr: float
+    native_american_trend_10yr: float
+    native_american_trend_15yr: float
     two_or_more_trend_1yr: float
     two_or_more_trend_3yr: float
     two_or_more_trend_5yr: float
+    two_or_more_trend_10yr: float
+    two_or_more_trend_15yr: float
     mena_trend_1yr: float
     mena_trend_3yr: float
     mena_trend_5yr: float
+    mena_trend_10yr: float
+    mena_trend_15yr: float
     act_trend_1yr: float
     act_trend_3yr: float
     act_trend_5yr: float
+    act_trend_10yr: float
+    act_trend_15yr: float
 
     # Historical Yearly Data (2019-2025)
     # Enrollment by year
@@ -293,7 +317,7 @@ All API responses use Pydantic models for validation and serialization:
 - `Diversity`: Racial/ethnic diversity breakdown
 
 **Trend Data:**
-- `TrendWindow`: Contains 1/3/5 year trend deltas for a single metric
+- `TrendWindow`: Contains 1/3/5/10/15 year trend deltas for a single metric
 - `TrendMetrics`: Collection of trend windows for all metrics (enrollment, demographics, diversity, ACT)
 
 **Historical Data:**

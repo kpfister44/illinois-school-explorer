@@ -23,7 +23,7 @@ SAT_YEARS = [2024, 2023, 2022, 2021, 2019]  # Skip 2020 (no SAT data)
 ACT_YEARS = [2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010]  # Years with direct ACT data (pre-SAT era)
 
 # Trend windows
-TREND_WINDOWS = [1, 3, 5]
+TREND_WINDOWS = [1, 3, 5, 10, 15]
 
 # SAT to ACT concordance table with ranges
 SAT_TO_ACT_RANGES = [

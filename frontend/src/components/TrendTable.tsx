@@ -1,5 +1,5 @@
 // ABOUTME: Presentational component for displaying trend data
-// ABOUTME: Shows 1/3/5-year windows with absolute changes
+// ABOUTME: Shows 1/3/5/10/15-year windows with absolute changes
 
 import type { TrendWindow } from '@/lib/api/types';
 import {
@@ -25,6 +25,8 @@ export default function TrendTable({ currentValue, trendData, metricType, unit, 
     { label: '1 Year', delta: trendData.one_year },
     { label: '3 Year', delta: trendData.three_year },
     { label: '5 Year', delta: trendData.five_year },
+    { label: '10 Year', delta: trendData.ten_year },
+    { label: '15 Year', delta: trendData.fifteen_year },
   ];
 
   return (

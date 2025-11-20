@@ -218,3 +218,45 @@ def test_compare_schools_handles_malformed_rcdts(client):
     response = client.get("/api/schools/compare?rcdts=invalid,,extra-comma")
 
     assert response.status_code in [200, 400]
+
+
+def test_get_school_detail_returns_all_trend_windows(client, test_db):
+    """GET /api/schools/{rcdts} returns all five trend windows (1/3/5/10/15yr)."""
+    school = School(
+        rcdts="05-016-2140-17-0999",
+        school_name="Test Trends School",
+        city="Test City",
+        level="School",
+        student_enrollment=1000,
+        enrollment_trend_1yr=10.0,
+        enrollment_trend_3yr=30.0,
+        enrollment_trend_5yr=50.0,
+        enrollment_trend_10yr=100.0,
+        enrollment_trend_15yr=150.0,
+        act_trend_1yr=0.5,
+        act_trend_3yr=1.5,
+        act_trend_5yr=2.5,
+        act_trend_10yr=5.0,
+        act_trend_15yr=7.5,
+    )
+    test_db.add(school)
+    test_db.commit()
+
+    response = client.get("/api/schools/05-016-2140-17-0999")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    enrollment_trends = data["metrics"]["trends"]["enrollment"]
+    assert enrollment_trends["one_year"] == 10.0
+    assert enrollment_trends["three_year"] == 30.0
+    assert enrollment_trends["five_year"] == 50.0
+    assert enrollment_trends["ten_year"] == 100.0
+    assert enrollment_trends["fifteen_year"] == 150.0
+
+    act_trends = data["metrics"]["trends"]["act"]
+    assert act_trends["one_year"] == 0.5
+    assert act_trends["three_year"] == 1.5
+    assert act_trends["five_year"] == 2.5
+    assert act_trends["ten_year"] == 5.0
+    assert act_trends["fifteen_year"] == 7.5
