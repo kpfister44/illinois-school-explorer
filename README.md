@@ -231,46 +231,6 @@ uv run python -m app.utils.import_data ../2025-Report-Card-Public-Data-Set.xlsx
 
 ---
 
-## Key Technical Challenges & Solutions
-
-### Challenge 1: Historical Trend Calculation
-
-**Problem:** Calculate 1/3/5/10/15-year trends for 12 different metrics across 3,827 schools from heterogeneous historical data sources (Excel, TXT, varying formats).
-
-**Solution:**
-- Built `HistoricalDataLoader` class to abstract over different file formats
-- Implemented year-specific parsers for Excel (2019-2025) and TXT (2010-2018) files
-- Created `TrendCalculator` to compute deltas between current and historical values
-- Handled edge cases: missing years, suppressed data, school consolidations
-
-**Result:** 54 pre-calculated trend columns populated during import, enabling instant trend queries without runtime computation.
-
-### Challenge 2: Full-Text Search Performance
-
-**Problem:** Enable sub-100ms search across school names, cities, and districts with relevance ranking.
-
-**Solution:**
-- Used SQLite FTS5 (Full-Text Search 5) virtual table
-- BM25 ranking algorithm for relevance scoring
-- Compound search across multiple fields with proper tokenization
-- Debounced input on frontend (300ms) to reduce API calls
-
-**Result:** Fast, Google-like search experience with highlighted matches and ranked results.
-
-### Challenge 3: Type Safety Across Stack
-
-**Problem:** Ensure data integrity from database → API → frontend without duplication or drift.
-
-**Solution:**
-- Single source of truth: Pydantic models in backend
-- Generated TypeScript types matching Pydantic schemas
-- TanStack Query hooks typed to API responses
-- Compile-time checks prevent mismatched field access
-
-**Result:** No runtime type errors, auto-complete in IDE, refactor-safe codebase.
-
----
-
 ## Project Structure
 
 ```
@@ -531,42 +491,6 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://illinois-sch
    - Vercel rebuilds frontend (1-2 minutes)
 5. **Verify** at production URLs
 
----
-
-## Development Workflow
-
-### Test-Driven Development (TDD)
-
-This project follows TDD principles:
-
-1. **Red:** Write a failing test that defines desired functionality
-2. **Green:** Write minimal code to make the test pass
-3. **Refactor:** Improve code quality while keeping tests passing
-
-### Git Workflow
-
-**Conventional Commits:**
-- `feat:` New feature
-- `fix:` Bug fix
-- `docs:` Documentation changes
-- `test:` Test additions or modifications
-- `refactor:` Code refactoring without behavior changes
-- `style:` Formatting, whitespace changes
-- `chore:` Build scripts, dependencies
-
-**Example:**
-```bash
-git commit -m "feat: add 10yr and 15yr trend metrics to school detail page"
-```
-
-### Code Quality Standards
-
-- **Type Safety:** TypeScript on frontend, Pydantic on backend
-- **Testing:** Minimum 80% coverage on new code
-- **Documentation:** Every file starts with ABOUTME comment explaining its purpose
-- **Formatting:** Consistent style across codebase (Prettier for frontend, Black for backend)
-
-See [CLAUDE.md](CLAUDE.md) for complete development guidelines.
 
 ---
 
@@ -613,25 +537,14 @@ Multi-year percentage changes calculated from historical Report Card data:
 
 Trends are pre-calculated during data import and stored as database columns for instant querying.
 
-See [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) for detailed concept explanations.
-
 ---
 
 ## Future Enhancements
-
-### Data Expansions
-- [ ] Graduation rates and college enrollment statistics
-- [ ] Teacher-to-student ratios and teacher qualifications
-- [ ] Disciplinary data (suspensions, expulsions)
-- [ ] School ratings and ESSA designations
-- [ ] Special education program details
 
 ### Feature Additions
 - [ ] Advanced filtering (by enrollment range, test score range, demographics)
 - [ ] Geographic search with map view (Mapbox/Google Maps)
 - [ ] Export comparisons to PDF or CSV
-- [ ] User accounts for saving favorite schools and comparisons
-- [ ] Email alerts for data updates
 
 ### Technical Improvements
 - [ ] PostgreSQL migration for better scalability
@@ -650,7 +563,6 @@ See [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) for detailed concept explanations
 - **[Frontend README](frontend/README.md)** - Frontend architecture and component guide
 - **[Database Schema](backend/docs/DATABASE_SCHEMA.md)** - Detailed database structure
 - **[API Endpoints](backend/docs/API_ENDPOINTS.md)** - API reference with examples
-- **[Development Guidelines](CLAUDE.md)** - Coding standards and best practices
 
 ---
 
@@ -665,9 +577,8 @@ MIT License - feel free to use this project as a reference or starting point for
 **Kyle Pfister**
 
 - **GitHub:** [@kpfister44](https://github.com/kpfister44)
-- **LinkedIn:** [Add your LinkedIn]
-- **Email:** [Add your email]
-- **Portfolio:** [Add your portfolio URL]
+- **LinkedIn:** https://www.linkedin.com/in/kyle-pfister-510753286/
+- **Email:** kpfister44@gmail.com
 
 **Have questions or suggestions?** Open an issue on GitHub or reach out directly!
 
