@@ -1,7 +1,9 @@
 // ABOUTME: Presentational component for displaying historical yearly data
 // ABOUTME: Shows 7 years of historical values for a metric in table format
 
+import { useState } from 'react';
 import { Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { HistoricalYearlyData } from '@/lib/api/types';
 
@@ -16,7 +18,12 @@ export default function HistoricalDataTable({
   metricType,
   metricLabel,
 }: HistoricalDataTableProps) {
+  const [showAllYears, setShowAllYears] = useState(false);
   const years = [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010];
+  const recentYears = years.filter((year) => year >= 2017);
+  const legacyYears = years.filter((year) => year < 2017);
+  const displayedYears = showAllYears ? years : recentYears;
+  const hasLegacyYears = legacyYears.length > 0;
 
   const formatValue = (value: number | null | undefined): string => {
     if (value === null || value === undefined) return 'N/A';
@@ -60,7 +67,7 @@ export default function HistoricalDataTable({
           </tr>
         </thead>
         <tbody>
-          {years.map((year) => {
+          {displayedYears.map((year) => {
             const key = `yr_${year}` as keyof HistoricalYearlyData;
             const value = data[key];
 
@@ -71,6 +78,22 @@ export default function HistoricalDataTable({
               </tr>
             );
           })}
+          {hasLegacyYears && (
+            <tr>
+              <td colSpan={2} className="py-2">
+                <div className="flex flex-col items-start gap-2 py-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-xs"
+                    onClick={() => setShowAllYears((prev) => !prev)}
+                  >
+                    {showAllYears ? 'Show Less' : 'Show More'}
+                  </Button>
+                </div>
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
       {isACTMetric && (
