@@ -35,20 +35,17 @@ describe('HistoricalDataTable', () => {
     expect(screen.queryByText('2016')).not.toBeInTheDocument();
     expect(screen.queryByText('2010')).not.toBeInTheDocument();
 
-    expect(screen.getByText('Showing 9 of 16 years')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /show more \(7 remaining\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^show more$/i })).toBeInTheDocument();
   });
 
   it('reveals legacy years and toggles button text when expanded', async () => {
     const user = userEvent.setup();
     render(<HistoricalDataTable data={sampleData} metricType="score" metricLabel="ACT Overall" />);
 
-    await user.click(screen.getByRole('button', { name: /show more/i }));
+    await user.click(screen.getByRole('button', { name: /^show more$/i }));
 
     expect(screen.getByText('2016')).toBeInTheDocument();
     expect(screen.getByText('2010')).toBeInTheDocument();
-    expect(screen.getByText('Showing 16 of 16 years')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /show less/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^show less$/i })).toBeInTheDocument();
   });
 });
-

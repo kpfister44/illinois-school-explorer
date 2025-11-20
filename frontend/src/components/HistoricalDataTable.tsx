@@ -24,7 +24,6 @@ export default function HistoricalDataTable({
   const legacyYears = years.filter((year) => year < 2017);
   const displayedYears = showAllYears ? years : recentYears;
   const hasLegacyYears = legacyYears.length > 0;
-  const remainingCount = legacyYears.length;
 
   const formatValue = (value: number | null | undefined): string => {
     if (value === null || value === undefined) return 'N/A';
@@ -82,16 +81,14 @@ export default function HistoricalDataTable({
           {hasLegacyYears && (
             <tr>
               <td colSpan={2} className="py-2">
-                <div className="flex flex-col items-center gap-2 py-4">
-                  <p className="text-sm text-muted-foreground">
-                    Showing {displayedYears.length} of {years.length} years
-                  </p>
+                <div className="flex flex-col items-start gap-2 py-3">
                   <Button
-                    variant="outline"
-                    size="lg"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-xs"
                     onClick={() => setShowAllYears((prev) => !prev)}
                   >
-                    {showAllYears ? 'Show Less' : `Show More (${remainingCount} remaining)`}
+                    {showAllYears ? 'Show Less' : 'Show More'}
                   </Button>
                 </div>
               </td>
