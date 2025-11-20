@@ -3,11 +3,14 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import TopScoresFilters from '@/components/TopScoresFilters';
 import type { TopScoresFilterOption } from '@/components/TopScoresFilters';
 import TopScoresTable from '@/components/TopScoresTable';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 import { getTopScores, topScoresQueryKey } from '@/lib/api/queries';
 
 const FILTERS: TopScoresFilterOption[] = [
@@ -18,8 +21,13 @@ const FILTERS: TopScoresFilterOption[] = [
 
 export default function TopScores() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [activeId, setActiveId] = useState(FILTERS[0].id);
   const active = FILTERS.find((option) => option.id === activeId) ?? FILTERS[0];
+
+  const handleBack = () => {
+    navigate(-1);
+  };
 
   const handleChange = (id: string) => {
     const next = FILTERS.find((option) => option.id === id);
@@ -71,6 +79,14 @@ export default function TopScores() {
 
   return (
     <section className="space-y-8">
+      <Button
+        variant="ghost"
+        onClick={handleBack}
+        className="gap-2 px-0 text-base hover:bg-transparent"
+      >
+        <ArrowLeft className="h-5 w-5" />
+        Back
+      </Button>
       <header className="space-y-3">
         <p className="text-sm uppercase tracking-wide text-muted-foreground">Leaderboard</p>
         <h1 className="text-4xl font-bold">Top Illinois Schools</h1>
