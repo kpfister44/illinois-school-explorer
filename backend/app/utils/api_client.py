@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 import httpx
@@ -15,18 +16,28 @@ class ReportCardAPIClient:
         self._client = httpx.Client(
             base_url=base_url,
             headers={"Authorization": f"Bearer {api_key}"},
-            timeout=60.0,
+            timeout=120.0,
         )
+
+    def _with_retry(self, fn, retries: int = 3):
+        """Call fn(), retrying on transient network errors with exponential backoff."""
+        for attempt in range(retries):
+            try:
+                return fn()
+            except (httpx.ReadError, httpx.ConnectError, httpx.TimeoutException):
+                if attempt == retries - 1:
+                    raise
+                time.sleep(2 ** attempt)
 
     def get_years(self) -> list[int]:
         """Return list of available data years."""
-        resp = self._client.get("/years")
+        resp = self._with_retry(lambda: self._client.get("/years"))
         resp.raise_for_status()
         return resp.json()["data"]
 
     def get_schema(self, year: int) -> list[dict]:
         """Return field metadata list for a given year."""
-        resp = self._client.get(f"/schema/{year}")
+        resp = self._with_retry(lambda: self._client.get(f"/schema/{year}"))
         resp.raise_for_status()
         return resp.json()["data"]
 
@@ -50,7 +61,7 @@ class ReportCardAPIClient:
             payload["fields"] = fields
         if table_suffix:
             payload["table_suffix"] = table_suffix
-        resp = self._client.post("/query", json=payload)
+        resp = self._with_retry(lambda: self._client.post("/query", json=payload))
         resp.raise_for_status()
         return resp.json()
 

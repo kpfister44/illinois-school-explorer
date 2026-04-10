@@ -72,7 +72,7 @@ IAR_FIELDS = [
 # ---------------------------------------------------------------------------
 
 FIELD_CANDIDATES: dict[str, list[str]] = {
-    "enrollment": ["student_enrollment"],
+    "enrollment": ["student_enrollment", "student_enrollment_total"],
     "low_income": [
         "pct_student_enrollment_low_income",
         "student_enrollment_low_income_pct",
@@ -157,6 +157,30 @@ FIELD_CANDIDATES: dict[str, list[str]] = {
         "act_science",
     ],
 }
+
+# All field names we care about across any historical year — used to filter the
+# columns returned by a probe query. Each year's table has a different schema;
+# we probe with limit=1 to discover what actually exists, then intersect with
+# this set so we never request a column that will cause a 500.
+_HIST_FIELD_CANDIDATES: frozenset[str] = frozenset(
+    field
+    for candidates in FIELD_CANDIDATES.values()
+    for field in candidates
+    # "ela" and "math" are short aliases that overlap with supplementary table
+    # column names and cause SQL errors when requested from the main school table
+    if field not in {"ela", "math"}
+) | {"rcdts", "student_enrollment_total"}
+
+# Years where SAT score data lives in a supplementary schools_sat_{year} table
+# (confirmed via API probe). 2019 is in SAT_YEARS but has no supplementary table.
+_SAT_SUPP_YEARS: frozenset[int] = frozenset({2024, 2023, 2022, 2021})
+
+# Fields to fetch from the supplementary SAT table for _SAT_SUPP_YEARS
+_HIST_SAT_SUPP_FIELDS: list[str] = [
+    "rcdts",
+    "sat_reading_average_score",
+    "sat_math_average_score",
+]
 
 # Diversity metrics: internal key → ISE database column
 DIVERSITY_METRICS: dict[str, str] = {
@@ -278,7 +302,7 @@ class DataSync:
     def sync(self, db: Session) -> int:
         """Full sync pipeline. Returns the number of schools inserted."""
         print("Fetching current year school data...")
-        current_rows = self._fetch_current_year()
+        current_rows = [r for r in self._fetch_current_year() if r.get("school_name")]
 
         print("Fetching historical data for trends and yearly columns...")
         historical = self._fetch_all_historical()
@@ -319,12 +343,46 @@ class DataSync:
         return list(by_rcdts.values())
 
     def _fetch_all_historical(self) -> dict[int, dict[str, dict]]:
-        """Fetch all schools for each historical year. Returns {year: {rcdts_no_hyphens: row}}."""
+        """Fetch needed fields for each historical year. Returns {year: {rcdts_no_hyphens: row}}.
+
+        Each year's table has a different schema, so we probe with limit=1 to discover which
+        columns actually exist, then intersect with our candidate set. This avoids 500 errors
+        from requesting columns that don't exist in a given year's table.
+        """
         historical: dict[int, dict[str, dict]] = {}
         for year in DEMOGRAPHIC_YEARS:
-            rows = self.client.query_all(year, "school")
-            historical[year] = {_normalize_rcdts(r["rcdts"]): r for r in rows if r.get("rcdts")}
+            print(f"  Fetching year {year}...")
+            year_data = self._fetch_historical_year(year)
+            historical[year] = year_data
         return historical
+
+    def _fetch_historical_year(self, year: int) -> dict[str, dict]:
+        """Fetch one historical year, probing to discover valid fields first."""
+        # Probe: fetch one row with SELECT * to discover actual column names
+        probe = self.client.query(year, "school", fields=None, limit=1)
+        if probe["data"]:
+            available = set(probe["data"][0].keys())
+            fields = ["rcdts"] + sorted(available & _HIST_FIELD_CANDIDATES - {"rcdts"})
+        else:
+            fields = None  # no rows for this year — fall through to empty result
+
+        rows = self.client.query_all(year, "school", fields)
+        year_data = {_normalize_rcdts(r["rcdts"]): r for r in rows if r.get("rcdts")}
+
+        # Merge SAT scores from supplementary table for years that have one
+        if year in _SAT_SUPP_YEARS:
+            try:
+                sat_rows = self.client.query_all(
+                    year, "school", _HIST_SAT_SUPP_FIELDS, table_suffix="sat"
+                )
+                for sat_row in sat_rows:
+                    key = _normalize_rcdts(sat_row["rcdts"])
+                    if key in year_data:
+                        year_data[key].update(sat_row)
+            except Exception:
+                pass  # supplementary SAT table absent for this year — skip silently
+
+        return year_data
 
     # ------------------------------------------------------------------
     # Record assembly

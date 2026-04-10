@@ -2,6 +2,7 @@
 # ABOUTME: Covers auth headers, pagination, schema discovery, and error handling
 
 import pytest
+import httpx
 from unittest.mock import MagicMock, patch
 
 from app.utils.api_client import ReportCardAPIClient
@@ -180,3 +181,26 @@ def test_context_manager_closes_on_exit(mock_http):
     with ReportCardAPIClient("k", "http://test.com"):
         pass
     mock_http.close.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Retry on transient network errors
+# ---------------------------------------------------------------------------
+
+def test_query_retries_on_read_error(mock_http):
+    good_resp = _resp({"data": [], "meta": {"total": 0}})
+    mock_http.post.side_effect = [httpx.ReadError("reset"), good_resp]
+    client = ReportCardAPIClient("k", "http://test.com")
+
+    result = client.query(2025, "school")
+
+    assert result["data"] == []
+    assert mock_http.post.call_count == 2
+
+
+def test_query_raises_after_max_retries(mock_http):
+    mock_http.post.side_effect = httpx.ReadError("reset")
+    client = ReportCardAPIClient("k", "http://test.com")
+
+    with pytest.raises(httpx.ReadError):
+        client.query(2025, "school")
