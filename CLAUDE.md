@@ -309,6 +309,36 @@ Swagger UI: `http://localhost:8000/docs` (local) or Railway URL + `/docs`
 4. Add E2E test if it's a critical user flow
 5. Import and use in route component
 
+### Adding a new data field from the ReportCardAPI
+
+If a feature needs data not currently in the DB, follow this order:
+
+1. **Check availability** — verify the field exists in the API for the years you need. The `/schema/{year}` endpoint lists all fields (mixes all tables), or probe directly:
+   ```bash
+   cd backend
+   uv run python -c "
+   from app.utils.api_client import ReportCardAPIClient
+   c = ReportCardAPIClient('<key>', 'https://reportcard-api-production.up.railway.app')
+   r = c.query(2025, 'school', limit=1)
+   print(list(r['data'][0].keys()))
+   c.close()
+   "
+   ```
+2. **Add the column** to the `School` model in `backend/app/database.py`
+3. **Update the sync script** (`backend/app/utils/sync_from_api.py`):
+   - Current-year fields: add to `GENERAL_FIELDS`, `ACT_FIELDS`, or `IAR_FIELDS`
+   - Map the field in `_build_current_record`
+   - Historical fields: add candidates to `FIELD_CANDIDATES` and handle in `_extract_historical_value` / `_build_historical_columns`
+4. **Rebuild the DB** — SQLite won't auto-migrate, so drop and re-sync:
+   ```bash
+   rm data/schools.db
+   export REPORT_CARD_API_KEY=<key>
+   uv run python -m app.utils.sync_from_api
+   ```
+5. **Expose via API** — update `backend/app/models.py` (Pydantic) and the relevant endpoint
+6. **Frontend** — add TypeScript type and TanStack Query hook
+7. **Commit `data/schools.db`** along with the code changes and push to deploy
+
 ### Refreshing school data
 Data is pulled from the live ReportCardAPI (`https://reportcard-api-production.up.railway.app`). Run the sync script manually whenever new data is available:
 ```bash
