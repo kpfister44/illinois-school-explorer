@@ -257,7 +257,7 @@ illinois-school-explorer/
 │   │   ├── test_schools_api.py    # API endpoint tests
 │   │   ├── test_import_data.py    # Data import tests
 │   │   └── ...
-│   └── README.md                  # Backend setup & development guide
+│   └── CLAUDE.md                  # Backend setup & development guide
 │
 ├── frontend/                      # React + TypeScript UI
 │   ├── src/
@@ -283,7 +283,7 @@ illinois-school-explorer/
 │   ├── tests/
 │   │   ├── e2e/                   # Playwright end-to-end tests
 │   │   └── [component].test.tsx  # 23 Vitest unit test files
-│   └── README.md                  # Frontend setup & component docs
+│   └── CLAUDE.md                  # Frontend setup & component docs
 │
 ├── data/
 │   ├── 2025-Report-Card-Public-Data-Set.xlsx     # Primary dataset
@@ -296,7 +296,6 @@ illinois-school-explorer/
 │   ├── screenshots/               # App screenshots (placeholder)
 │   └── trend-data-workflow.md     # Historical data processing guide
 │
-├── PROJECT_OVERVIEW.md            # High-level app overview for AI context
 ├── CLAUDE.md                      # Development guidelines and conventions
 └── README.md                      # This file
 ```
@@ -558,9 +557,8 @@ Trends are pre-calculated during data import and stored as database columns for 
 
 ## Documentation
 
-- **[Project Overview](PROJECT_OVERVIEW.md)** - High-level context for developers and AI assistants
-- **[Backend README](backend/README.md)** - Complete backend setup and API documentation
-- **[Frontend README](frontend/README.md)** - Frontend architecture and component guide
+- **[Backend](backend/CLAUDE.md)** - Complete backend setup and API documentation
+- **[Frontend](frontend/CLAUDE.md)** - Frontend architecture and component guide
 - **[Database Schema](backend/docs/DATABASE_SCHEMA.md)** - Detailed database structure
 - **[API Endpoints](backend/docs/API_ENDPOINTS.md)** - API reference with examples
 
