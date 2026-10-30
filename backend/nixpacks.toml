@@ -8,4 +8,4 @@ cmds = ["uv sync --no-dev"]
 cmds = []
 
 [start]
-cmd = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+cmd = ".venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $PORT"

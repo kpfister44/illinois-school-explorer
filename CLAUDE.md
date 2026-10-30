@@ -381,7 +381,7 @@ ISBE publishes each year's data set in late October. The year is loaded into Rep
 | Platform | Vercel | Railway |
 | Root dir | `frontend` | `backend` |
 | Build | `npm run build` | Nixpacks (Python 3.11, uv) |
-| Start | — | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+| Start | — | `.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
 | Auto-deploy | `main` branch | `main` branch |
 
 ### Environment Variables

@@ -453,7 +453,7 @@ VITE_API_URL=https://illinois-school-explorer-production.up.railway.app
 - **Platform:** Railway
 - **Framework:** Python (Nixpacks auto-detect)
 - **Root Directory:** `backend`
-- **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- **Start Command:** `.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - **Auto-deploy:** Enabled from `main` branch
 
 **Environment Variables:**
