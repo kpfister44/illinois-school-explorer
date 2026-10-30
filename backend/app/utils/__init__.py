@@ -1,6 +1,2 @@
-# ABOUTME: Convenience exports for backend utility helpers
-# ABOUTME: Keeps shared utility classes importable via app.utils
-
-from .historical_loader import HistoricalDataLoader
-
-__all__ = ["HistoricalDataLoader"]
+# ABOUTME: Backend utility package for the ReportCardAPI client and data sync
+# ABOUTME: Modules are imported directly, e.g. app.utils.sync_from_api
