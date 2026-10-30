@@ -1,15 +1,12 @@
 # ABOUTME: Tests for database models and CRUD operations
 # ABOUTME: Validates School model, FTS search, and data integrity
 
-from pathlib import Path
-
 import pytest
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 
 from app.database import (
     Base,
     School,
-    engine,
     get_db,
     get_school_by_rcdts,
     init_db,
@@ -131,14 +128,14 @@ def test_get_db_generator_closes_session(monkeypatch):
     assert dummy_session.closed
 
 
-def test_init_db_creates_tables_and_fts(tmp_path):
+def test_init_db_creates_tables_and_fts(tmp_path, monkeypatch):
     """Test init_db initializes tables and FTS index on disk database."""
-    data_dir = Path("data")
-    data_dir.mkdir(exist_ok=True)
+    disk_engine = create_engine(f"sqlite:///{tmp_path / 'schools.db'}")
+    monkeypatch.setattr("app.database.engine", disk_engine)
 
     init_db()
 
-    with engine.connect() as conn:
+    with disk_engine.connect() as conn:
         tables = conn.execute(
             text("SELECT name FROM sqlite_master WHERE type='table' AND name='schools'")
         ).fetchall()
