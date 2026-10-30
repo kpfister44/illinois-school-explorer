@@ -47,8 +47,8 @@ test.describe('School Comparison Flow', () => {
     await expect(page).toHaveURL('/compare');
     await expect(page.getByText('Elk Grove High School').first()).toBeVisible();
     await expect(page.getByText('Rolling Meadows High School').first()).toBeVisible();
-    await expect(page.getByText('Enrollment')).toBeVisible();
-    await expect(page.getByText('ACT ELA Average')).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Enrollment', exact: true })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'ACT ELA Average' })).toBeVisible();
   });
 
   test('comparison persists across page refresh', async ({ page }) => {
