@@ -82,8 +82,9 @@ class TrendMetrics(BaseModel):
 
 
 class HistoricalYearlyData(BaseModel):
-    """Historical values by year for a single metric (2010-2025)."""
+    """Historical values by year for a single metric (2010-2026)."""
 
+    yr_2026: Optional[float] = None
     yr_2025: Optional[float] = None
     yr_2024: Optional[float] = None
     yr_2023: Optional[float] = None

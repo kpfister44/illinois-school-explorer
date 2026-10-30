@@ -260,3 +260,27 @@ def test_get_school_detail_returns_all_trend_windows(client, test_db):
     assert act_trends["five_year"] == 2.5
     assert act_trends["ten_year"] == 5.0
     assert act_trends["fifteen_year"] == 7.5
+
+
+def test_get_school_detail_returns_2026_historical_values(client, test_db):
+    """GET /api/schools/{rcdts} includes 2026 alongside earlier historical years."""
+    school = School(
+        rcdts="05-016-2140-17-0002",
+        school_name="Elk Grove High School",
+        city="Elk Grove Village",
+        level="high",
+        enrollment_hist_2026=1790,
+        enrollment_hist_2025=1775,
+        act_hist_2026=18.4,
+        act_hist_2025=17.95,
+    )
+    test_db.add(school)
+    test_db.commit()
+
+    response = client.get("/api/schools/05-016-2140-17-0002")
+
+    assert response.status_code == 200
+    historical = response.json()["metrics"]["historical"]
+    assert historical["enrollment"]["yr_2026"] == 1790
+    assert historical["enrollment"]["yr_2025"] == 1775
+    assert historical["act"]["yr_2026"] == 18.4

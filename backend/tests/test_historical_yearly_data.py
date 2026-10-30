@@ -205,3 +205,26 @@ def test_school_has_15_years_act_historical_columns(test_db):
     assert result.act_hist_2018 == 20.3
     assert result.act_hist_2015 == 19.7
     assert result.act_hist_2010 == 18.7
+
+
+def test_school_has_2026_historical_columns(test_db):
+    """Test School model stores 2026 values for every historical metric."""
+    prefixes = [
+        "enrollment", "act", "act_ela", "act_math", "act_science", "el", "low_income",
+        "white", "black", "hispanic", "asian", "pacific_islander", "native_american",
+        "two_or_more", "mena",
+    ]
+    school = School(
+        rcdts="TEST-2026",
+        school_name="Test School",
+        city="Test City",
+        level="high",
+        **{f"{prefix}_hist_2026": 12.0 for prefix in prefixes},
+    )
+    test_db.add(school)
+    test_db.commit()
+    test_db.expire_all()
+
+    result = test_db.query(School).filter_by(rcdts="TEST-2026").first()
+    for prefix in prefixes:
+        assert getattr(result, f"{prefix}_hist_2026") == 12.0

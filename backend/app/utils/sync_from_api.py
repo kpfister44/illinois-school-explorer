@@ -16,11 +16,11 @@ from app.utils.api_client import ReportCardAPIClient
 # Constants
 # ---------------------------------------------------------------------------
 
-CURRENT_YEAR = 2025
+CURRENT_YEAR = 2026
 
 # All historical years needed for hist_* columns (excludes current year)
 DEMOGRAPHIC_YEARS = [
-    2024, 2023, 2022, 2021, 2020, 2019,
+    2025, 2024, 2023, 2022, 2021, 2020, 2019,
     2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010,
 ]
 
@@ -30,10 +30,14 @@ SAT_YEARS: set[int] = {2024, 2023, 2022, 2021, 2019}
 # Direct ACT years (act_composite field present)
 ACT_YEARS: set[int] = {2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010}
 
+# ACT subject-score years (ELA/Math/Science averages in a supplementary schools_act_{year}
+# table; composite = ELA/Math average, matching the current-year calculation)
+ACT_SUBJECT_YEARS: set[int] = {2025}
+
 TREND_WINDOWS = [1, 3, 5, 10, 15]
 
 # ---------------------------------------------------------------------------
-# Fields requested from current-year (2025) tables
+# Fields requested from current-year (CURRENT_YEAR) tables
 # ---------------------------------------------------------------------------
 
 GENERAL_FIELDS = [
@@ -372,17 +376,24 @@ class DataSync:
         # Merge SAT scores from supplementary table for years that have one
         if year in _SAT_SUPP_YEARS:
             try:
-                sat_rows = self.client.query_all(
-                    year, "school", _HIST_SAT_SUPP_FIELDS, table_suffix="sat"
-                )
-                for sat_row in sat_rows:
-                    key = _normalize_rcdts(sat_row["rcdts"])
-                    if key in year_data:
-                        year_data[key].update(sat_row)
+                self._merge_supplementary(year, year_data, "sat", _HIST_SAT_SUPP_FIELDS)
             except Exception:
                 pass  # supplementary SAT table absent for this year — skip silently
 
+        # Merge ACT subject scores from the supplementary ACT table
+        if year in ACT_SUBJECT_YEARS:
+            self._merge_supplementary(year, year_data, "act", ACT_FIELDS)
+
         return year_data
+
+    def _merge_supplementary(
+        self, year: int, year_data: dict[str, dict], table_suffix: str, fields: list[str]
+    ) -> None:
+        """Merge rows from a supplementary schools_{suffix}_{year} table into year_data by RCDTS."""
+        for supp_row in self.client.query_all(year, "school", fields, table_suffix=table_suffix):
+            key = _normalize_rcdts(supp_row["rcdts"])
+            if key in year_data:
+                year_data[key].update(supp_row)
 
     # ------------------------------------------------------------------
     # Record assembly
@@ -507,7 +518,8 @@ class DataSync:
     def _build_act_series(
         self, rcdts_key: str, historical: dict[int, dict[str, dict]]
     ) -> dict[int, float]:
-        """Build ACT composite series using direct ACT for 2010-2017 and SAT→ACT for 2017-2024."""
+        """Build ACT composite series: direct ACT for 2010-2017, SAT→ACT for 2019-2024,
+        and the ELA/Math subject average for ACT_SUBJECT_YEARS."""
         series: dict[int, float] = {}
 
         for year, year_data in historical.items():
@@ -525,6 +537,12 @@ class DataSync:
                 composite = _get_field(row, *FIELD_CANDIDATES["act_composite"])
                 if composite is not None:
                     series[year] = composite
+
+            elif year in ACT_SUBJECT_YEARS:
+                act_ela = _get_field(row, *FIELD_CANDIDATES["act_ela"])
+                act_math = _get_field(row, *FIELD_CANDIDATES["act_math_hist"])
+                if act_ela is not None and act_math is not None:
+                    series[year] = (act_ela + act_math) / 2.0
 
         return series
 
@@ -554,21 +572,24 @@ class DataSync:
         """Build all enrollment_hist_YYYY, act_hist_YYYY, etc. columns."""
         hist: dict[str, Any] = {}
 
-        # Current year (2025) from record
+        # Current year from record
         if record.get("student_enrollment") is not None:
-            hist["enrollment_hist_2025"] = record["student_enrollment"]
+            hist[f"enrollment_hist_{CURRENT_YEAR}"] = record["student_enrollment"]
         for metric in DIVERSITY_METRICS:
             val = record.get(DIVERSITY_METRICS[metric])
             if val is not None:
-                hist[f"{metric}_hist_2025"] = round(val, 1)
-        for field, col in [("el_percentage", "el_hist_2025"), ("low_income_percentage", "low_income_hist_2025")]:
+                hist[f"{metric}_hist_{CURRENT_YEAR}"] = round(val, 1)
+        for field, col in [
+            ("el_percentage", f"el_hist_{CURRENT_YEAR}"),
+            ("low_income_percentage", f"low_income_hist_{CURRENT_YEAR}"),
+        ]:
             val = record.get(field)
             if val is not None:
                 hist[col] = round(val, 1)
         for act_field, hist_key in [
-            ("act_ela_avg", "act_ela_hist_2025"),
-            ("act_math_avg", "act_math_hist_2025"),
-            ("act_science_avg", "act_science_hist_2025"),
+            ("act_ela_avg", f"act_ela_hist_{CURRENT_YEAR}"),
+            ("act_math_avg", f"act_math_hist_{CURRENT_YEAR}"),
+            ("act_science_avg", f"act_science_hist_{CURRENT_YEAR}"),
         ]:
             val = _safe_float(record.get(act_field))
             if val is not None:
@@ -576,7 +597,7 @@ class DataSync:
         ela = _safe_float(record.get("act_ela_avg"))
         math = _safe_float(record.get("act_math_avg"))
         if ela is not None and math is not None:
-            hist["act_hist_2025"] = round((ela + math) / 2.0, 1)
+            hist[f"act_hist_{CURRENT_YEAR}"] = round((ela + math) / 2.0, 1)
 
         # Historical years
         for year in DEMOGRAPHIC_YEARS:
@@ -608,11 +629,16 @@ class DataSync:
                     act_val = sat_to_act(reading + math_score)
                     if act_val is not None:
                         hist[f"act_hist_{year}"] = round(act_val, 1)
-            elif year in ACT_YEARS:
-                composite = _get_field(row, *FIELD_CANDIDATES["act_composite"])
+            elif year in ACT_YEARS or year in ACT_SUBJECT_YEARS:
                 act_ela = _get_field(row, *FIELD_CANDIDATES["act_ela"])
                 act_math = _get_field(row, *FIELD_CANDIDATES["act_math_hist"])
                 act_science = _get_field(row, *FIELD_CANDIDATES["act_science"])
+                if year in ACT_YEARS:
+                    composite = _get_field(row, *FIELD_CANDIDATES["act_composite"])
+                elif act_ela is not None and act_math is not None:
+                    composite = (act_ela + act_math) / 2.0
+                else:
+                    composite = None
                 if composite is not None:
                     hist[f"act_hist_{year}"] = round(composite, 1)
                 if act_ela is not None:

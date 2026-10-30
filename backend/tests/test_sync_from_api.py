@@ -265,7 +265,7 @@ def test_extract_historical_value_returns_none_for_missing(sync):
 def _make_client_for_sync():
     """Return a mock client that produces minimal but complete fake data."""
     client = MagicMock()
-    client.get_years.return_value = [2025, 2024, 2023, 2022, 2021, 2020, 2019,
+    client.get_years.return_value = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019,
                                       2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010]
 
     school_row = {
@@ -293,6 +293,12 @@ def _make_client_for_sync():
         "act_ela_average_score_grade_11": 22.5,
         "act_math_average_score_grade_11": 21.3,
         "act_science_average_score_grade_11": 23.1,
+    }
+    hist_act_row = {
+        "rcdts": "05-016-2140-17-0001",
+        "act_ela_average_score_grade_11": 21.0,
+        "act_math_average_score_grade_11": 20.0,
+        "act_science_average_score_grade_11": 22.0,
     }
     iar_row = {
         "rcdts": "05-016-2140-17-0001",
@@ -322,11 +328,11 @@ def _make_client_for_sync():
 
     def query_all_side_effect(year, entity_type, fields=None, table_suffix=None):
         if table_suffix == "act":
-            return [act_row]
+            return [act_row] if year == 2026 else [hist_act_row]
         if table_suffix == "iar":
             return [iar_row]
         # Historical or current general data
-        if year == 2025:
+        if year == 2026:
             return [school_row]
         return [hist_row]
 
@@ -365,9 +371,45 @@ def test_sync_populates_historical_columns(test_db):
     ds.sync(test_db)
 
     school = test_db.query(School).first()
-    assert school.enrollment_hist_2025 == 1800
+    assert school.enrollment_hist_2026 == 1800
     # Historical years come from hist_row
+    assert school.enrollment_hist_2025 == 1750
     assert school.enrollment_hist_2024 == 1750
+
+
+def test_sync_populates_current_year_act_history(test_db):
+    from app.database import School
+    ds = DataSync(_make_client_for_sync())
+    ds.sync(test_db)
+
+    school = test_db.query(School).first()
+    assert school.act_ela_hist_2026 == 22.5
+    assert school.act_math_hist_2026 == 21.3
+    assert school.act_science_hist_2026 == 23.1
+    assert school.act_hist_2026 == pytest.approx(21.9)
+
+
+def test_sync_populates_2025_act_history_from_act_table(test_db):
+    from app.database import School
+    ds = DataSync(_make_client_for_sync())
+    ds.sync(test_db)
+
+    school = test_db.query(School).first()
+    assert school.act_ela_hist_2025 == 21.0
+    assert school.act_math_hist_2025 == 20.0
+    assert school.act_science_hist_2025 == 22.0
+    # Composite is the ELA/Math average, matching the current-year calculation
+    assert school.act_hist_2025 == pytest.approx(20.5)
+
+
+def test_sync_calculates_act_1yr_trend_against_2025(test_db):
+    from app.database import School
+    ds = DataSync(_make_client_for_sync())
+    ds.sync(test_db)
+
+    school = test_db.query(School).first()
+    # 2026 composite (22.5 + 21.3) / 2 = 21.9 minus 2025 composite 20.5
+    assert school.act_trend_1yr == pytest.approx(1.4)
 
 
 def test_sync_clears_existing_data(test_db):
