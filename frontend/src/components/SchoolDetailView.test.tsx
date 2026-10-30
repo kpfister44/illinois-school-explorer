@@ -4,6 +4,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, beforeEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { ComparisonProvider } from '@/contexts/ComparisonContext';
 import SchoolDetailView from './SchoolDetailView';
 import type { SchoolDetail } from '@/lib/api/types';
@@ -39,11 +40,18 @@ const mockSchoolDetail: SchoolDetail = {
       two_or_more: 3.0,
       mena: null,
     },
+    iar_ela_proficiency_pct: null,
+    iar_math_proficiency_pct: null,
+    iar_overall_proficiency_pct: null,
   },
 };
 
 function renderWithProviders(ui: React.ReactElement) {
-  return render(<ComparisonProvider>{ui}</ComparisonProvider>);
+  return render(
+    <MemoryRouter>
+      <ComparisonProvider>{ui}</ComparisonProvider>
+    </MemoryRouter>
+  );
 }
 
 describe('SchoolDetailView', () => {

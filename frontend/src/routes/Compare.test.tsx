@@ -166,8 +166,9 @@ describe('Compare', () => {
     render(<Compare />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('Elk Grove High School')).toBeInTheDocument();
-      expect(screen.getByText('Rolling Meadows High School')).toBeInTheDocument();
+      // Names render in both the mobile card and desktop table layouts
+      expect(screen.getAllByText('Elk Grove High School').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Rolling Meadows High School').length).toBeGreaterThan(0);
     });
   });
 

@@ -27,6 +27,10 @@ const renderWithRouter = (ui: React.ReactNode) => {
       path: '/',
       element: ui,
     },
+    {
+      path: '/school/:rcdts',
+      element: <div>School detail</div>,
+    },
   ]);
 
   render(<RouterProvider router={router} />);

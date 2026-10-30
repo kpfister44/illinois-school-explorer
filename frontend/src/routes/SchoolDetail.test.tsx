@@ -47,6 +47,9 @@ const mockSchoolDetail = {
       two_or_more: 3.0,
       mena: null,
     },
+    iar_ela_proficiency_pct: null,
+    iar_math_proficiency_pct: null,
+    iar_overall_proficiency_pct: null,
   },
 };
 
