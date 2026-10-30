@@ -451,7 +451,7 @@ VITE_API_URL=https://illinois-school-explorer-production.up.railway.app
 
 **Configuration:**
 - **Platform:** Railway
-- **Framework:** Python (Nixpacks auto-detect)
+- **Framework:** Python via Nixpacks, configured by `backend/nixpacks.toml` and `backend/railway.toml`
 - **Root Directory:** `backend`
 - **Start Command:** `.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - **Auto-deploy:** Enabled from `main` branch
@@ -462,8 +462,8 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://illinois-sch
 ```
 
 **Database:**
-- SQLite file (7MB) deployed alongside application
-- Persists across deployments using Railway volumes
+- SQLite file (7MB) committed to git at `backend/data/schools.db` and deployed with the code
+- Read-only in production; no Railway volume
 - No external database service required
 
 ### Deployment Workflow

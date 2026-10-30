@@ -258,6 +258,12 @@ Normalized during import from the raw `school_type` field:
 
 See `backend/app/utils/sync_from_api.py` (`normalize_level`) for normalization logic.
 
+### Report Card Years
+ISBE names each Report Card after the spring its school year ends, and the app uses that label everywhere (`CURRENT_YEAR`, `yr_<year>`, `*_hist_<year>`):
+- `2026` = 2026 Report Card = 2025-26 school year (tests taken spring 2026, enrollment as of Oct 1, 2025)
+- `2025` = 2024-25 school year, and so on
+- The UI shows the bare year (e.g. "2026"); it does not display "2025-26" labels
+
 ### Suppressed Data (Nulls)
 ISBE suppresses metrics when student counts are <10 (privacy protection):
 - Source data: suppressed values arrive as `null` from the ReportCardAPI → stored as `NULL` → returned as `null` in API
@@ -360,7 +366,7 @@ ISBE publishes each year's data set in late October. The year is loaded into Rep
    uv run python -m app.cli.import_data data/report-cards/<file>.xlsx --year <year> --dry-run
    uv run python -m app.cli.import_data data/report-cards/<file>.xlsx --year <year>
    ```
-   Update its year-coverage test and docs. Redeploying production ReportCardAPI wipes researcher API keys (see its PROJECT.md).
+   Update its year-coverage test and docs. Redeploying production ReportCardAPI wipes researcher API keys; follow the redeploy checklist in its PROJECT.md and tell Kyle so he can re-issue keys.
 2. **Sync against a local ReportCardAPI** so the website doesn't depend on the production redeploy. Run it on a copy of the DB so no test key gets baked into the production image:
    ```bash
    cp ~/ReportCardAPI/data/reportcard.db /tmp/reportcard-local.db
@@ -403,3 +409,12 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://illinois-sch
 5. Verify: https://illinois-school-explorer.vercel.app
 
 **Deploy times:** Backend ~2-3 min, Frontend ~1-2 min
+
+### Backend start command
+The start command (in `backend/railway.toml`, `nixpacks.toml`, `Procfile`) runs `.venv/bin/uvicorn`, not bare `uvicorn`. `uv sync` installs into `/app/.venv`, and Railway's Nixpacks build only puts `/opt/venv/bin` on `PATH`, so bare `uvicorn` fails with "command not found" and the `/health` check never passes. Keep the explicit venv path.
+
+### Debugging a failed Railway deploy
+- A push to `main` can fail on Railway while Vercel succeeds — check both. `gh api repos/kpfister44/illinois-school-explorer/deployments` shows each platform's status.
+- The Railway CLI must be logged in (`railway login` is interactive — Kyle runs `! railway login`). `backend/` is linked to Railway project `pacific-simplicity`, service `illinois-school-explorer`. The home directory is linked to the separate `reportcard-api` project, so run Railway commands from `backend/`.
+- `railway logs --build` prints nothing when not attached to a terminal. Either have Kyle run it, or query the Railway GraphQL API (`https://backboard.railway.com/graphql/v2`, `buildLogs` / `deploymentLogs` queries) with the token in `~/.railway/config.json`.
+- Build logs show image build steps and the health check; the actual crash reason is usually in the deployment logs.
