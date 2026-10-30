@@ -133,11 +133,13 @@ FIELD_CANDIDATES: dict[str, list[str]] = {
     # SAT section scores (combine reading + math to get composite)
     "sat_reading": [
         "sat_reading_average_score",
+        "sat_reading_average",
         "sat_ebrw_average_score",
         "ela",
     ],
     "sat_math": [
         "sat_math_average_score",
+        "sat_math_average",
         "math",
     ],
     # Direct ACT fields
@@ -175,16 +177,16 @@ _HIST_FIELD_CANDIDATES: frozenset[str] = frozenset(
     if field not in {"ela", "math"}
 ) | {"rcdts", "student_enrollment_total"}
 
-# Years where SAT score data lives in a supplementary schools_sat_{year} table
-# (confirmed via API probe). 2019 is in SAT_YEARS but has no supplementary table.
-_SAT_SUPP_YEARS: frozenset[int] = frozenset({2024, 2023, 2022, 2021})
-
-# Fields to fetch from the supplementary SAT table for _SAT_SUPP_YEARS
-_HIST_SAT_SUPP_FIELDS: list[str] = [
-    "rcdts",
-    "sat_reading_average_score",
-    "sat_math_average_score",
-]
+# Fields to fetch from each year's supplementary schools_sat_{year} table. Column
+# names differ between years (confirmed via API probe).
+_SAT_SCORE_FIELDS: list[str] = ["rcdts", "sat_reading_average_score", "sat_math_average_score"]
+_HIST_SAT_SUPP_FIELDS: dict[int, list[str]] = {
+    2024: _SAT_SCORE_FIELDS,
+    2023: _SAT_SCORE_FIELDS,
+    2022: _SAT_SCORE_FIELDS,
+    2021: _SAT_SCORE_FIELDS,
+    2019: ["rcdts", "sat_reading_average", "sat_math_average"],
+}
 
 # Diversity metrics: internal key → ISE database column
 DIVERSITY_METRICS: dict[str, str] = {
@@ -374,9 +376,9 @@ class DataSync:
         year_data = {_normalize_rcdts(r["rcdts"]): r for r in rows if r.get("rcdts")}
 
         # Merge SAT scores from supplementary table for years that have one
-        if year in _SAT_SUPP_YEARS:
+        if year in _HIST_SAT_SUPP_FIELDS:
             try:
-                self._merge_supplementary(year, year_data, "sat", _HIST_SAT_SUPP_FIELDS)
+                self._merge_supplementary(year, year_data, "sat", _HIST_SAT_SUPP_FIELDS[year])
             except Exception:
                 pass  # supplementary SAT table absent for this year — skip silently
 

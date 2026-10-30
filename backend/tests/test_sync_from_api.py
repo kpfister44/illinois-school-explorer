@@ -259,6 +259,30 @@ def test_extract_historical_value_returns_none_for_missing(sync):
 
 
 # ---------------------------------------------------------------------------
+# DataSync._fetch_historical_year — supplementary SAT tables
+# ---------------------------------------------------------------------------
+
+def test_fetch_historical_year_merges_2019_sat_averages(sync):
+    main_row = {"rcdts": "050162140170001", "student_enrollment": 1700}
+    sat_row = {"rcdts": "050162140170001", "sat_reading_average": 600.0, "sat_math_average": 600.0}
+    sync.client.query.return_value = {"data": [main_row]}
+
+    def query_all_side_effect(year, entity_type, fields=None, table_suffix=None):
+        if table_suffix == "sat":
+            assert fields == ["rcdts", "sat_reading_average", "sat_math_average"]
+            return [sat_row]
+        return [dict(main_row)]
+
+    sync.client.query_all.side_effect = query_all_side_effect
+
+    year_data = sync._fetch_historical_year(2019)
+    series = sync._build_act_series("050162140170001", {2019: year_data})
+
+    # SAT composite 1200 converts to ACT 25
+    assert series == {2019: 25}
+
+
+# ---------------------------------------------------------------------------
 # DataSync.sync — integration (mocked API, real DB)
 # ---------------------------------------------------------------------------
 
