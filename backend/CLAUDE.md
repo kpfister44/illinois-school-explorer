@@ -5,7 +5,7 @@
 
 FastAPI REST API for searching and retrieving Illinois school data. Provides endpoints for full-text search, detailed school information, and multi-school comparison.
 
-**Database:** 3,827 Illinois schools, 2010–2025 data from ReportCardAPI
+**Database:** 3,828 Illinois schools, 2010–2026 data from ReportCardAPI
 **Search:** SQLite FTS5 full-text search
 
 ---
@@ -36,7 +36,7 @@ export REPORT_CARD_API_KEY=<key>   # ask Kyle for the key
 uv run python -m app.utils.sync_from_api
 ```
 
-The sync fetches current-year (2025) school data plus 15 years of history (2010–2024), calculates all trends, and replaces `data/schools.db` in place. Commit the updated DB and push to deploy.
+The sync fetches current-year (2026) school data plus 16 years of history (2010–2025), calculates all trends, and replaces `data/schools.db` in place. Commit the updated DB and push to deploy.
 
 #### ReportCardAPI data sources by year
 
@@ -44,10 +44,10 @@ The sync fetches current-year (2025) school data plus 15 years of history (2010�
 | --- | --- | --- |
 | 2010–2017 | Compact single table (`pct_*` demographics) | ACT in main table |
 | 2018 | Large single table (`student_enrollment_*_pct` demographics) | None |
-| 2019 | New format (`pct_student_enrollment_*`) | SAT in main table |
+| 2019 | New format (`pct_student_enrollment_*`) | SAT in supplementary `schools_sat_2019` table (`sat_*_average` columns) |
 | 2020 | New format | None |
 | 2021–2024 | New format | SAT in supplementary `schools_sat_{year}` table |
-| 2025 | New format | ACT in `schools_act_2025`, IAR in `schools_iar_2025` |
+| 2025–2026 | New format | ACT in `schools_act_{year}`, IAR in `schools_iar_{year}` |
 
 The sync script handles all format differences automatically via a probe-then-fetch approach.
 
@@ -217,73 +217,15 @@ class School(Base):
     act_trend_10yr: float
     act_trend_15yr: float
 
-    # Historical Yearly Data (2019-2025)
-    # Enrollment by year
+    # Historical Yearly Data (2010-2026)
+    # One column per year for each of 15 metrics: {metric}_hist_{year}
+    # Metrics: enrollment (int), act, act_ela, act_math, act_science, el, low_income,
+    #          white, black, hispanic, asian, pacific_islander, native_american,
+    #          two_or_more, mena (float)
+    enrollment_hist_2026: int
     enrollment_hist_2025: int
-    enrollment_hist_2024: int
-    enrollment_hist_2023: int
-    enrollment_hist_2022: int
-    enrollment_hist_2021: int
-    enrollment_hist_2020: int
-    enrollment_hist_2019: int
-
-    # ACT composite by year
-    act_hist_2025: float
-    act_hist_2024: float
-    act_hist_2023: float
-    act_hist_2022: float
-    act_hist_2021: float
-    act_hist_2020: float
-    act_hist_2019: float
-
-    # ACT ELA by year
-    act_ela_hist_2025: float
-    act_ela_hist_2024: float
-    act_ela_hist_2023: float
-    act_ela_hist_2022: float
-    act_ela_hist_2021: float
-    act_ela_hist_2020: float
-    act_ela_hist_2019: float
-
-    # ACT Math by year
-    act_math_hist_2025: float
-    act_math_hist_2024: float
-    act_math_hist_2023: float
-    act_math_hist_2022: float
-    act_math_hist_2021: float
-    act_math_hist_2020: float
-    act_math_hist_2019: float
-
-    # ACT Science by year
-    act_science_hist_2025: float
-    act_science_hist_2024: float
-    act_science_hist_2023: float
-    act_science_hist_2022: float
-    act_science_hist_2021: float
-    act_science_hist_2020: float
-    act_science_hist_2019: float
-
-    # English Learners by year
-    el_hist_2025: float
-    el_hist_2024: float
-    el_hist_2023: float
-    el_hist_2022: float
-    el_hist_2021: float
-    el_hist_2020: float
-    el_hist_2019: float
-
-    # Low Income by year
-    low_income_hist_2025: float
-    low_income_hist_2024: float
-    low_income_hist_2023: float
-    low_income_hist_2022: float
-    low_income_hist_2021: float
-    low_income_hist_2020: float
-    low_income_hist_2019: float
-
-    # Diversity percentages by year (White, Black, Hispanic, Asian, Pacific Islander, Native American, Two or More, MENA)
-    # Each diversity category has *_hist_2025 through *_hist_2019
-    # (119 total historical columns across all metrics)
+    # ... through enrollment_hist_2010, and likewise for every metric
+    # (255 historical columns: 15 metrics x 17 years)
 
     created_at: datetime
 ```
@@ -317,7 +259,7 @@ All API responses use Pydantic models for validation and serialization:
 - `TrendMetrics`: Collection of trend windows for all metrics (enrollment, demographics, diversity, ACT)
 
 **Historical Data:**
-- `HistoricalYearlyData`: Yearly values 2019-2025 for a single metric
+- `HistoricalYearlyData`: Yearly values 2010-2026 for a single metric
 - `HistoricalMetrics`: Historical yearly data for all metrics
 
 **Top Scores:**
@@ -709,13 +651,13 @@ uv run pytest tests/test_search_api.py::test_name -vv
 
 ## Data Source
 
-**API:** ReportCardAPI (`https://reportcard-api-production.up.railway.app`) — a separate Railway-hosted service that exposes all 16 years of Illinois Report Card data
+**API:** ReportCardAPI (`https://reportcard-api-production.up.railway.app`) — a separate Railway-hosted service that exposes all 17 years of Illinois Report Card data
 
-**Current year (2025):** Fetches General sheet fields + ACT scores (supplementary table) + IAR scores (supplementary table)
+**Current year (2026):** Fetches General sheet fields + ACT scores (supplementary table) + IAR scores (supplementary table)
 
-**Historical years (2010–2024):** Fetches per-year main school table using a probe-then-fetch approach to handle schema differences across years. SAT scores for 2021–2024 are merged from supplementary `schools_sat_{year}` tables.
+**Historical years (2010–2025):** Fetches per-year main school table using a probe-then-fetch approach to handle schema differences across years. SAT scores for 2021–2024 are merged from supplementary `schools_sat_{year}` tables, and 2025 ACT subject scores from `schools_act_2025`.
 
-**Records:** 3,827 schools (rows without a `school_name` — state/district aggregates — are filtered out)
+**Records:** 3,828 schools (rows without a `school_name` — state/district aggregates — are filtered out)
 
 **Suppressed Data:** Values suppressed for privacy arrive as `null` from the API → stored as `NULL` → returned as `null` in API responses
 

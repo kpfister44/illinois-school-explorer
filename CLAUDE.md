@@ -3,7 +3,7 @@
 
 # Illinois School Explorer — Claude Code Guidelines
 
-A full-stack web application for exploring and comparing Illinois K-12 schools using official 2025 Report Card data from ISBE. Search 3,827 schools, view detailed metrics, compare schools side-by-side, and browse top-performing schools by ACT or IAR scores.
+A full-stack web application for exploring and comparing Illinois K-12 schools using official 2026 Report Card data (2025-26 school year) from ISBE. Search 3,828 schools, view detailed metrics, compare schools side-by-side, and browse top-performing schools by ACT or IAR scores.
 
 **Live URLs:**
 - Frontend: https://illinois-school-explorer.vercel.app
@@ -144,10 +144,10 @@ Good names tell a story about the domain:
 
 ```
 React (Vite) ──── Axios ──── FastAPI ──── SQLAlchemy ──── SQLite (FTS5)
-   Vercel                    Railway                      7MB / 3,827 schools
+   Vercel                    Railway                      7MB / 3,828 schools
 ```
 
-- Data pipeline: ReportCardAPI → 7MB SQLite, 294+ columns, 16 years of history (2010–2025)
+- Data pipeline: ReportCardAPI → 7MB SQLite, 294+ columns, 17 years of history (2010–2026)
 - CORS configured for local dev (`localhost:5173`) and production (Vercel URL)
 - API contract enforced via TypeScript types matching Pydantic models
 
@@ -265,9 +265,9 @@ ISBE suppresses metrics when student counts are <10 (privacy protection):
 - Common cases: ACT scores for elementary schools, small demographic categories
 
 ### Historical Trends
-Pre-calculated percentage changes stored as `{metric}_trend_{window}` columns:
+Pre-calculated changes (current value minus base-year value) stored as `{metric}_trend_{window}` columns:
 - Windows: `1yr`, `3yr`, `5yr`, `10yr`, `15yr`
-- Calculated during data import across 16 years of historical data (2010–2025)
+- Calculated during data sync across 17 years of historical data (2010–2026)
 - Not all schools have trends (new schools, data suppression)
 
 ---
@@ -288,7 +288,7 @@ Swagger UI: `http://localhost:8000/docs` (local) or Railway URL + `/docs`
 - `useSearch(query, limit)`
 - `useSchoolDetail(rcdts)`
 - `useCompare(rcdtsList)`
-- `useTopScores(assessment, level, limit)`
+- `getTopScores(params)` + `topScoresQueryKey(...)` — used directly with `useQuery` (no `useTopScores` hook)
 
 ---
 
@@ -319,7 +319,7 @@ If a feature needs data not currently in the DB, follow this order:
    uv run python -c "
    from app.utils.api_client import ReportCardAPIClient
    c = ReportCardAPIClient('<key>', 'https://reportcard-api-production.up.railway.app')
-   r = c.query(2025, 'school', limit=1)
+   r = c.query(2026, 'school', limit=1)
    print(list(r['data'][0].keys()))
    c.close()
    "
@@ -350,7 +350,26 @@ git add data/schools.db
 git commit -m "data: sync schools.db from ReportCardAPI"
 git push
 ```
-The sync clears and rebuilds the entire database — no need to drop it first. It fetches current-year data (2025) plus 15 years of historical data (2010–2024) and calculates all trends.
+The sync clears and rebuilds the entire database — no need to drop it first. It fetches current-year data (2026) plus 16 years of historical data (2010–2025) and calculates all trends. Set `REPORT_CARD_API_URL` to sync from a different ReportCardAPI instance (e.g. a local one).
+
+### Loading a new Report Card year
+ISBE publishes each year's data set in late October. The year is loaded into ReportCardAPI first (`~/ReportCardAPI`), then synced here:
+
+1. **ReportCardAPI** — back up `data/reportcard.db`, put the xlsx in `data/report-cards/`, then import with a dry run first:
+   ```bash
+   uv run python -m app.cli.import_data data/report-cards/<file>.xlsx --year <year> --dry-run
+   uv run python -m app.cli.import_data data/report-cards/<file>.xlsx --year <year>
+   ```
+   Update its year-coverage test and docs. Redeploying production ReportCardAPI wipes researcher API keys (see its PROJECT.md).
+2. **Sync against a local ReportCardAPI** so the website doesn't depend on the production redeploy. Run it on a copy of the DB so no test key gets baked into the production image:
+   ```bash
+   cp ~/ReportCardAPI/data/reportcard.db /tmp/reportcard-local.db
+   cd ~/ReportCardAPI && DATABASE_URL=sqlite:////tmp/reportcard-local.db ADMIN_API_KEY=<throwaway> \
+     RATE_LIMIT_REQUESTS=100000 uv run uvicorn app.main:app --port 8100
+   ```
+3. **Sync code** (`backend/app/utils/sync_from_api.py`): bump `CURRENT_YEAR`, add the previous year to `DEMOGRAPHIC_YEARS`, and classify its assessment data (`ACT_YEARS`, `SAT_YEARS`, `ACT_SUBJECT_YEARS`).
+4. **Schema** — add `*_hist_<year>` columns (`database.py`), `yr_<year>` (`models.py`, `api/schools.py`, `frontend/src/lib/api/types.ts`, `HistoricalDataTable.tsx`), and update the footer date.
+5. **Rebuild** — `rm data/schools.db`, then `REPORT_CARD_API_KEY=<throwaway> REPORT_CARD_API_URL=http://localhost:8100 uv run python -m app.utils.sync_from_api`. Check that the new `*_hist_<previous year>` values match the previous release's current-year values.
 
 ---
 

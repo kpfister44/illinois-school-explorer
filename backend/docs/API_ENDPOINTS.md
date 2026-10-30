@@ -213,22 +213,26 @@ curl "http://localhost:8000/api/schools/05-016-2140-17-0002"
     },
     "historical": {
       "enrollment": {
+        "yr_2026": 1790,
         "yr_2025": 1775,
         "yr_2024": 1820,
         "yr_2023": 1850,
         "yr_2022": 1900,
         "yr_2021": 1950,
         "yr_2020": 2000,
-        "yr_2019": 2050
+        "yr_2019": 2050,
+        "...": "through yr_2010"
       },
       "act": {
+        "yr_2026": 18.1,
         "yr_2025": 17.95,
         "yr_2024": 17.74,
         "yr_2023": 17.50,
         "yr_2022": null,
         "yr_2021": null,
         "yr_2020": null,
-        "yr_2019": null
+        "yr_2019": 18.0,
+        "...": "through yr_2010"
       }
     }
   }
@@ -244,11 +248,11 @@ See [`../app/models.py`](../app/models.py) for complete type definitions:
 - `Demographics` - EL and low-income percentages
 - `Diversity` - Racial/ethnic breakdown
 - `TrendMetrics` - Year-over-year changes
-- `HistoricalMetrics` - Yearly values 2019-2025
+- `HistoricalMetrics` - Yearly values 2010-2026
 
 **Metrics Details:**
 
-**Current Year (2025):**
+**Current Year (2026 Report Card):**
 - `enrollment` (int | null) - Total student count
 - `act` (object | null) - ACT scores (null for elementary schools)
   - `ela_avg`, `math_avg`, `science_avg` (float | null)
@@ -260,16 +264,16 @@ See [`../app/models.py`](../app/models.py) for complete type definitions:
 - `iar_*_proficiency_pct` (float | null) - IAR proficiency rates (null for high schools)
 
 **Trends:**
-- `trends` (object | null) - Percentage changes over 1/3/5/10/15 year windows
+- `trends` (object | null) - Changes (current minus base-year value) over 1/3/5/10/15 year windows
 - Each metric has: `one_year`, `three_year`, `five_year`, `ten_year`, `fifteen_year` (float | null)
 - Available for: enrollment, demographics, diversity, ACT
 - See [`docs/DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md#trend-metrics-year-over-year-changes) for calculation details
 
 **Historical Data:**
-- `historical` (object | null) - Actual values by year (2019-2025)
-- Each metric has: `yr_2025` through `yr_2019` (number | null)
+- `historical` (object | null) - Actual values by year (2010-2026)
+- Each metric has: `yr_2026` through `yr_2010` (number | null)
 - Available for: enrollment, ACT (overall + subjects), demographics, diversity
-- See [`docs/DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md#historical-yearly-data-2019-2025) for data sources
+- See [`docs/DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md#historical-yearly-data-2010-2026) for data sources
 
 **NULL Handling:**
 - `null` indicates suppressed data (privacy protection) or not applicable

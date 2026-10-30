@@ -1,20 +1,20 @@
 # Illinois School Explorer
 
-A full-stack web application for exploring and comparing Illinois K-12 schools using official 2025 Report Card data from the Illinois State Board of Education.
+A full-stack web application for exploring and comparing Illinois K-12 schools using official 2026 Report Card data (2025-26 school year) from the Illinois State Board of Education.
 
 **Live Application:** https://illinois-school-explorer.vercel.app
 
 ![Illinois School Explorer - Main Search Interface](./docs/screenshots/search-interface.png)
-*Screenshot: Main search interface with full-text search across 3,827 Illinois schools*
+*Screenshot: Main search interface with full-text search across 3,828 Illinois schools*
 
 ---
 
 ## Overview
 
-Finding and comparing Illinois schools shouldn't require navigating spreadsheets with 681 columns. This application transforms the Illinois State Board of Education's 2025 Report Card dataset into an interactive, searchable web experience.
+Finding and comparing Illinois schools shouldn't require navigating spreadsheets with 899 columns. This application transforms the Illinois State Board of Education's 2026 Report Card dataset into an interactive, searchable web experience.
 
 **What it does:**
-- **Search** 3,827 Illinois schools by name, city, or district
+- **Search** 3,828 Illinois schools by name, city, or district
 - **Explore** detailed metrics: enrollment, test scores (ACT/IAR), demographics, diversity
 - **Compare** schools side-by-side with persistent comparison basket
 - **Analyze** historical trends (1, 3, 5, 10, and 15-year windows) for enrollment, demographics, and test scores
@@ -63,7 +63,7 @@ Comprehensive school information with current metrics and historical trends span
 - **Test Scores:** ACT composite scores (high schools) and IAR proficiency rates (elementary/middle schools)
 - **Demographics:** English Learner percentage, Low Income percentage
 - **Diversity:** 8-category racial/ethnic breakdown with trend data
-- **Historical Data:** Year-by-year values from 2010-2025
+- **Historical Data:** Year-by-year values from 2010-2026
 
 ![Historical Trends](./docs/screenshots/historical-trends.png)
 *Screenshot: Expandable historical trend tables with 15 years of data*
@@ -146,7 +146,7 @@ Ranked lists of top-performing schools by ACT composite (high schools) or IAR pr
         │                                        ┌──────────────────┐
         │                                        │  SQLite Database │
         │                                        │   + FTS5 Index   │
-        │                                        │   (3,827 schools)│
+        │                                        │   (3,828 schools)│
         │                                        └──────────────────┘
         │
         ▼
@@ -165,14 +165,14 @@ Ranked lists of top-performing schools by ACT composite (high schools) or IAR pr
 **Database Schema:**
 - Denormalized design for read performance (294+ columns)
 - FTS5 virtual table for fast full-text search
-- 54 trend columns (12 metrics × 1/3/5/10/15-year windows)
-- 240 historical columns (16 years × 15 metrics)
+- 60 trend columns (12 metrics × 1/3/5/10/15-year windows)
+- 255 historical columns (17 years × 15 metrics)
 
 **Data Processing Pipeline:**
-1. Parse 39MB Excel file with 681 columns
-2. Merge multiple sheets (General Info, ACT Scores, IAR Scores)
-3. Clean and normalize data (handle suppressed values, percentages)
-4. Calculate trends from historical Report Card data (2010-2025)
+1. Fetch current-year data (General, ACT, IAR tables) from ReportCardAPI
+2. Fetch 16 years of history, probing each year's schema to handle format changes
+3. Normalize data (suppressed values, school levels, SAT-to-ACT conversion)
+4. Calculate trends from historical Report Card data (2010-2026)
 5. Bulk insert with SQLAlchemy for efficiency
 
 ### Frontend Architecture
@@ -201,33 +201,29 @@ Ranked lists of top-performing schools by ACT composite (high schools) or IAR pr
 
 ### Source Data
 
-**Primary Dataset:**
-- **File:** `2025-Report-Card-Public-Data-Set.xlsx` (39MB)
-- **Source:** Illinois State Board of Education
-- **Records:** 3,827 schools (filtered from 5,000+ entities to `Level == 'School'`)
-- **Metrics:** 681 columns covering enrollment, assessments, demographics, diversity, programs
+**Source:** Illinois State Board of Education Report Card public data sets (2010-2026), served by [ReportCardAPI](https://reportcard-api-production.up.railway.app), a companion REST API that stores each year in its own table.
 
-**Historical Data:**
-- Excel files (2010-2024): Enrollment, demographics, diversity breakdowns
-- TXT files (2010-2017): ACT/SAT scores with format conversions
-- SAT-to-ACT concordance table for score normalization
+- **Current year:** 2026 Report Card (2025-26 school year), 3,828 schools
+- **History:** 2010-2025 enrollment, demographics, diversity, and ACT/SAT scores
+- **Score normalization:** SAT years (2019, 2021-2024) converted to ACT with the official concordance table
 
-### Import Process
+### Sync Process
 
 ```bash
 cd backend
-uv run python -m app.utils.import_data ../2025-Report-Card-Public-Data-Set.xlsx
+export REPORT_CARD_API_KEY=<key>
+uv run python -m app.utils.sync_from_api
 ```
 
 **Processing steps:**
-1. Load and merge multiple Excel sheets (General, ACT, IAR)
+1. Fetch and merge current-year General, ACT, and IAR tables
 2. Filter to school-level entities (exclude districts, state aggregates)
-3. Clean data (convert percentages, handle asterisks/nulls)
+3. Probe each historical year's schema and fetch the matching columns
 4. Normalize school types to standard levels (elementary, middle, high, other)
-5. Calculate historical trends from 16 years of data
-6. Bulk insert 3,827 records with 294+ fields each
+5. Calculate 1/3/5/10/15-year trends from 17 years of data
+6. Bulk insert 3,828 records with 300+ fields each
 
-**Output:** SQLite database (7MB) optimized for read-heavy operations
+**Output:** SQLite database (7MB) committed to the repo and optimized for read-heavy operations
 
 ---
 
@@ -243,19 +239,19 @@ illinois-school-explorer/
 │   │   │   └── top_scores.py      # Leaderboard endpoint
 │   │   ├── services/              # Business logic layer
 │   │   │   └── top_scores.py      # Ranking and filtering logic
-│   │   ├── utils/                 # Data processing utilities
-│   │   │   ├── import_data.py     # Excel → SQLite import pipeline
-│   │   │   ├── import_historical_trends.py  # Trend calculation engine
-│   │   │   └── historical_loader.py         # Multi-format historical data loader
+│   │   ├── utils/                 # Data sync utilities
+│   │   │   ├── sync_from_api.py   # ReportCardAPI → SQLite sync and trend calculation
+│   │   │   └── api_client.py      # ReportCardAPI HTTP client
 │   │   ├── database.py            # SQLAlchemy ORM models (School, FTS5)
 │   │   ├── models.py              # Pydantic response schemas
 │   │   └── main.py                # FastAPI application setup
 │   ├── docs/
 │   │   ├── API_ENDPOINTS.md       # Complete API reference with examples
 │   │   └── DATABASE_SCHEMA.md     # Detailed schema documentation
-│   ├── tests/                     # 13 test files (79 tests, >80% coverage)
+│   ├── data/schools.db            # SQLite database (committed, deployed with the API)
+│   ├── tests/                     # 11 test files (119 tests, 98% coverage)
 │   │   ├── test_schools_api.py    # API endpoint tests
-│   │   ├── test_import_data.py    # Data import tests
+│   │   ├── test_sync_from_api.py  # Data sync tests
 │   │   └── ...
 │   └── CLAUDE.md                  # Backend setup & development guide
 │
@@ -282,19 +278,12 @@ illinois-school-explorer/
 │   │   └── App.tsx                # Root component with routing
 │   ├── tests/
 │   │   ├── e2e/                   # Playwright end-to-end tests
-│   │   └── [component].test.tsx  # 23 Vitest unit test files
+│   │   └── [component].test.tsx  # 25 Vitest unit test files
 │   └── CLAUDE.md                  # Frontend setup & component docs
 │
-├── data/
-│   ├── 2025-Report-Card-Public-Data-Set.xlsx     # Primary dataset
-│   └── historical-report-cards/   # Historical data (2010-2024)
-│       ├── rc10/                  # 2010 data (TXT format)
-│       ├── rc11/                  # 2011 data (TXT format)
-│       └── ...                    # 2012-2024 (Excel format)
-│
 ├── docs/
-│   ├── screenshots/               # App screenshots (placeholder)
-│   └── trend-data-workflow.md     # Historical data processing guide
+│   ├── plans/                     # Implementation plans
+│   └── screenshots/               # App screenshots
 │
 ├── CLAUDE.md                      # Development guidelines and conventions
 └── README.md                      # This file
@@ -318,10 +307,7 @@ cd backend
 # 2. Install dependencies with uv
 uv sync --all-extras
 
-# 3. Import the Illinois schools dataset (creates SQLite database)
-uv run python -m app.utils.import_data ../2025-Report-Card-Public-Data-Set.xlsx
-
-# 4. Start the FastAPI development server
+# 3. Start the FastAPI development server (data/schools.db is committed and ready to use)
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
@@ -510,12 +496,12 @@ Schools are categorized into normalized levels for filtering and leaderboards:
 - `high` - High schools
 - `other` - Alternative and special education schools
 
-Computed during data import from the original `school_type` field.
+Computed during data sync from the original `school_type` field.
 
 ### Suppressed Data
 
 Illinois suppresses certain metrics when student counts are too low (< 10 students) for privacy protection:
-- **In source data:** Asterisks (`*`) in Excel files
+- **In source data:** Markers such as `*n<10` in ISBE data sets (`null` from ReportCardAPI)
 - **In database:** `NULL` values
 - **In API responses:** `null` in JSON
 - **In frontend:** Displayed as "N/A"
@@ -527,14 +513,14 @@ Common scenarios:
 
 ### Historical Trends
 
-Multi-year percentage changes calculated from historical Report Card data:
-- **1-year trend:** 2024 → 2025
-- **3-year trend:** 2022 → 2025
-- **5-year trend:** 2020 → 2025
-- **10-year trend:** 2015 → 2025
-- **15-year trend:** 2010 → 2025
+Multi-year changes (current value minus base-year value) calculated from historical Report Card data:
+- **1-year trend:** 2025 → 2026
+- **3-year trend:** 2023 → 2026
+- **5-year trend:** 2021 → 2026
+- **10-year trend:** 2016 → 2026
+- **15-year trend:** 2011 → 2026
 
-Trends are pre-calculated during data import and stored as database columns for instant querying.
+Trends are pre-calculated during data sync and stored as database columns for instant querying.
 
 ---
 
