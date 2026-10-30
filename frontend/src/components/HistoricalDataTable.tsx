@@ -1,5 +1,5 @@
 // ABOUTME: Presentational component for displaying historical yearly data
-// ABOUTME: Shows 7 years of historical values for a metric in table format
+// ABOUTME: Shows recent years of historical values with a toggle for the full history
 
 import { useState } from 'react';
 import { Info } from 'lucide-react';
@@ -19,7 +19,7 @@ export default function HistoricalDataTable({
   metricLabel,
 }: HistoricalDataTableProps) {
   const [showAllYears, setShowAllYears] = useState(false);
-  const years = [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010];
+  const years = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010];
   const recentYears = years.filter((year) => year >= 2017);
   const legacyYears = years.filter((year) => year < 2017);
   const displayedYears = showAllYears ? years : recentYears;

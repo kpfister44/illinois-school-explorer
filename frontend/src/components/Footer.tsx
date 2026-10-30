@@ -16,7 +16,7 @@ export default function Footer() {
             Illinois State Board of Education
           </a>
           {' | '}
-          Report Card Data | Last Updated: November 13, 2025
+          Report Card Data | Last Updated: October 30, 2026
         </p>
       </div>
     </footer>

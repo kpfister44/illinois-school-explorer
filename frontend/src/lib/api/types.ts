@@ -62,6 +62,7 @@ export interface TrendMetrics {
 }
 
 export interface HistoricalYearlyData {
+  yr_2026?: number | null;
   yr_2025?: number | null;
   yr_2024?: number | null;
   yr_2023?: number | null;

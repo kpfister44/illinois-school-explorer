@@ -8,6 +8,7 @@ import HistoricalDataTable from './HistoricalDataTable';
 import type { HistoricalYearlyData } from '@/lib/api/types';
 
 const sampleData: HistoricalYearlyData = {
+  yr_2026: 18.1,
   yr_2025: 17.9,
   yr_2024: 17.8,
   yr_2023: 17.7,
@@ -27,9 +28,11 @@ const sampleData: HistoricalYearlyData = {
 };
 
 describe('HistoricalDataTable', () => {
-  it('shows 2017-2025 by default with show more control', () => {
+  it('shows 2017-2026 by default with show more control', () => {
     render(<HistoricalDataTable data={sampleData} metricType="score" metricLabel="ACT Overall" />);
 
+    expect(screen.getByText('2026')).toBeInTheDocument();
+    expect(screen.getByText('18.1')).toBeInTheDocument();
     expect(screen.getByText('2025')).toBeInTheDocument();
     expect(screen.getByText('2017')).toBeInTheDocument();
     expect(screen.queryByText('2016')).not.toBeInTheDocument();
