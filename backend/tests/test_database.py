@@ -142,6 +142,7 @@ def test_init_db_creates_tables_and_fts(tmp_path, monkeypatch):
         fts_tables = conn.execute(
             text("SELECT name FROM sqlite_master WHERE type='table' AND name='schools_fts'")
         ).fetchall()
+    disk_engine.dispose()
 
     assert tables
     assert fts_tables
