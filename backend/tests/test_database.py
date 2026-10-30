@@ -150,54 +150,34 @@ def test_init_db_creates_tables_and_fts(tmp_path):
     assert fts_tables
 
 
-@pytest.mark.slow
-def test_search_schools_by_name(test_db):
+def test_search_schools_by_name(committed_db):
     """search_schools finds records by partial school name."""
-    from app.utils.import_data import import_to_database
-
-    import_to_database("../2025-Report-Card-Public-Data-Set.xlsx", test_db)
-
-    results = search_schools(test_db, "elk grove", limit=5)
+    results = search_schools(committed_db, "elk grove", limit=5)
 
     assert len(results) > 0
     assert any("elk grove" in s.school_name.lower() for s in results)
 
 
-@pytest.mark.slow
-def test_search_schools_by_city(test_db):
+def test_search_schools_by_city(committed_db):
     """search_schools matches against city names."""
-    from app.utils.import_data import import_to_database
-
-    import_to_database("../2025-Report-Card-Public-Data-Set.xlsx", test_db)
-
-    results = search_schools(test_db, "chicago", limit=10)
+    results = search_schools(committed_db, "chicago", limit=10)
 
     assert len(results) > 0
     assert any(s.city.lower() == "chicago" for s in results)
 
 
-@pytest.mark.slow
-def test_search_schools_limit_works(test_db):
+def test_search_schools_limit_works(committed_db):
     """Limit parameter caps number of returned schools."""
-    from app.utils.import_data import import_to_database
-
-    import_to_database("../2025-Report-Card-Public-Data-Set.xlsx", test_db)
-
-    results = search_schools(test_db, "high school", limit=3)
+    results = search_schools(committed_db, "high school", limit=3)
 
     assert 0 < len(results) <= 3
 
 
-@pytest.mark.slow
-def test_get_school_by_rcdts(test_db):
+def test_get_school_by_rcdts(committed_db):
     """get_school_by_rcdts returns persisted school for valid code."""
-    from app.utils.import_data import import_to_database
+    first_school = committed_db.query(School).first()
 
-    import_to_database("../2025-Report-Card-Public-Data-Set.xlsx", test_db)
-
-    first_school = test_db.query(School).first()
-
-    result = get_school_by_rcdts(test_db, first_school.rcdts)
+    result = get_school_by_rcdts(committed_db, first_school.rcdts)
 
     assert result is not None
     assert result.rcdts == first_school.rcdts

@@ -1,5 +1,7 @@
-# ABOUTME: Pytest fixtures for testing with in-memory SQLite database
+# ABOUTME: Pytest fixtures for in-memory test databases and the committed schools.db
 # ABOUTME: Provides test database sessions and client instances
+
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -39,6 +41,24 @@ def test_db(test_engine) -> Session:
         yield db
     finally:
         db.close()
+
+
+COMMITTED_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "schools.db"
+
+
+@pytest.fixture
+def committed_db() -> Session:
+    """Provide a read-only session on the committed data/schools.db with real school data."""
+    engine = create_engine(
+        f"sqlite:///file:{COMMITTED_DB_PATH}?mode=ro&uri=true",
+        connect_args={"check_same_thread": False},
+    )
+    db = sessionmaker(bind=engine)()
+    try:
+        yield db
+    finally:
+        db.close()
+        engine.dispose()
 
 
 @pytest.fixture
