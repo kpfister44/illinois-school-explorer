@@ -15,7 +15,7 @@ Complete schema reference for the Illinois School Explorer SQLite database.
 **Model Definition:** `backend/app/database.py`
 
 **Key Features:**
-- Single `schools` table with 270+ columns
+- Single `schools` table with 353 columns
 - FTS5 virtual table for full-text search
 - Automatic triggers for search index synchronization
 - Historical data spanning **2010-2026** (17 years)
@@ -32,12 +32,14 @@ Complete schema reference for the Illinois School Explorer SQLite database.
 | `id` | INTEGER | PRIMARY KEY, AUTOINCREMENT | Internal database ID |
 | `rcdts` | VARCHAR(20) | UNIQUE, NOT NULL, INDEXED | Illinois state school identifier (format: "05-016-2140-17-0002") |
 | `school_name` | TEXT | NOT NULL | Official school name |
+| `display_name` | TEXT | NULL | `school_name` with abbreviations spelled out (Elem, Sch, Hs/HS, JHS; Jr and Sr only in front of High or HS) |
 | `district` | TEXT | NULL | School district name |
 | `city` | TEXT | NOT NULL, INDEXED | City location |
 | `county` | TEXT | NULL | County name |
 | `school_type` | TEXT | NULL | Original school type from source data (e.g., "High School", "Elementary School") |
 | `level` | VARCHAR(20) | NOT NULL, INDEXED | Normalized school level: "high", "middle", "elementary", "other" |
 | `grades_served` | TEXT | NULL | Grade range (e.g., "9-12", "K-8") |
+| `designation` | TEXT | NULL | 2026 Profiles of Performance level: "Exemplary", "Approaching Exemplary", "Commendable", "Developing", "Comprehensive" (best first), or "Dually Designated" for schools spanning grade bands. NULL when ISBE gave none |
 | `created_at` | DATETIME | NOT NULL | Timestamp of record creation (UTC) |
 
 **Notes:**
@@ -152,7 +154,15 @@ Each diversity category has five trend columns following the pattern `{category}
 | `act_trend_10yr` | FLOAT | 10-year ACT composite change |
 | `act_trend_15yr` | FLOAT | 15-year ACT composite change |
 
-**Total Trend Columns:** 60 (12 metrics × 5 windows)
+IAR proficiency has a one-year trend only, because results before 2025 are not comparable:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `iar_trend_1yr` | FLOAT | 1-year change in overall IAR proficiency (percentage points) |
+| `iar_ela_trend_1yr` | FLOAT | 1-year change in IAR ELA proficiency |
+| `iar_math_trend_1yr` | FLOAT | 1-year change in IAR math proficiency |
+
+**Total Trend Columns:** 63 (12 metrics × 5 windows, plus 3 IAR one-year trends)
 
 **Calculation:** Trends are computed during data sync (`_calculate_trend` in `backend/app/utils/sync_from_api.py`) as current value minus the base-year value.
 
@@ -224,7 +234,9 @@ Each diversity category has 17 yearly columns: `{category}_hist_{year}`
 - `black_hist_2026` through `black_hist_2010` (17 columns)
 - (8 categories × 17 years = 136 total diversity historical columns)
 
-**Total Historical Columns:** 255 (17 enrollment + 68 ACT + 34 demographics + 136 diversity)
+**IAR proficiency:** `iar_hist_{year}`, `iar_ela_hist_{year}` and `iar_math_hist_{year}` exist for 2025 and 2026 only (6 columns). 2024 precedes a scoring change and 2019-2023 have no schoolwide total.
+
+**Total Historical Columns:** 261 (17 enrollment + 68 ACT + 6 IAR + 34 demographics + 136 diversity)
 
 **Data Source:** ReportCardAPI per-year tables, fetched by `backend/app/utils/sync_from_api.py`
 
@@ -239,6 +251,7 @@ Each diversity category has 17 yearly columns: `{category}_hist_{year}`
 
 **Columns:**
 - `school_name` (TEXT)
+- `display_name` (TEXT)
 - `city` (TEXT)
 - `district` (TEXT)
 
@@ -246,6 +259,7 @@ Each diversity category has 17 yearly columns: `{category}_hist_{year}`
 ```sql
 CREATE VIRTUAL TABLE schools_fts USING fts5(
     school_name,
+    display_name,
     city,
     district,
     content=schools,
@@ -253,7 +267,7 @@ CREATE VIRTUAL TABLE schools_fts USING fts5(
 );
 ```
 
-**Synchronization:** Automatic via triggers (insert, update, delete)
+**Synchronization:** Automatic via triggers (insert, update, delete). The table is external-content, so the update and delete triggers remove the old entry with the FTS5 `'delete'` command and the old column values.
 
 **Search Function:** `search_schools(db, query, limit)` in `backend/app/database.py`
 
@@ -285,7 +299,7 @@ CREATE VIRTUAL TABLE schools_fts USING fts5(
 
 | Index | Columns | Purpose |
 |-------|---------|---------|
-| `schools_fts` | `school_name`, `city`, `district` | Full-text search |
+| `schools_fts` | `school_name`, `display_name`, `city`, `district` | Full-text search |
 
 ---
 
@@ -332,22 +346,23 @@ These fields are computed once during data sync:
 | Field | Source | Logic |
 |-------|--------|-------|
 | `level` | `school_type` | Normalized to "high", "middle", "elementary", "other" |
+| `display_name` | `school_name` | Abbreviations spelled out |
 | `*_trend_*` | Historical data | `current - historical` |
 
 ---
 
 ## Table Statistics
 
-**Total Columns:** 294+
-- Primary info: 10 columns
-- Current metrics: 19 columns
-- Trend metrics: 60 columns
-- Historical data: 255 columns (17 years × 15 metrics)
+**Total Columns:** 353
+- Primary info: 11 columns
+- Current metrics: 17 columns
+- Trend metrics: 63 columns
+- Historical data: 261 columns (17 years × 15 metrics, plus 2 years × 3 IAR metrics)
 - Metadata: 1 column (`created_at`)
 
 **Total Schools:** 3,828 (2026 dataset)
 
-**Database Size:** ~7 MB (with full historical data)
+**Database Size:** ~10 MB (with full historical data)
 
 **Historical Coverage:** 17-year time series (2010-2026) for:
 - Enrollment (15 years complete)

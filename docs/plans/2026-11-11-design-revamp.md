@@ -183,9 +183,10 @@ ISBE's 2026 accountability system is called Profiles of Performance. ISBE says t
 - **Not available:** the level for each Core and Elevating indicator (the "house"). It is on ISBE's site but not in the public data set. The app links to `https://www.illinoisreportcard.com/school.aspx?schoolid=<rcdts without hyphens>&source=accountability&source2=essadesignation`.
 - **No history:** 2025 used different categories (Commendable, Targeted, Exemplary, Comprehensive, Intensive). The page says the system is new in 2026.
 
-**Confirm against ISBE documentation before building phase 2:**
-1. The order of the five levels. Assumed from the names: Exemplary, Approaching Exemplary, Commendable, Developing, Comprehensive.
-2. What "Dually Designated" means and how to display it.
+**Confirmed against ISBE documentation in phase 2:**
+1. The order of the five levels. ISBE's "2026 Illinois Report Card: An Overview of Profiles of Performance" numbers them 1 Exemplary, 2 Approaching Exemplary, 3 Commendable, 4 Developing, 5 Comprehensive. A sixth level, Automatic Comprehensive, applies to single indicators only and never to a school's overall designation. ISBE's short descriptions: highest levels of performance; strong; typical or average; below average; low.
+2. "Dually Designated" marks a school with a variant grade configuration. ISBE's ESSA plan (Amendment 5, April 2026): such schools "receive two designations using the data elements and thresholds applicable to the grade band". All 82 span bands, mostly 6-12 and 7-12. The public data set does not say which two designations, so the school page shows "Dually Designated" off the five-step scale with a link to the school's Illinois Report Card profile.
+3. `summative_designation_student_groups` is "NA" for every school and is not synced.
 
 ---
 
@@ -205,7 +206,7 @@ Store 2025 and 2026 and show a one-year change. No IAR chart yet.
 
 | Change | Returns | Phase |
 |---|---|---|
-| `SchoolDetail` gains `designation`, `designation_student_groups`, `display_name`, IAR history and one-year IAR trend | New fields from the rebuild | 2 |
+| `SchoolDetail` gains `designation`, `display_name`, IAR history and one-year IAR trend | New fields from the rebuild | 2 |
 | `GET /api/stats` | School, district and city counts | 2 |
 | `GET /api/schools/{rcdts}` gains `benchmarks` | Per metric: state average, district average and school count, percentile, similar-schools average | 4 |
 | `GET /api/schools/{rcdts}/similar` | The 25 similar schools | 4 |
@@ -216,7 +217,7 @@ Store 2025 and 2026 and show a one-year change. No IAR chart yet.
 
 Follow "Adding a new API endpoint" and "Adding a new data field from the ReportCardAPI" in the root `CLAUDE.md`. Keep `frontend/src/lib/api/types.ts` in step with `backend/app/models.py`.
 
-**Display names.** At sync time, store `display_name` beside the official `school_name`, expanding a short fixed list of unambiguous abbreviations as whole words: Elem, Sch, Hs/HS, Jr, JHS. Search matches both. The school page shows the official name as secondary text when it differs.
+**Display names.** At sync time, store `display_name` beside the official `school_name`, expanding a short fixed list of unambiguous abbreviations as whole words: Elem, Sch, Hs/HS, JHS. Jr and Sr are expanded only in front of High or HS, because eight schools carry them as part of a person's name ("M L King Jr Elem School"). Search matches both. The school page shows the official name as secondary text when it differs.
 
 ---
 
@@ -234,7 +235,7 @@ Each phase ships on its own. All work follows the TDD and testing rules in the r
 
 ### Phase 2: New data, one rebuild (small, backend first)
 - Confirm the two designation unknowns.
-- Sync: designation, designation student groups, `display_name`, IAR ELA and math history for 2025 and 2026, one-year IAR trend.
+- Sync: designation, `display_name`, IAR ELA and math history for 2025 and 2026, one-year IAR trend.
 - Rebuild `schools.db`; check 2026 values are unchanged for existing columns.
 - Expose the new fields; add `GET /api/stats`; Home uses it.
 - **Done when:** the rebuilt database is committed, new fields appear in the API and types, and backend tests cover the sync mapping.

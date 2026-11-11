@@ -70,6 +70,7 @@ The sync script handles all format differences automatically via a probe-then-fe
 | `/api/schools/{rcdts}` | GET | Get complete school information | [→](docs/API_ENDPOINTS.md#get-school-detail) |
 | `/api/schools/compare` | GET | Compare 2-5 schools side-by-side | [→](docs/API_ENDPOINTS.md#compare-schools) |
 | `/api/top-scores` | GET | Ranked list of top schools by assessment | [→](docs/API_ENDPOINTS.md#get-top-scores) |
+| `/api/stats` | GET | School, district and city counts | [→](docs/API_ENDPOINTS.md#get-stats) |
 
 ### Common Examples
 
@@ -122,13 +123,15 @@ class School(Base):
     # Primary Info
     id: int
     rcdts: str              # State school ID (unique)
-    school_name: str
+    school_name: str        # Official ISBE name
+    display_name: str       # school_name with abbreviations spelled out
     city: str
     district: str
     county: str
     school_type: str        # "Elementary School", "High School", etc.
     level: str              # Normalized level: "elementary", "middle", "high", "other"
     grades_served: str      # "9-12", "K-8", etc.
+    designation: str        # 2026 Profiles of Performance level, or None
 
     # Core Metrics
     student_enrollment: int
@@ -216,6 +219,9 @@ class School(Base):
     act_trend_5yr: float
     act_trend_10yr: float
     act_trend_15yr: float
+    iar_trend_1yr: float    # IAR has a one-year trend only
+    iar_ela_trend_1yr: float
+    iar_math_trend_1yr: float
 
     # Historical Yearly Data (2010-2026)
     # One column per year for each of 15 metrics: {metric}_hist_{year}
@@ -226,6 +232,9 @@ class School(Base):
     enrollment_hist_2025: int
     # ... through enrollment_hist_2010, and likewise for every metric
     # (255 historical columns: 15 metrics x 17 years)
+    # IAR history covers 2025 and 2026 only: iar, iar_ela, iar_math (6 columns)
+    iar_hist_2026: float
+    iar_hist_2025: float
 
     created_at: datetime
 ```
@@ -243,6 +252,7 @@ All API responses use Pydantic models for validation and serialization:
 **Search & Basic Info:**
 - `SchoolSearchResult`: Search endpoint results (basic info only)
 - `SearchResponse`: Wrapper for search results + total count
+- `StatsResponse`: School, district and city counts
 - `CompareResponse`: Wrapper for array of school details
 
 **School Details:**
@@ -293,6 +303,7 @@ FTS5 virtual table for fast search. See [`docs/DATABASE_SCHEMA.md`](docs/DATABAS
 ```sql
 CREATE VIRTUAL TABLE schools_fts USING fts5(
     school_name,
+    display_name,
     city,
     district,
     content=schools,
@@ -339,6 +350,7 @@ backend/
 │   │   ├── __init__.py
 │   │   ├── search.py        # GET /api/search
 │   │   ├── schools.py       # GET /api/schools/{rcdts}, /compare
+│   │   ├── stats.py         # GET /api/stats
 │   │   └── top_scores.py    # GET /api/top-scores
 │   ├── services/
 │   │   ├── __init__.py
@@ -356,6 +368,7 @@ backend/
 │   ├── test_schools_api.py              # School detail & compare tests
 │   ├── test_top_scores_api.py           # Top scores endpoint tests
 │   ├── test_top_scores_service.py       # Top scores service tests
+│   ├── test_stats_api.py                # Stats endpoint tests
 │   ├── test_api_client.py               # ReportCardAPI client tests
 │   ├── test_sync_from_api.py            # Sync pipeline tests
 │   └── test_integration.py              # End-to-end integration tests
@@ -489,6 +502,7 @@ def client(test_db):
 - `test_search_api.py`: Search endpoint, pagination, validation
 - `test_schools_api.py`: Detail & compare endpoints, error cases
 - `test_top_scores_api.py`: Top scores endpoint, filters, ranking
+- `test_stats_api.py`: School, district and city counts
 
 **Service Tests:**
 - `test_top_scores_service.py`: Top scores business logic, ranking algorithms
@@ -496,7 +510,7 @@ def client(test_db):
 **Integration Tests:**
 - `test_integration.py`: Full pipeline, end-to-end flows (marked `@pytest.mark.slow`)
 
-**Total:** 11 active test files with comprehensive coverage
+**Total:** 12 active test files with comprehensive coverage
 
 ### Coverage Targets
 

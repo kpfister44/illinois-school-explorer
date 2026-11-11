@@ -144,10 +144,10 @@ Good names tell a story about the domain:
 
 ```
 React (Vite) ──── Axios ──── FastAPI ──── SQLAlchemy ──── SQLite (FTS5)
-   Vercel                    Railway                      7MB / 3,828 schools
+   Vercel                    Railway                      10MB / 3,828 schools
 ```
 
-- Data pipeline: ReportCardAPI → 7MB SQLite, 294+ columns, 17 years of history (2010–2026)
+- Data pipeline: ReportCardAPI → 10MB SQLite, 353 columns, 17 years of history (2010–2026)
 - CORS configured for local dev (`localhost:5173`) and production (Vercel URL)
 - API contract enforced via TypeScript types matching Pydantic models
 
@@ -276,6 +276,20 @@ Tokens are defined in `frontend/src/index.css` and documented in `docs/plans/202
 - Controls are at least 44px in both directions, and nothing depends on hover.
 - Only test results get a better or worse reading. Enrollment and demographics are shown neutrally.
 
+### State Designation
+`designation` is the school's 2026 Profiles of Performance level from ISBE (`summative_designation` in ReportCardAPI):
+- Five levels, best first: Exemplary, Approaching Exemplary, Commendable, Developing, Comprehensive
+- `Dually Designated` (82 schools) marks a school that spans grade bands, mostly 6-12 and 7-12. ISBE gives it one designation per band, and the public data set does not say which two. It has no place on the five-level scale.
+- `null` (187 schools) means ISBE gave no designation, mostly special schools
+- New in 2026; earlier years used different categories, so there is no history
+- `summative_designation_student_groups` is not synced: it is "NA" for every school
+
+### Display Names
+`display_name` is the official `school_name` with abbreviations spelled out (`display_name` in `sync_from_api.py`):
+- Elem, Sch, Hs/HS and JHS are always expanded
+- Jr and Sr are expanded only in front of High or HS ("Jr-Sr High" → "Junior-Senior High"). Elsewhere they are part of a person's name ("M L King Jr Elem School" → "M L King Jr Elementary School")
+- Search matches both names. `school_name` stays the official ISBE spelling.
+
 ### Suppressed Data (Nulls)
 ISBE suppresses metrics when student counts are <10 (privacy protection):
 - Source data: suppressed values arrive as `null` from the ReportCardAPI → stored as `NULL` → returned as `null` in API
@@ -287,6 +301,7 @@ Pre-calculated changes (current value minus base-year value) stored as `{metric}
 - Windows: `1yr`, `3yr`, `5yr`, `10yr`, `15yr`
 - Calculated during data sync across 17 years of historical data (2010–2026)
 - Not all schools have trends (new schools, data suppression)
+- IAR (`iar`, `iar_ela`, `iar_math`) has history for 2025 and 2026 only and a `1yr` trend only. 2024 precedes a scoring change and earlier years have no schoolwide total.
 
 ---
 
@@ -297,6 +312,7 @@ GET /api/search?q={query}&limit={n}                          — full-text searc
 GET /api/schools/{rcdts}                                     — school detail
 GET /api/schools/compare?rcdts={rcdts1},{rcdts2},...         — compare 2-5 schools
 GET /api/top-scores?assessment={act|iar}&level={high|middle|elementary}&limit={1-100}
+GET /api/stats                                               — school, district and city counts
 GET /health                                                  — health check
 ```
 
@@ -306,6 +322,7 @@ Swagger UI: `http://localhost:8000/docs` (local) or Railway URL + `/docs`
 - `useSearch(query, limit)`
 - `useSchoolDetail(rcdts)`
 - `useCompare(rcdtsList)`
+- `useStats()`
 - `getTopScores(params)` + `topScoresQueryKey(...)` — used directly with `useQuery` (no `useTopScores` hook)
 
 ---
@@ -385,8 +402,8 @@ ISBE publishes each year's data set in late October. The year is loaded into Rep
    cd ~/ReportCardAPI && DATABASE_URL=sqlite:////tmp/reportcard-local.db ADMIN_API_KEY=<throwaway> \
      RATE_LIMIT_REQUESTS=100000 uv run uvicorn app.main:app --port 8100
    ```
-3. **Sync code** (`backend/app/utils/sync_from_api.py`): bump `CURRENT_YEAR`, add the previous year to `DEMOGRAPHIC_YEARS`, and classify its assessment data (`ACT_YEARS`, `SAT_YEARS`, `ACT_SUBJECT_YEARS`).
-4. **Schema** — add `*_hist_<year>` columns (`database.py`), `yr_<year>` (`models.py`, `api/schools.py`, `frontend/src/lib/api/types.ts`, `HistoricalDataTable.tsx`), bump `CURRENT_YEAR` in `frontend/src/lib/trendUtils.ts` (ACT subject trends are derived from history in the frontend), and update the footer date.
+3. **Sync code** (`backend/app/utils/sync_from_api.py`): bump `CURRENT_YEAR`, add the previous year to `DEMOGRAPHIC_YEARS`, and classify its assessment data (`ACT_YEARS`, `SAT_YEARS`, `ACT_SUBJECT_YEARS`, and `IAR_YEARS` if the previous year's IAR totals are comparable).
+4. **Schema** — add `*_hist_<year>` columns (`database.py`, including `iar*_hist_<year>`), `yr_<year>` (`models.py`, `api/schools.py`, `frontend/src/lib/api/types.ts`, `HistoricalDataTable.tsx`), bump `CURRENT_YEAR` in `frontend/src/lib/trendUtils.ts` (ACT subject trends are derived from history in the frontend), and update the footer date.
 5. **Rebuild** — `rm data/schools.db`, then `REPORT_CARD_API_KEY=<throwaway> REPORT_CARD_API_URL=http://localhost:8100 uv run python -m app.utils.sync_from_api`. Check that the new `*_hist_<previous year>` values match the previous release's current-year values.
 
 ---

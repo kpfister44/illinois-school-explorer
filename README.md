@@ -163,7 +163,7 @@ Ranked lists of top-performing schools by ACT composite (high schools) or IAR pr
 - Automatic OpenAPI (Swagger) documentation generation
 
 **Database Schema:**
-- Denormalized design for read performance (294+ columns)
+- Denormalized design for read performance (353 columns)
 - FTS5 virtual table for fast full-text search
 - 60 trend columns (12 metrics × 1/3/5/10/15-year windows)
 - 255 historical columns (17 years × 15 metrics)
@@ -223,7 +223,7 @@ uv run python -m app.utils.sync_from_api
 5. Calculate 1/3/5/10/15-year trends from 17 years of data
 6. Bulk insert 3,828 records with 300+ fields each
 
-**Output:** SQLite database (7MB) committed to the repo and optimized for read-heavy operations
+**Output:** SQLite database (10MB) committed to the repo and optimized for read-heavy operations
 
 ---
 
@@ -400,6 +400,7 @@ npm run test:e2e:ui
 | `/api/schools/{rcdts}` | GET | Retrieve complete school details by RCDTS identifier |
 | `/api/schools/compare` | GET | Compare 2-5 schools side-by-side |
 | `/api/top-scores` | GET | Ranked leaderboard by ACT or IAR scores |
+| `/api/stats` | GET | School, district and city counts |
 | `/health` | GET | Health check endpoint |
 
 ### Example API Calls
@@ -464,7 +465,7 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://illinois-sch
 ```
 
 **Database:**
-- SQLite file (7MB) committed to git at `backend/data/schools.db` and deployed with the code
+- SQLite file (10MB) committed to git at `backend/data/schools.db` and deployed with the code
 - Read-only in production; no Railway volume
 - No external database service required
 

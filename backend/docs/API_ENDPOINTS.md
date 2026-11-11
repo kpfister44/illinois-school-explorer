@@ -19,6 +19,7 @@ Complete endpoint documentation for the Illinois School Explorer REST API.
 | [`/api/schools/{rcdts}`](#get-school-detail) | GET | Get complete school information |
 | [`/api/schools/compare`](#compare-schools) | GET | Compare 2-5 schools side-by-side |
 | [`/api/top-scores`](#get-top-scores) | GET | Ranked list of top schools by assessment |
+| [`/api/stats`](#get-stats) | GET | School, district and city counts |
 
 ---
 
@@ -165,11 +166,13 @@ curl "http://localhost:8000/api/schools/05-016-2140-17-0002"
   "id": 123,
   "rcdts": "05-016-2140-17-0002",
   "school_name": "Elk Grove High School",
+  "display_name": "Elk Grove High School",
   "city": "Elk Grove Village",
   "district": "Township HSD 214",
   "county": "Cook",
   "school_type": "High School",
   "grades_served": "9-12",
+  "designation": "Commendable",
   "metrics": {
     "enrollment": 1775,
     "act": {
@@ -263,16 +266,22 @@ See [`../app/models.py`](../app/models.py) for complete type definitions:
 - `diversity` (object) - 8 racial/ethnic categories, all (float | null)
 - `iar_*_proficiency_pct` (float | null) - IAR proficiency rates (null for high schools)
 
+**Name and designation:**
+- `display_name` (string) - `school_name` with abbreviations spelled out ("Clearmont Elem School" → "Clearmont Elementary School")
+- `designation` (string | null) - 2026 Profiles of Performance level. Best first: "Exemplary", "Approaching Exemplary", "Commendable", "Developing", "Comprehensive". "Dually Designated" marks a school spanning grade bands, which gets one designation per band. `null` when ISBE gave none.
+
 **Trends:**
 - `trends` (object | null) - Changes (current minus base-year value) over 1/3/5/10/15 year windows
 - Each metric has: `one_year`, `three_year`, `five_year`, `ten_year`, `fifteen_year` (float | null)
 - Available for: enrollment, demographics, diversity, ACT
+- `iar`, `iar_ela` and `iar_math` have `one_year` only; results before 2025 are not comparable
 - See [`docs/DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md#trend-metrics-year-over-year-changes) for calculation details
 
 **Historical Data:**
 - `historical` (object | null) - Actual values by year (2010-2026)
 - Each metric has: `yr_2026` through `yr_2010` (number | null)
 - Available for: enrollment, ACT (overall + subjects), demographics, diversity
+- `iar`, `iar_ela` and `iar_math` have `yr_2025` and `yr_2026` only
 - See [`docs/DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md#historical-yearly-data-2010-2026) for data sources
 
 **NULL Handling:**
@@ -600,6 +609,45 @@ const { data } = useQuery({
 - Results cached client-side by TanStack Query
 - Consider rate limiting for public deployments
 - Limit capped at 100 to prevent excessive data transfer
+
+---
+
+### Get Stats
+
+Count the schools, districts and cities in the database.
+
+**Endpoint:** `GET /api/stats`
+
+**Authentication:** None
+
+**Example Request:**
+```bash
+curl "http://localhost:8000/api/stats"
+```
+
+**Example Response:**
+```json
+{
+  "schools": 3828,
+  "districts": 864,
+  "cities": 845
+}
+```
+
+**Response Fields:**
+- `schools` (integer) - Number of schools
+- `districts` (integer) - Number of districts. A district is the region-county-district-type prefix of the RCDTS code, since unrelated districts can share a name.
+- `cities` (integer) - Number of cities, ignoring capitalisation ("DeKalb" and "Dekalb" count once)
+
+**Status Codes:**
+- `200 OK` - Counts returned
+- `503 Service Unavailable` - Database connection error
+
+**Frontend Integration:**
+```typescript
+// See frontend/src/lib/api/queries.ts
+const { data: stats } = useStats();
+```
 
 ---
 
