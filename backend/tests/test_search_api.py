@@ -1,6 +1,8 @@
 # ABOUTME: Tests for /api/search endpoint with FTS5 full-text search
 # ABOUTME: Validates search functionality, pagination, and error handling
 
+from sqlalchemy import text
+
 from app.database import School
 
 
@@ -120,3 +122,73 @@ def test_search_handles_special_characters(client, test_db):
     assert response.status_code == 200
     data = response.json()
     assert data["total"] >= 1
+
+
+def test_search_matches_display_name_and_official_name(client, test_db):
+    """GET /api/search finds a school by its spelled-out name and by its official name."""
+    school = School(
+        rcdts="05-016-0590-04-2003",
+        school_name="Clearmont Elem School",
+        display_name="Clearmont Elementary School",
+        city="Elk Grove Village",
+        district="Comm Cons SD 59",
+        school_type="Elementary School",
+        level="elementary",
+    )
+    test_db.add(school)
+    test_db.commit()
+
+    for query in ("clearmont elementary", "clearmont elem"):
+        response = client.get("/api/search", params={"q": query})
+        names = [result["school_name"] for result in response.json()["results"]]
+        assert names == ["Clearmont Elem School"], query
+
+
+def test_search_follows_display_name_updates(client, test_db):
+    """The search index tracks changes to a school's display name."""
+    school = School(
+        rcdts="05-016-0590-04-2003",
+        school_name="Clearmont Elem School",
+        city="Elk Grove Village",
+        level="elementary",
+    )
+    test_db.add(school)
+    test_db.commit()
+    assert client.get("/api/search", params={"q": "elementary"}).json()["total"] == 0
+
+    school.display_name = "Clearmont Elementary School"
+    test_db.commit()
+
+    assert client.get("/api/search", params={"q": "elementary"}).json()["total"] == 1
+
+
+def test_search_forgets_deleted_schools(client, test_db):
+    """The search index drops a school when it is deleted and stays usable afterwards."""
+    school = School(
+        rcdts="05-016-0590-04-2003",
+        school_name="Clearmont Elem School",
+        city="Elk Grove Village",
+        level="elementary",
+    )
+    test_db.add(school)
+    test_db.commit()
+
+    test_db.delete(school)
+    test_db.commit()
+    assert client.get("/api/search", params={"q": "clearmont"}).json()["total"] == 0
+
+    test_db.add(
+        School(
+            rcdts="05-016-2140-17-0002",
+            school_name="Elk Grove High School",
+            city="Elk Grove Village",
+            level="high",
+        )
+    )
+    test_db.commit()
+    assert client.get("/api/search", params={"q": "clearmont"}).json()["total"] == 0
+    assert client.get("/api/search", params={"q": "elk grove"}).json()["total"] == 1
+    integrity = test_db.execute(
+        text("INSERT INTO schools_fts(schools_fts, rank) VALUES('integrity-check', 1)")
+    )
+    assert integrity is not None

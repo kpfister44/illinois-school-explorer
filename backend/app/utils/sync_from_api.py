@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 from typing import Any, Optional
 
@@ -34,6 +35,11 @@ ACT_YEARS: set[int] = {2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010}
 # table; composite = ELA/Math average, matching the current-year calculation)
 ACT_SUBJECT_YEARS: set[int] = {2025}
 
+# Historical years whose schools_iar_{year} table has schoolwide proficiency totals on the
+# same scoring as CURRENT_YEAR. 2024 has the fields but precedes a scoring change, and
+# 2019-2023 only have per-grade percentages.
+IAR_YEARS: set[int] = {2025}
+
 TREND_WINDOWS = [1, 3, 5, 10, 15]
 
 # ---------------------------------------------------------------------------
@@ -43,6 +49,7 @@ TREND_WINDOWS = [1, 3, 5, 10, 15]
 GENERAL_FIELDS = [
     "rcdts", "school_name", "district", "city", "county",
     "school_type", "grades_served",
+    "summative_designation",
     "student_enrollment",
     "pct_student_enrollment_low_income",
     "pct_student_enrollment_el",
@@ -200,6 +207,35 @@ DIVERSITY_METRICS: dict[str, str] = {
     "mena": "pct_mena",
 }
 
+# IAR proficiency metrics: internal key → ISE database column
+IAR_METRICS: dict[str, str] = {
+    "iar": "iar_overall_proficiency_pct",
+    "iar_ela": "iar_ela_proficiency_pct",
+    "iar_math": "iar_math_proficiency_pct",
+}
+
+# Abbreviations in official school names that always stand for the same words,
+# expanded only where they appear as whole words
+_NAME_ABBREVIATIONS: dict[str, str] = {
+    "Elem": "Elementary",
+    "Sch": "School",
+    "Hs": "High School",
+    "HS": "High School",
+    "JHS": "Junior High School",
+}
+_NAME_ABBREVIATION_PATTERN = re.compile(
+    r"\b(" + "|".join(_NAME_ABBREVIATIONS) + r")\b\.?"
+)
+
+# "Jr" and "Sr" name a grade band only in front of "High" or "HS", alone or paired
+# ("Jr High", "Jr-Sr HS", "Jr Sr High", "Jr and Sr High"). Elsewhere they belong to a
+# person's name.
+_GRADE_BAND_ABBREVIATIONS: dict[str, str] = {"Jr": "Junior", "Sr": "Senior"}
+_GRADE_BAND_PATTERN = re.compile(
+    r"\b(Jr|Sr)\b\.?"
+    r"(?=(?:\s*(?:/|-|&|and)?\s*(?:Jr|Sr)\b\.?)?\s+(?:High|HS|Hs)\b)"
+)
+
 # SAT-to-ACT concordance table (SAT min, SAT max, ACT equivalent)
 _SAT_TO_ACT_RANGES = [
     (1570, 1600, 36), (1530, 1560, 35), (1490, 1520, 34), (1450, 1480, 33),
@@ -228,6 +264,18 @@ def normalize_level(school_type: Optional[str]) -> str:
     if "elementary" in normalized or "primary" in normalized:
         return "elementary"
     return "other"
+
+
+def display_name(school_name: Optional[str]) -> Optional[str]:
+    """Spell out the abbreviations in an official school name."""
+    if school_name is None:
+        return None
+    with_grade_bands = _GRADE_BAND_PATTERN.sub(
+        lambda match: _GRADE_BAND_ABBREVIATIONS[match.group(1)], school_name
+    )
+    return _NAME_ABBREVIATION_PATTERN.sub(
+        lambda match: _NAME_ABBREVIATIONS[match.group(1)], with_grade_bands
+    )
 
 
 def sat_to_act(sat_composite: Any) -> Optional[float]:
@@ -284,6 +332,23 @@ def _get_field(row: dict, *candidates: str) -> Optional[float]:
             if result is not None:
                 return result
     return None
+
+
+def _iar_rates(row: dict) -> dict[str, float]:
+    """Return the IAR proficiency rates present in an API row, keyed by IAR_METRICS key.
+
+    The overall rate is the ELA/Math average and needs both.
+    """
+    ela = _safe_float(row.get("iar_ela_proficiency_rate_total"))
+    math = _safe_float(row.get("iar_math_proficiency_rate_total"))
+    rates: dict[str, float] = {}
+    if ela is not None:
+        rates["iar_ela"] = ela
+    if math is not None:
+        rates["iar_math"] = math
+    if ela is not None and math is not None:
+        rates["iar"] = round((ela + math) / 2.0, 2)
+    return rates
 
 
 def _normalize_rcdts(rcdts: str) -> str:
@@ -386,6 +451,10 @@ class DataSync:
         if year in ACT_SUBJECT_YEARS:
             self._merge_supplementary(year, year_data, "act", ACT_FIELDS)
 
+        # Merge IAR proficiency rates from the supplementary IAR table
+        if year in IAR_YEARS:
+            self._merge_supplementary(year, year_data, "iar", IAR_FIELDS)
+
         return year_data
 
     def _merge_supplementary(
@@ -416,28 +485,29 @@ class DataSync:
 
     def _build_current_record(self, raw: dict) -> dict:
         """Map current-year API fields to ISE database column names."""
-        iar_ela = _safe_float(raw.get("iar_ela_proficiency_rate_total"))
-        iar_math = _safe_float(raw.get("iar_math_proficiency_rate_total"))
-        iar_overall = (iar_ela + iar_math) / 2.0 if (iar_ela is not None and iar_math is not None) else None
+        iar = _iar_rates(raw)
+        designation = (raw.get("summative_designation") or "").strip()
 
         return {
             "rcdts": raw["rcdts"],
             "school_name": raw.get("school_name"),
+            "display_name": display_name(raw.get("school_name")),
             "district": raw.get("district"),
             "city": raw.get("city"),
             "county": raw.get("county"),
             "school_type": raw.get("school_type"),
             "level": normalize_level(raw.get("school_type")),
             "grades_served": raw.get("grades_served"),
+            "designation": designation or None,
             "student_enrollment": raw.get("student_enrollment"),
             "low_income_percentage": _safe_float(raw.get("pct_student_enrollment_low_income")),
             "el_percentage": _safe_float(raw.get("pct_student_enrollment_el")),
             "act_ela_avg": _safe_float(raw.get("act_ela_average_score_grade_11")),
             "act_math_avg": _safe_float(raw.get("act_math_average_score_grade_11")),
             "act_science_avg": _safe_float(raw.get("act_science_average_score_grade_11")),
-            "iar_ela_proficiency_pct": iar_ela,
-            "iar_math_proficiency_pct": iar_math,
-            "iar_overall_proficiency_pct": round(iar_overall, 2) if iar_overall is not None else None,
+            "iar_ela_proficiency_pct": iar.get("iar_ela"),
+            "iar_math_proficiency_pct": iar.get("iar_math"),
+            "iar_overall_proficiency_pct": iar.get("iar"),
             "pct_white": _safe_float(raw.get("pct_student_enrollment_white")),
             "pct_black": _safe_float(raw.get("pct_student_enrollment_black_or_african_american")),
             "pct_hispanic": _safe_float(raw.get("pct_student_enrollment_hispanic_or_latino")),
@@ -459,7 +529,8 @@ class DataSync:
     def _build_trend_fields(
         self, record: dict, rcdts_key: str, historical: dict[int, dict[str, dict]]
     ) -> dict[str, Any]:
-        """Calculate 1/3/5/10/15-year deltas for enrollment, demographics, diversity, and ACT."""
+        """Calculate 1/3/5/10/15-year deltas for enrollment, demographics, diversity, and ACT,
+        and the one-year delta for IAR."""
         trends: dict[str, Any] = {}
 
         # Enrollment
@@ -502,6 +573,13 @@ class DataSync:
                 d = self._calculate_trend(current_act, act_series, CURRENT_YEAR, w)
                 if d is not None:
                     trends[f"act_trend_{w}yr"] = round(d, 2)
+
+        # IAR proficiency: one year only, because earlier years are not comparable
+        previous_iar = _iar_rates(historical.get(CURRENT_YEAR - 1, {}).get(rcdts_key, {}))
+        for metric, field in IAR_METRICS.items():
+            current = record.get(field)
+            if current is not None and metric in previous_iar:
+                trends[f"{metric}_trend_1yr"] = round(current - previous_iar[metric], 2)
 
         return trends
 
@@ -600,6 +678,10 @@ class DataSync:
         math = _safe_float(record.get("act_math_avg"))
         if ela is not None and math is not None:
             hist[f"act_hist_{CURRENT_YEAR}"] = round((ela + math) / 2.0, 1)
+        for metric, field in IAR_METRICS.items():
+            val = record.get(field)
+            if val is not None:
+                hist[f"{metric}_hist_{CURRENT_YEAR}"] = val
 
         # Historical years
         for year in DEMOGRAPHIC_YEARS:
@@ -649,6 +731,10 @@ class DataSync:
                     hist[f"act_math_hist_{year}"] = round(act_math, 1)
                 if act_science is not None:
                     hist[f"act_science_hist_{year}"] = round(act_science, 1)
+
+            if year in IAR_YEARS:
+                for metric, val in _iar_rates(row).items():
+                    hist[f"{metric}_hist_{year}"] = val
 
         return hist
 

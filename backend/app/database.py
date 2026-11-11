@@ -19,12 +19,14 @@ class School(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     rcdts = Column(String(20), unique=True, nullable=False, index=True)
     school_name = Column(Text, nullable=False)
+    display_name = Column(Text)
     district = Column(Text)
     city = Column(Text, nullable=False, index=True)
     county = Column(Text)
     school_type = Column(Text)
     level = Column(String(20), nullable=False, index=True)
     grades_served = Column(Text)
+    designation = Column(Text)
 
     # Core Metrics
     student_enrollment = Column(Integer)
@@ -112,6 +114,9 @@ class School(Base):
     act_trend_5yr = Column(Float)
     act_trend_10yr = Column(Float)
     act_trend_15yr = Column(Float)
+    iar_trend_1yr = Column(Float)
+    iar_ela_trend_1yr = Column(Float)
+    iar_math_trend_1yr = Column(Float)
 
     # Historical Yearly Data (2010-2026)
     # Enrollment
@@ -208,6 +213,14 @@ class School(Base):
     act_science_hist_2012 = Column(Float)
     act_science_hist_2011 = Column(Float)
     act_science_hist_2010 = Column(Float)
+
+    # IAR proficiency (overall, ELA, math); comparable schoolwide totals start in 2025
+    iar_hist_2026 = Column(Float)
+    iar_hist_2025 = Column(Float)
+    iar_ela_hist_2026 = Column(Float)
+    iar_ela_hist_2025 = Column(Float)
+    iar_math_hist_2026 = Column(Float)
+    iar_math_hist_2025 = Column(Float)
 
     # English Learners
     el_hist_2026 = Column(Float)
@@ -442,6 +455,7 @@ def create_fts_index(target_engine):
                 """
                 CREATE VIRTUAL TABLE schools_fts USING fts5(
                     school_name,
+                    display_name,
                     city,
                     district,
                     content=schools,
@@ -454,8 +468,8 @@ def create_fts_index(target_engine):
             text(
                 """
                 CREATE TRIGGER schools_fts_insert AFTER INSERT ON schools BEGIN
-                    INSERT INTO schools_fts(rowid, school_name, city, district)
-                    VALUES (new.id, new.school_name, new.city, new.district);
+                    INSERT INTO schools_fts(rowid, school_name, display_name, city, district)
+                    VALUES (new.id, new.school_name, new.display_name, new.city, new.district);
                 END
                 """
             )
@@ -464,7 +478,8 @@ def create_fts_index(target_engine):
             text(
                 """
                 CREATE TRIGGER schools_fts_delete AFTER DELETE ON schools BEGIN
-                    DELETE FROM schools_fts WHERE rowid = old.id;
+                    INSERT INTO schools_fts(schools_fts, rowid, school_name, display_name, city, district)
+                    VALUES ('delete', old.id, old.school_name, old.display_name, old.city, old.district);
                 END
                 """
             )
@@ -473,11 +488,10 @@ def create_fts_index(target_engine):
             text(
                 """
                 CREATE TRIGGER schools_fts_update AFTER UPDATE ON schools BEGIN
-                    UPDATE schools_fts
-                    SET school_name = new.school_name,
-                        city = new.city,
-                        district = new.district
-                    WHERE rowid = new.id;
+                    INSERT INTO schools_fts(schools_fts, rowid, school_name, display_name, city, district)
+                    VALUES ('delete', old.id, old.school_name, old.display_name, old.city, old.district);
+                    INSERT INTO schools_fts(rowid, school_name, display_name, city, district)
+                    VALUES (new.id, new.school_name, new.display_name, new.city, new.district);
                 END
                 """
             )
@@ -486,8 +500,8 @@ def create_fts_index(target_engine):
         conn.execute(
             text(
                 """
-                INSERT INTO schools_fts(rowid, school_name, city, district)
-                SELECT id, school_name, city, district FROM schools
+                INSERT INTO schools_fts(rowid, school_name, display_name, city, district)
+                SELECT id, school_name, display_name, city, district FROM schools
                 """
             )
         )
@@ -527,6 +541,26 @@ def search_schools(db: Session, query: str, limit: int = 10) -> List[School]:
             results.append(school)
 
     return results
+
+
+def count_schools_districts_cities(db: Session) -> dict[str, int]:
+    """Count schools, districts and cities.
+
+    A district is the region-county-district-type prefix of the RCDTS code, since
+    unrelated districts can share a name. City names are compared without regard
+    to capitalisation.
+    """
+    row = db.execute(
+        text(
+            """
+            SELECT COUNT(*) AS schools,
+                   COUNT(DISTINCT substr(rcdts, 1, 14)) AS districts,
+                   COUNT(DISTINCT lower(trim(city))) AS cities
+            FROM schools
+            """
+        )
+    ).one()
+    return {"schools": row.schools, "districts": row.districts, "cities": row.cities}
 
 
 def get_school_by_rcdts(db: Session, rcdts: str) -> Optional[School]:

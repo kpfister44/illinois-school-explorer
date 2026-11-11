@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 from app.utils.sync_from_api import (
     DataSync,
+    display_name,
     normalize_level,
     sat_to_act,
     _get_field,
@@ -34,6 +35,53 @@ def test_normalize_level_other():
 
 def test_normalize_level_none():
     assert normalize_level(None) == "other"
+
+
+# ---------------------------------------------------------------------------
+# display_name
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize(
+    "official, expected",
+    [
+        ("Clearmont Elem School", "Clearmont Elementary School"),
+        ("Ridge Family Center for Learning Elem Sch", "Ridge Family Center for Learning Elementary School"),
+        ("Margaret Mead JHS", "Margaret Mead Junior High School"),
+        ("Lincoln Jr High School", "Lincoln Junior High School"),
+        ("Washington Jr. High Sch", "Washington Junior High School"),
+        ("Morton East HS", "Morton East High School"),
+        ("Southland College Prep Charter Hs", "Southland College Prep Charter High School"),
+        ("Central Jr-Sr HS", "Central Junior-Senior High School"),
+        ("United Jr./Sr. High School", "United Junior/Senior High School"),
+        ("Cerro Gordo Jr and Sr High School", "Cerro Gordo Junior and Senior High School"),
+        ("Virginia Jr/ Sr High School", "Virginia Junior/ Senior High School"),
+        ("Granite City Sr High School", "Granite City Senior High School"),
+        ("Dakota Jr Sr High School", "Dakota Junior Senior High School"),
+    ],
+)
+def test_display_name_expands_abbreviations(official, expected):
+    assert display_name(official) == expected
+
+@pytest.mark.parametrize(
+    "official, expected",
+    [
+        ("M L King Jr Elem School", "M L King Jr Elementary School"),
+        ("James Farmer Jr. Elementary", "James Farmer Jr. Elementary"),
+        ("J Emmett Hinchcliffe Sr Elem Sch", "J Emmett Hinchcliffe Sr Elementary School"),
+    ],
+)
+def test_display_name_keeps_jr_and_sr_in_a_persons_name(official, expected):
+    assert display_name(official) == expected
+
+def test_display_name_leaves_full_names_alone():
+    assert display_name("Elk Grove High School") == "Elk Grove High School"
+
+def test_display_name_only_expands_whole_words():
+    assert display_name("Schaumburg Elementary") == "Schaumburg Elementary"
+    assert display_name("Schneider Elem School") == "Schneider Elementary School"
+
+def test_display_name_none():
+    assert display_name(None) is None
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +162,7 @@ def _general_row():
         "county": "Cook",
         "school_type": "High School",
         "grades_served": "9-12",
+        "summative_designation": "Commendable",
         "student_enrollment": 1800,
         "pct_student_enrollment_low_income": 15.2,
         "pct_student_enrollment_el": 8.5,
@@ -143,6 +192,31 @@ def test_build_current_record_maps_basic_fields(sync):
     assert record["county"] == "Cook"
     assert record["district"] == "Township HSD 214"
     assert record["grades_served"] == "9-12"
+
+
+def test_build_current_record_maps_designation(sync):
+    record = sync._build_current_record(_general_row())
+    assert record["designation"] == "Commendable"
+
+
+def test_build_current_record_designation_none_when_not_designated(sync):
+    row = _general_row()
+    row["summative_designation"] = None
+    assert sync._build_current_record(row)["designation"] is None
+
+
+def test_build_current_record_designation_none_when_blank(sync):
+    row = _general_row()
+    row["summative_designation"] = "  "
+    assert sync._build_current_record(row)["designation"] is None
+
+
+def test_build_current_record_adds_display_name(sync):
+    row = _general_row()
+    row["school_name"] = "Lincoln Elem Sch"
+    record = sync._build_current_record(row)
+    assert record["school_name"] == "Lincoln Elem Sch"
+    assert record["display_name"] == "Lincoln Elementary School"
 
 
 def test_build_current_record_normalizes_level(sync):
@@ -300,6 +374,7 @@ def _make_client_for_sync():
         "county": "Cook",
         "school_type": "High School",
         "grades_served": "9-12",
+        "summative_designation": "Exemplary",
         "student_enrollment": 1800,
         "pct_student_enrollment_low_income": 15.2,
         "pct_student_enrollment_el": 8.5,
@@ -329,6 +404,11 @@ def _make_client_for_sync():
         "iar_ela_proficiency_rate_total": 65.0,
         "iar_math_proficiency_rate_total": 58.0,
     }
+    hist_iar_row = {
+        "rcdts": "05-016-2140-17-0001",
+        "iar_ela_proficiency_rate_total": 60.5,
+        "iar_math_proficiency_rate_total": 59.5,
+    }
     hist_row = {
         "rcdts": "050162140170001",  # no hyphens in older data
         "student_enrollment": 1750,
@@ -354,7 +434,8 @@ def _make_client_for_sync():
         if table_suffix == "act":
             return [act_row] if year == 2026 else [hist_act_row]
         if table_suffix == "iar":
-            return [iar_row]
+            assert year in (2026, 2025), f"no comparable IAR totals for {year}"
+            return [iar_row] if year == 2026 else [hist_iar_row]
         # Historical or current general data
         if year == 2026:
             return [school_row]
@@ -434,6 +515,82 @@ def test_sync_calculates_act_1yr_trend_against_2025(test_db):
     school = test_db.query(School).first()
     # 2026 composite (22.5 + 21.3) / 2 = 21.9 minus 2025 composite 20.5
     assert school.act_trend_1yr == pytest.approx(1.4)
+
+
+def test_sync_requests_designation_from_the_current_year(test_db):
+    client = _make_client_for_sync()
+    DataSync(client).sync(test_db)
+
+    current_general_calls = [
+        call for call in client.query_all.call_args_list
+        if call.args[0] == 2026 and call.kwargs.get("table_suffix") is None
+    ]
+    assert len(current_general_calls) == 1
+    assert "summative_designation" in current_general_calls[0].args[2]
+
+
+def test_sync_populates_designation_and_display_name(test_db):
+    from app.database import School
+    ds = DataSync(_make_client_for_sync())
+    ds.sync(test_db)
+
+    school = test_db.query(School).first()
+    assert school.designation == "Exemplary"
+    assert school.display_name == "Lincoln High School"
+
+
+def test_sync_populates_current_year_iar_history(test_db):
+    from app.database import School
+    ds = DataSync(_make_client_for_sync())
+    ds.sync(test_db)
+
+    school = test_db.query(School).first()
+    assert school.iar_ela_hist_2026 == 65.0
+    assert school.iar_math_hist_2026 == 58.0
+    assert school.iar_hist_2026 == pytest.approx(61.5)
+
+
+def test_sync_populates_2025_iar_history_from_iar_table(test_db):
+    from app.database import School
+    ds = DataSync(_make_client_for_sync())
+    ds.sync(test_db)
+
+    school = test_db.query(School).first()
+    assert school.iar_ela_hist_2025 == 60.5
+    assert school.iar_math_hist_2025 == 59.5
+    # Overall is the ELA/Math average, matching the current-year calculation
+    assert school.iar_hist_2025 == pytest.approx(60.0)
+
+
+def test_sync_calculates_iar_1yr_trends_against_2025(test_db):
+    from app.database import School
+    ds = DataSync(_make_client_for_sync())
+    ds.sync(test_db)
+
+    school = test_db.query(School).first()
+    assert school.iar_ela_trend_1yr == pytest.approx(4.5)
+    assert school.iar_math_trend_1yr == pytest.approx(-1.5)
+    assert school.iar_trend_1yr == pytest.approx(1.5)
+
+
+def test_sync_leaves_iar_trend_empty_without_2025_results(test_db):
+    from app.database import School
+    client = _make_client_for_sync()
+    inner = client.query_all.side_effect
+
+    def without_2025_iar(year, entity_type, fields=None, table_suffix=None):
+        if table_suffix == "iar" and year == 2025:
+            return []
+        return inner(year, entity_type, fields, table_suffix=table_suffix)
+
+    client.query_all.side_effect = without_2025_iar
+    DataSync(client).sync(test_db)
+
+    school = test_db.query(School).first()
+    assert school.iar_hist_2025 is None
+    assert school.iar_ela_trend_1yr is None
+    assert school.iar_math_trend_1yr is None
+    assert school.iar_trend_1yr is None
 
 
 def test_sync_clears_existing_data(test_db):
