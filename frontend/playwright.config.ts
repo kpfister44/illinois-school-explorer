@@ -1,5 +1,5 @@
 // ABOUTME: Playwright configuration for end-to-end tests
-// ABOUTME: Tests run against local dev server on port 5173
+// ABOUTME: Runs each spec at desktop and phone width against the dev server on port 5173
 
 import { defineConfig, devices } from '@playwright/test';
 
@@ -18,6 +18,10 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'phone',
+      use: { ...devices['Pixel 5'], viewport: { width: 360, height: 740 } },
     },
   ],
   webServer: {
