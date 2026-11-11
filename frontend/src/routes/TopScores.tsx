@@ -1,5 +1,5 @@
 // ABOUTME: Top Scores leaderboard route
-// ABOUTME: Shows hero, filters, and leaderboard placeholder
+// ABOUTME: Shows hero, filters, ranking explanation, and the leaderboard
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -91,7 +91,8 @@ export default function TopScores() {
         <p className="text-sm uppercase tracking-wide text-muted-foreground">Leaderboard</p>
         <h1 className="text-4xl font-bold">Top Illinois Schools</h1>
         <p className="text-lg text-muted-foreground">
-          Ranked by ACT (grade 11) and IAR % Meets/Exceeds per normalized level.
+          The 100 highest-scoring schools at each level, ranked by average ACT score for high
+          schools and IAR proficiency for middle and elementary schools.
         </p>
       </header>
       <TopScoresFilters
@@ -104,8 +105,11 @@ export default function TopScores() {
         <Alert>
           <AlertTitle>How rankings are calculated</AlertTitle>
           <AlertDescription>
-            ACT scores use grade 11 overall averages while IAR scores use percent Meets or
-            Exceeds. Each category is normalized to a 100-point scale and ranked statewide.
+            High schools are ranked by ACT score, out of 36: the average of the grade 11 English
+            language arts and math scores. Middle and elementary schools are ranked by IAR
+            proficiency: the average of the English language arts and math proficiency rates.
+            Scores appear as ISBE published them, and each school is ranked against every
+            Illinois school of the same level.
           </AlertDescription>
         </Alert>
         <p className="text-sm text-muted-foreground">

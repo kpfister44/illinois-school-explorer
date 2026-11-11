@@ -1,5 +1,5 @@
 // ABOUTME: Tests for Top Scores route
-// ABOUTME: Ensures hero heading and description render
+// ABOUTME: Ensures the hero and the ranking explanation render
 
 import { beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -16,7 +16,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-test('renders hero heading and description', () => {
+function renderTopScores() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -32,7 +32,22 @@ test('renders hero heading and description', () => {
       </MemoryRouter>
     </QueryClientProvider>
   );
+}
+
+test('renders hero heading and description', () => {
+  renderTopScores();
 
   expect(screen.getByRole('heading', { name: /Top Illinois Schools/ })).toBeVisible();
-  expect(screen.getByText(/ranked by act.*iar/i)).toBeInTheDocument();
+  expect(screen.getByText(/ranked by average act score.*iar proficiency/i)).toBeInTheDocument();
+});
+
+test('explains the ranking as the published scores, with no normalization', () => {
+  renderTopScores();
+
+  const explainer = screen.getByText(/how rankings are calculated/i).parentElement!;
+
+  expect(explainer).toHaveTextContent(/average of the grade 11 English language arts and math scores/i);
+  expect(explainer).toHaveTextContent(/average of the English language arts and math proficiency rates/i);
+  expect(explainer).not.toHaveTextContent(/normalized|100-point/i);
+  expect(screen.queryByText(/normalized/i)).not.toBeInTheDocument();
 });
