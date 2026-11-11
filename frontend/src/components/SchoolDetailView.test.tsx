@@ -4,7 +4,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ComparisonProvider } from '@/contexts/ComparisonContext';
 import SchoolDetailView from './SchoolDetailView';
 import type { SchoolDetail } from '@/lib/api/types';
@@ -65,6 +65,24 @@ describe('SchoolDetailView', () => {
     expect(screen.getByText('Elk Grove High School')).toBeInTheDocument();
     expect(screen.getByText(/Elk Grove Village/)).toBeInTheDocument();
     expect(screen.getByText(/Cook/)).toBeInTheDocument();
+  });
+
+  it('returns to the previous page from the back button', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/top-scores', '/school/05-016-2140-17-0002']} initialIndex={1}>
+        <ComparisonProvider>
+          <Routes>
+            <Route path="/top-scores" element={<div>Leaderboard</div>} />
+            <Route path="/school/:rcdts" element={<SchoolDetailView school={mockSchoolDetail} />} />
+          </Routes>
+        </ComparisonProvider>
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByRole('button', { name: /back/i }));
+
+    expect(screen.getByText('Leaderboard')).toBeInTheDocument();
   });
 
   it('displays school type and grades badges', () => {
