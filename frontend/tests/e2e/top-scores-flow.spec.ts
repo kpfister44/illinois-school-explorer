@@ -6,14 +6,19 @@ import { test, expect } from '@playwright/test';
 const FRONTEND = process.env.FRONTEND_URL ?? 'http://localhost:5173';
 
 test.describe('Top Scores leaderboard', () => {
-  test('user opens leaderboard, switches tabs, and visits school detail', async ({ page }) => {
+  test('user opens leaderboard, switches tabs, and visits school detail', async ({ page, isMobile }) => {
     await page.goto(FRONTEND);
     await page.getByRole('link', { name: /Explore Top 100 Scores/i }).click();
 
     await expect(page).toHaveURL(/\/top-scores$/);
     await expect(page.getByRole('heading', { name: /Top Illinois Schools/ })).toBeVisible();
 
-  await page.getByRole('tab', { name: /Middle School IAR/ }).click();
+  if (isMobile) {
+    await page.getByRole('combobox').click();
+    await page.getByRole('option', { name: /Middle School IAR/ }).click();
+  } else {
+    await page.getByRole('tab', { name: /Middle School IAR/ }).click();
+  }
   const firstRow = page.getByRole('button', { name: /View details for/i }).first();
   await expect(firstRow).toBeVisible();
 

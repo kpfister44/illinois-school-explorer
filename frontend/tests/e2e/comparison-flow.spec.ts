@@ -19,8 +19,21 @@ async function addSchoolToComparison(page: Page, searchTerm: string, schoolName:
   await addButton.click();
 }
 
+function compareDestination(page: Page) {
+  return page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: /^Compare/ });
+}
+
 async function ensureSelectionCount(page: Page, count: number) {
-  await expect(page.getByText(new RegExp(`${count} schools selected`, 'i'))).toBeVisible();
+  const selected = count === 1 ? '1 school selected' : `${count} schools selected`;
+  await expect(compareDestination(page)).toHaveAccessibleName(`Compare ${selected}`);
+}
+
+// Phones manage the selection on the Compare page; desktop has it in the bottom bar on every page
+async function showSelection(page: Page, isMobile: boolean) {
+  if (isMobile) {
+    await compareDestination(page).click();
+    await expect(page).toHaveURL('/compare');
+  }
 }
 
 function getCompareButton(page: Page) {
@@ -33,22 +46,31 @@ test.describe('School Comparison Flow', () => {
     await page.evaluate(() => localStorage.clear());
   });
 
-  test('complete comparison flow', async ({ page }) => {
+  test('complete comparison flow', async ({ page, isMobile }) => {
     await addSchoolToComparison(page, 'elk grove', 'Elk Grove High School');
     await ensureSelectionCount(page, 1);
 
     await addSchoolToComparison(page, 'rolling meadows', 'Rolling Meadows High School');
     await ensureSelectionCount(page, 2);
 
-    const compareButton = getCompareButton(page);
-    await expect(compareButton).toBeEnabled();
-    await compareButton.click();
+    if (isMobile) {
+      await compareDestination(page).click();
+    } else {
+      const compareButton = getCompareButton(page);
+      await expect(compareButton).toBeEnabled();
+      await compareButton.click();
+    }
 
     await expect(page).toHaveURL('/compare');
     await expect(page.getByText('Elk Grove High School').first()).toBeVisible();
     await expect(page.getByText('Rolling Meadows High School').first()).toBeVisible();
-    await expect(page.getByRole('cell', { name: 'Enrollment', exact: true })).toBeVisible();
-    await expect(page.getByRole('cell', { name: 'ACT ELA Average' })).toBeVisible();
+    if (isMobile) {
+      await expect(page.getByText('Enrollment', { exact: true }).filter({ visible: true })).toHaveCount(1);
+      await expect(page.getByText('ACT ELA Average').filter({ visible: true })).toHaveCount(1);
+    } else {
+      await expect(page.getByRole('cell', { name: 'Enrollment', exact: true })).toBeVisible();
+      await expect(page.getByRole('cell', { name: 'ACT ELA Average' })).toBeVisible();
+    }
   });
 
   test('comparison persists across page refresh', async ({ page }) => {
@@ -59,29 +81,36 @@ test.describe('School Comparison Flow', () => {
     await ensureSelectionCount(page, 1);
   });
 
-  test('remove school from comparison', async ({ page }) => {
+  test('remove school from comparison', async ({ page, isMobile }) => {
     await addSchoolToComparison(page, 'elk grove', 'Elk Grove High School');
     await addSchoolToComparison(page, 'rolling meadows', 'Rolling Meadows High School');
+    await showSelection(page, isMobile);
 
-    const removeButton = page.getByLabel(/remove elk grove/i).first();
-    await removeButton.click();
+    await page.getByRole('button', { name: /remove elk grove/i }).click();
 
     await ensureSelectionCount(page, 1);
+    await expect(page.getByRole('button', { name: /remove rolling meadows/i })).toBeVisible();
   });
 
-  test('clear all schools from comparison', async ({ page }) => {
+  test('clear all schools from comparison', async ({ page, isMobile }) => {
     await addSchoolToComparison(page, 'elk grove', 'Elk Grove High School');
+    await showSelection(page, isMobile);
 
     await page.getByRole('button', { name: /clear all/i }).click();
 
-    await expect(page.getByText(/schools selected/i)).toHaveCount(0);
+    await expect(compareDestination(page)).toHaveAccessibleName('Compare');
+    await expect(page.getByRole('button', { name: /remove elk grove/i })).toHaveCount(0);
   });
 
-  test('cannot compare with only one school', async ({ page }) => {
+  test('cannot compare with only one school', async ({ page, isMobile }) => {
     await addSchoolToComparison(page, 'elk grove', 'Elk Grove High School');
+    await showSelection(page, isMobile);
 
-    const compareButton = getCompareButton(page);
-    await expect(compareButton).toHaveAttribute('aria-disabled', 'true');
+    if (isMobile) {
+      await expect(page.getByText(/select at least 2 schools/i)).toBeVisible();
+    } else {
+      await expect(getCompareButton(page)).toHaveAttribute('aria-disabled', 'true');
+    }
   });
 
   test('cannot add more than five schools', async ({ page }) => {
