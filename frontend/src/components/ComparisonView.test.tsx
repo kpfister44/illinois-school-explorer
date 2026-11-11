@@ -135,11 +135,34 @@ describe('ComparisonView', () => {
     expect(within(table).getAllByText('N/A').length).toBeGreaterThan(0);
   });
 
-  it('applies color coding to highlight best values', () => {
-    const { container } = renderWithProviders(<ComparisonView schools={mockSchools} />);
+  it('highlights the highest test result in each row', () => {
+    renderWithProviders(<ComparisonView schools={mockSchools} />);
 
-    const highlightedCells = container.querySelectorAll('[class*="bg-green"]');
-    expect(highlightedCells.length).toBeGreaterThan(0);
+    const table = screen.getByRole('table');
+    const elaRow = within(table).getByText('ACT ELA Average').closest('tr')!;
+
+    expect(within(elaRow).getByText('18.5').className).toMatch(/bg-green/);
+    expect(within(elaRow).getByText('17.7').className).not.toMatch(/bg-green/);
+  });
+
+  it('gives enrollment and student demographics no better or worse reading', () => {
+    renderWithProviders(<ComparisonView schools={mockSchools} />);
+
+    const table = screen.getByRole('table');
+    const describedRows = [
+      'Enrollment',
+      'English Learner %',
+      'Low Income %',
+      'White %',
+      'Black %',
+      'Hispanic %',
+      'Asian %',
+    ];
+
+    for (const label of describedRows) {
+      const row = within(table).getByText(label).closest('tr')!;
+      expect(row.querySelector('[class*="bg-green"]')).toBeNull();
+    }
   });
 
   it('renders metric labels in first column', () => {

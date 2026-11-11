@@ -1,5 +1,5 @@
 // ABOUTME: Side-by-side comparison for schools
-// ABOUTME: Mobile: Swipeable cards; Desktop: Table with color-coded metrics
+// ABOUTME: Mobile: Swipeable cards; Desktop: Table; the highest test result in a row is highlighted
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,7 +26,7 @@ interface MetricRow {
   label: string;
   getValue: (school: SchoolDetail) => number | null;
   format: (value: number | null) => string;
-  higherIsBetter: boolean;
+  isTestResult: boolean;
 }
 
 const metrics: MetricRow[] = [
@@ -34,100 +34,93 @@ const metrics: MetricRow[] = [
     label: 'Enrollment',
     getValue: (s) => s.metrics.enrollment,
     format: (v) => (v == null ? 'N/A' : v.toLocaleString()),
-    higherIsBetter: false,
+    isTestResult: false,
   },
   {
     label: 'ACT ELA Average',
     getValue: (s) => s.metrics.act?.ela_avg ?? null,
     format: (v) => (v == null ? 'N/A' : v.toFixed(1)),
-    higherIsBetter: true,
+    isTestResult: true,
   },
   {
     label: 'ACT Math Average',
     getValue: (s) => s.metrics.act?.math_avg ?? null,
     format: (v) => (v == null ? 'N/A' : v.toFixed(1)),
-    higherIsBetter: true,
+    isTestResult: true,
   },
   {
     label: 'ACT Science Average',
     getValue: (s) => s.metrics.act?.science_avg ?? null,
     format: (v) => (v == null ? 'N/A' : v.toFixed(1)),
-    higherIsBetter: true,
+    isTestResult: true,
   },
   {
     label: 'IAR Overall Proficiency %',
     getValue: (s) => s.metrics.iar_overall_proficiency_pct,
     format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    higherIsBetter: true,
+    isTestResult: true,
   },
   {
     label: 'IAR ELA Proficiency %',
     getValue: (s) => s.metrics.iar_ela_proficiency_pct,
     format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    higherIsBetter: true,
+    isTestResult: true,
   },
   {
     label: 'IAR Math Proficiency %',
     getValue: (s) => s.metrics.iar_math_proficiency_pct,
     format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    higherIsBetter: true,
+    isTestResult: true,
   },
   {
     label: 'English Learner %',
     getValue: (s) => s.metrics.demographics.el_percentage,
     format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    higherIsBetter: false,
+    isTestResult: false,
   },
   {
     label: 'Low Income %',
     getValue: (s) => s.metrics.demographics.low_income_percentage,
     format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    higherIsBetter: false,
+    isTestResult: false,
   },
   {
     label: 'White %',
     getValue: (s) => s.metrics.diversity.white,
     format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    higherIsBetter: false,
+    isTestResult: false,
   },
   {
     label: 'Black %',
     getValue: (s) => s.metrics.diversity.black,
     format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    higherIsBetter: false,
+    isTestResult: false,
   },
   {
     label: 'Hispanic %',
     getValue: (s) => s.metrics.diversity.hispanic,
     format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    higherIsBetter: false,
+    isTestResult: false,
   },
   {
     label: 'Asian %',
     getValue: (s) => s.metrics.diversity.asian,
     format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    higherIsBetter: false,
+    isTestResult: false,
   },
 ];
 
 function getColorClass(
   value: number | null,
   values: (number | null)[],
-  higherIsBetter: boolean
+  isTestResult: boolean
 ): string {
-  if (value === null) return '';
+  if (!isTestResult || value === null) return '';
 
   const validValues = values.filter((v): v is number => v !== null);
   if (validValues.length < 2) return '';
 
-  const max = Math.max(...validValues);
-  const min = Math.min(...validValues);
-
-  if (higherIsBetter) {
-    return value === max ? 'bg-green-100 dark:bg-green-900' : '';
-  }
-
-  return value === min ? 'bg-green-100 dark:bg-green-900' : '';
+  return value === Math.max(...validValues) ? 'bg-green-100 dark:bg-green-900' : '';
 }
 
 export default function ComparisonView({ schools }: ComparisonViewProps) {
@@ -255,7 +248,7 @@ export default function ComparisonView({ schools }: ComparisonViewProps) {
                       {visibleMetrics.map((metric, idx) => {
                         const value = metric.getValue(currentSchool);
                         const values = allValues[idx];
-                        const colorClass = getColorClass(value, values, metric.higherIsBetter);
+                        const colorClass = getColorClass(value, values, metric.isTestResult);
                         const isHighlight = colorClass !== '';
 
                         return (
@@ -319,7 +312,7 @@ export default function ComparisonView({ schools }: ComparisonViewProps) {
                   <TableCell className="font-medium">{metric.label}</TableCell>
                   {schools.map((school) => {
                     const value = metric.getValue(school);
-                    const colorClass = getColorClass(value, values, metric.higherIsBetter);
+                    const colorClass = getColorClass(value, values, metric.isTestResult);
 
                     return (
                       <TableCell
