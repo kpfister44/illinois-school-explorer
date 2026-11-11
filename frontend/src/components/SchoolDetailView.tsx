@@ -10,6 +10,7 @@ import { Plus, Minus, ArrowLeft } from 'lucide-react';
 import { useComparison } from '@/contexts/ComparisonContext';
 import { useNavigate } from 'react-router-dom';
 import TrendDisplay from '@/components/TrendDisplay';
+import { trendFromHistory } from '@/lib/trendUtils';
 import type { SchoolDetail } from '@/lib/api/types';
 
 interface SchoolDetailViewProps {
@@ -169,7 +170,10 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                     <TrendDisplay
                       label="ACT ELA"
                       currentValue={school.metrics.act.ela_avg}
-                      trendData={school.metrics.trends?.act}
+                      trendData={trendFromHistory(
+                        school.metrics.act.ela_avg,
+                        school.metrics.historical?.act_ela
+                      )}
                       historicalData={school.metrics.historical?.act_ela}
                       metricType="score"
                       unit="points"
@@ -188,7 +192,10 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                     <TrendDisplay
                       label="ACT Math"
                       currentValue={school.metrics.act.math_avg}
-                      trendData={school.metrics.trends?.act}
+                      trendData={trendFromHistory(
+                        school.metrics.act.math_avg,
+                        school.metrics.historical?.act_math
+                      )}
                       historicalData={school.metrics.historical?.act_math}
                       metricType="score"
                       unit="points"
@@ -207,7 +214,10 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
                     <TrendDisplay
                       label="ACT Science"
                       currentValue={school.metrics.act.science_avg}
-                      trendData={school.metrics.trends?.act}
+                      trendData={trendFromHistory(
+                        school.metrics.act.science_avg,
+                        school.metrics.historical?.act_science
+                      )}
                       historicalData={school.metrics.historical?.act_science}
                       metricType="score"
                       unit="points"

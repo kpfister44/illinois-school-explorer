@@ -8,6 +8,7 @@ import {
   formatPercentage,
   shouldShowPercentage,
   calculatePercentageChange,
+  trendFromHistory,
 } from './trendUtils';
 
 describe('getTrendArrow', () => {
@@ -146,5 +147,49 @@ describe('calculatePercentageChange', () => {
   it('handles delta of zero', () => {
     const result = calculatePercentageChange(100, 0, 'count');
     expect(result).toBe(0);
+  });
+});
+
+describe('trendFromHistory', () => {
+  it('subtracts each base year from the current value', () => {
+    const trend = trendFromHistory(17.6, {
+      yr_2026: 17.6,
+      yr_2025: 17.7,
+      yr_2023: 17.0,
+      yr_2021: 18.1,
+      yr_2016: 21.1,
+      yr_2011: 21.8,
+    });
+
+    expect(trend).toEqual({
+      one_year: -0.1,
+      three_year: 0.6,
+      five_year: -0.5,
+      ten_year: -3.5,
+      fifteen_year: -4.2,
+    });
+  });
+
+  it('leaves a window null when its base year is missing or suppressed', () => {
+    const trend = trendFromHistory(17.6, { yr_2025: 17.7, yr_2023: null });
+
+    expect(trend).toEqual({
+      one_year: -0.1,
+      three_year: null,
+      five_year: null,
+      ten_year: null,
+      fifteen_year: null,
+    });
+  });
+
+  it('uses the year before a missing five-year base, as the composite trend does', () => {
+    const trend = trendFromHistory(20, { yr_2020: 18 });
+
+    expect(trend?.five_year).toBe(2);
+  });
+
+  it('returns null when no base year has a value', () => {
+    expect(trendFromHistory(17.6, { yr_2026: 17.6 })).toBeNull();
+    expect(trendFromHistory(17.6, undefined)).toBeNull();
   });
 });

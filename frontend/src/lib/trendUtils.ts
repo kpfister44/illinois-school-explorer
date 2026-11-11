@@ -1,6 +1,10 @@
 // ABOUTME: Utility functions for trend metric calculations and formatting
 // ABOUTME: Handles percentage calculation, thresholds, and display formatting
 
+import type { HistoricalYearlyData, TrendWindow } from '@/lib/api/types';
+
+export const CURRENT_YEAR = 2026;
+
 const ZERO_THRESHOLD = 0.05;
 const THRESHOLDS = {
   count: 50,
@@ -66,4 +70,40 @@ export function calculatePercentageChange(
   }
 
   return (delta / historical) * 100;
+}
+
+function changeSince(
+  currentValue: number,
+  history: HistoricalYearlyData,
+  yearsBack: number
+): number | null {
+  const baseYear = CURRENT_YEAR - yearsBack;
+  const baseValue =
+    history[`yr_${baseYear}` as keyof HistoricalYearlyData] ??
+    // The synced composite trend reads the year before a missing five-year base
+    (yearsBack === 5 ? history[`yr_${baseYear - 1}` as keyof HistoricalYearlyData] : null);
+
+  if (baseValue == null) {
+    return null;
+  }
+  return Math.round((currentValue - baseValue) * 100) / 100;
+}
+
+export function trendFromHistory(
+  currentValue: number,
+  history: HistoricalYearlyData | undefined
+): TrendWindow | null {
+  if (!history) {
+    return null;
+  }
+
+  const trend: TrendWindow = {
+    one_year: changeSince(currentValue, history, 1),
+    three_year: changeSince(currentValue, history, 3),
+    five_year: changeSince(currentValue, history, 5),
+    ten_year: changeSince(currentValue, history, 10),
+    fifteen_year: changeSince(currentValue, history, 15),
+  };
+
+  return Object.values(trend).some((change) => change !== null) ? trend : null;
 }

@@ -282,4 +282,40 @@ describe('Trend Display', () => {
     const trendButtons = screen.getAllByRole('button', { name: /show trends/i });
     expect(trendButtons.length).toBeGreaterThan(0);
   });
+
+  it('shows each ACT subject its own trend, not the composite trend', async () => {
+    const user = userEvent.setup();
+    const schoolWithTrends: SchoolDetail = {
+      ...mockSchoolDetail,
+      metrics: {
+        ...mockSchoolDetail.metrics,
+        trends: {
+          act: {
+            one_year: 2,
+            three_year: null,
+            five_year: null,
+            ten_year: null,
+            fifteen_year: null,
+          },
+        },
+        historical: {
+          act_ela: { yr_2026: 17.7, yr_2025: 17.9 },
+        },
+      },
+    };
+
+    renderWithProviders(<SchoolDetailView school={schoolWithTrends} />);
+    await user.click(screen.getByRole('tab', { name: /academics/i }));
+
+    const trendButtons = screen
+      .getAllByRole('button', { name: /show trends/i })
+      .filter((button) => !button.hasAttribute('disabled'));
+    expect(trendButtons).toHaveLength(2);
+    for (const button of trendButtons) {
+      await user.click(button);
+    }
+
+    expect(screen.getAllByText('+2 points')).toHaveLength(1);
+    expect(screen.getByText('-0.2 points')).toBeInTheDocument();
+  });
 });
