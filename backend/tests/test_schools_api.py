@@ -284,3 +284,99 @@ def test_get_school_detail_returns_2026_historical_values(client, test_db):
     assert historical["enrollment"]["yr_2026"] == 1790
     assert historical["enrollment"]["yr_2025"] == 1775
     assert historical["act"]["yr_2026"] == 18.4
+
+
+def test_get_school_detail_returns_designation_and_display_name(client, test_db):
+    """GET /api/schools/{rcdts} returns the state designation and the spelled-out name."""
+    test_db.add(
+        School(
+            rcdts="05-016-0590-04-2003",
+            school_name="Clearmont Elem School",
+            display_name="Clearmont Elementary School",
+            city="Elk Grove Village",
+            level="elementary",
+            designation="Commendable",
+        )
+    )
+    test_db.commit()
+
+    data = client.get("/api/schools/05-016-0590-04-2003").json()
+
+    assert data["school_name"] == "Clearmont Elem School"
+    assert data["display_name"] == "Clearmont Elementary School"
+    assert data["designation"] == "Commendable"
+
+
+def test_get_school_detail_without_designation(client, test_db):
+    """GET /api/schools/{rcdts} returns a null designation for schools ISBE did not designate."""
+    test_db.add(
+        School(
+            rcdts="05-016-0590-04-2003",
+            school_name="Clearmont Elem School",
+            display_name="Clearmont Elementary School",
+            city="Elk Grove Village",
+            level="elementary",
+        )
+    )
+    test_db.commit()
+
+    data = client.get("/api/schools/05-016-0590-04-2003").json()
+
+    assert data["designation"] is None
+
+
+def test_get_school_detail_returns_iar_history_and_one_year_trend(client, test_db):
+    """GET /api/schools/{rcdts} returns 2025 and 2026 IAR rates and their one-year change."""
+    test_db.add(
+        School(
+            rcdts="05-016-0590-04-2003",
+            school_name="Clearmont Elem School",
+            display_name="Clearmont Elementary School",
+            city="Elk Grove Village",
+            level="elementary",
+            iar_hist_2026=56.6,
+            iar_hist_2025=54.1,
+            iar_ela_hist_2026=64.9,
+            iar_ela_hist_2025=60.0,
+            iar_math_hist_2026=48.3,
+            iar_math_hist_2025=48.2,
+            iar_trend_1yr=2.5,
+            iar_ela_trend_1yr=4.9,
+            iar_math_trend_1yr=0.1,
+        )
+    )
+    test_db.commit()
+
+    metrics = client.get("/api/schools/05-016-0590-04-2003").json()["metrics"]
+
+    assert metrics["historical"]["iar"]["yr_2026"] == 56.6
+    assert metrics["historical"]["iar"]["yr_2025"] == 54.1
+    assert metrics["historical"]["iar"]["yr_2024"] is None
+    assert metrics["historical"]["iar_ela"]["yr_2025"] == 60.0
+    assert metrics["historical"]["iar_math"]["yr_2026"] == 48.3
+    assert metrics["trends"]["iar"]["one_year"] == 2.5
+    assert metrics["trends"]["iar"]["three_year"] is None
+    assert metrics["trends"]["iar_ela"]["one_year"] == 4.9
+    assert metrics["trends"]["iar_math"]["one_year"] == 0.1
+
+
+def test_get_school_detail_omits_iar_trend_without_a_previous_year(client, test_db):
+    """GET /api/schools/{rcdts} has no IAR trend for a school with no 2025 results."""
+    test_db.add(
+        School(
+            rcdts="05-016-0590-04-2003",
+            school_name="Clearmont Elem School",
+            display_name="Clearmont Elementary School",
+            city="Elk Grove Village",
+            level="elementary",
+            iar_hist_2026=56.6,
+            enrollment_trend_1yr=4.0,
+        )
+    )
+    test_db.commit()
+
+    trends = client.get("/api/schools/05-016-0590-04-2003").json()["metrics"]["trends"]
+
+    assert trends["iar"] is None
+    assert trends["iar_ela"] is None
+    assert trends["iar_math"] is None

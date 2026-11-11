@@ -79,6 +79,9 @@ class TrendMetrics(BaseModel):
     two_or_more: Optional[TrendWindow] = None
     mena: Optional[TrendWindow] = None
     act: Optional[TrendWindow] = None
+    iar: Optional[TrendWindow] = None
+    iar_ela: Optional[TrendWindow] = None
+    iar_math: Optional[TrendWindow] = None
 
 
 class HistoricalYearlyData(BaseModel):
@@ -111,6 +114,9 @@ class HistoricalMetrics(BaseModel):
     act_ela: Optional[HistoricalYearlyData] = None
     act_math: Optional[HistoricalYearlyData] = None
     act_science: Optional[HistoricalYearlyData] = None
+    iar: Optional[HistoricalYearlyData] = None
+    iar_ela: Optional[HistoricalYearlyData] = None
+    iar_math: Optional[HistoricalYearlyData] = None
     el: Optional[HistoricalYearlyData] = None
     low_income: Optional[HistoricalYearlyData] = None
     white: Optional[HistoricalYearlyData] = None
@@ -145,11 +151,13 @@ class SchoolDetail(BaseModel):
     id: int
     rcdts: str
     school_name: str
+    display_name: str
     city: str
     district: Optional[str] = None
     county: Optional[str] = None
     school_type: Optional[str] = None
     grades_served: Optional[str] = None
+    designation: Optional[str] = None
     metrics: SchoolMetrics
 
 
@@ -173,6 +181,14 @@ class TopScoresResponse(BaseModel):
     """Response wrapper for top scores endpoint."""
 
     results: List[TopScoreEntry]
+
+
+class StatsResponse(BaseModel):
+    """Counts of the schools, districts and cities in the database."""
+
+    schools: int
+    districts: int
+    cities: int
 
 
 class SearchResponse(BaseModel):

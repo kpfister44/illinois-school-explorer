@@ -9,6 +9,7 @@ from sqlalchemy.exc import OperationalError
 
 from app.api.search import router as search_router
 from app.api.schools import router as schools_router
+from app.api.stats import router as stats_router
 from app.api.top_scores import router as top_scores_router
 
 app = FastAPI(
@@ -32,6 +33,7 @@ app.add_middleware(
 
 app.include_router(search_router)
 app.include_router(schools_router)
+app.include_router(stats_router)
 app.include_router(top_scores_router)
 
 

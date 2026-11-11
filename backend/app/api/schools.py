@@ -109,12 +109,22 @@ TREND_FIELD_MAP = {
     ),
 }
 
+# IAR results are only comparable with the previous year, so they have no longer windows
+ONE_YEAR_TREND_FIELD_MAP = {
+    "iar": "iar_trend_1yr",
+    "iar_ela": "iar_ela_trend_1yr",
+    "iar_math": "iar_math_trend_1yr",
+}
+
 HISTORICAL_FIELD_MAP = {
     "enrollment": "enrollment_hist",
     "act": "act_hist",
     "act_ela": "act_ela_hist",
     "act_math": "act_math_hist",
     "act_science": "act_science_hist",
+    "iar": "iar_hist",
+    "iar_ela": "iar_ela_hist",
+    "iar_math": "iar_math_hist",
     "el": "el_hist",
     "low_income": "low_income_hist",
     "white": "white_hist",
@@ -189,11 +199,13 @@ def build_school_detail(school) -> SchoolDetail:
         id=school.id,
         rcdts=school.rcdts,
         school_name=school.school_name,
+        display_name=school.display_name or school.school_name,
         city=school.city,
         district=school.district,
         county=school.county,
         school_type=school.school_type,
         grades_served=school.grades_served,
+        designation=school.designation,
         metrics=metrics,
     )
 
@@ -221,6 +233,11 @@ def _build_trend_metrics(school) -> Optional[TrendMetrics]:
         ten_year = getattr(school, fields[3], None)
         fifteen_year = getattr(school, fields[4], None)
         window = _build_trend_window(one_year, three_year, five_year, ten_year, fifteen_year)
+        if window is not None:
+            trend_payload[metric] = window
+
+    for metric, field in ONE_YEAR_TREND_FIELD_MAP.items():
+        window = _build_trend_window(getattr(school, field, None), None, None, None, None)
         if window is not None:
             trend_payload[metric] = window
 

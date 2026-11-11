@@ -133,6 +133,7 @@ def test_school_detail_full_model():
         id=123,
         rcdts="05-016-2140-17-0002",
         school_name="Elk Grove High School",
+        display_name="Elk Grove High School",
         city="Elk Grove Village",
         district="Township HSD 214",
         county="Cook",
@@ -162,6 +163,7 @@ def test_school_detail_includes_iar_metrics():
         id=1,
         rcdts="11",
         school_name="Sample",
+        display_name="Sample",
         city="Normal",
         metrics=SchoolMetrics(
             enrollment=400,
@@ -204,6 +206,7 @@ def test_compare_response_wrapper():
                 id=1,
                 rcdts="05-016-2140-17-0002",
                 school_name="School A",
+                display_name="School A",
                 city="Chicago",
                 metrics=SchoolMetrics(enrollment=1000)
             ),
@@ -211,6 +214,7 @@ def test_compare_response_wrapper():
                 id=2,
                 rcdts="05-016-2140-17-0003",
                 school_name="School B",
+                display_name="School B",
                 city="Springfield",
                 metrics=SchoolMetrics(enrollment=500)
             )
