@@ -116,7 +116,7 @@ Ranked lists of top-performing schools by ACT composite (high schools) or IAR pr
 - **pytest** - Comprehensive test suite with 79 tests and >80% coverage
 
 ### Frontend
-- **React 18 + TypeScript** - Type-safe component-based UI
+- **React 19 + TypeScript** - Type-safe component-based UI
 - **Vite** - Lightning-fast build tool and dev server
 - **TanStack Query v5** - Powerful server state management with caching
 - **shadcn/ui + Tailwind CSS** - Accessible component library with utility-first styling
@@ -259,6 +259,8 @@ illinois-school-explorer/
 │   ├── src/
 │   │   ├── components/            # Reusable React components
 │   │   │   ├── SchoolDetailView.tsx     # School profile display
+│   │   │   ├── SiteHeader.tsx           # Site title, desktop search and navigation
+│   │   │   ├── BottomTabBar.tsx         # Phone navigation with Compare count
 │   │   │   ├── TrendTable.tsx           # Trend data visualization
 │   │   │   ├── TrendDisplay.tsx         # Expandable trend container
 │   │   │   ├── HistoricalDataTable.tsx  # Year-by-year data table
@@ -278,7 +280,7 @@ illinois-school-explorer/
 │   │   └── App.tsx                # Root component with routing
 │   ├── tests/
 │   │   ├── e2e/                   # Playwright end-to-end tests
-│   │   └── [component].test.tsx  # 25 Vitest unit test files
+│   │   └── [component].test.tsx  # 28 Vitest unit test files
 │   └── CLAUDE.md                  # Frontend setup & component docs
 │
 ├── docs/
@@ -370,16 +372,16 @@ npm run test:run
 # Run unit tests in watch mode
 npm run test
 
-# Run end-to-end tests
-npm run test:e2e
+# Run end-to-end tests (start the backend on port 8000 first)
+npm run test:e2e -- --reporter=list
 
 # Run E2E tests in UI mode
 npm run test:e2e:ui
 ```
 
 **Test Coverage:**
-- 23 unit test files (140 tests)
-- 6 E2E test files covering critical user flows
+- 28 unit test files (171 tests)
+- 8 E2E test files, each run at desktop and phone width, covering critical user flows, the theme in light and dark mode, and tap target sizes
 - Tests for components, API integration, routing, and full user journeys
 
 ---

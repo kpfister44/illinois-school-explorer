@@ -157,8 +157,8 @@ React (Vite) ──── Axios ──── FastAPI ──── SQLAlchemy ─
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, TypeScript 5, Vite, React Router v7 |
-| UI | shadcn/ui (Radix UI), Tailwind CSS, lucide-react |
+| Frontend | React 19, TypeScript 5, Vite, React Router v7 |
+| UI | shadcn/ui (Radix UI), Tailwind CSS, lucide-react, self-hosted Newsreader and Schibsted Grotesk (`@fontsource-variable`) |
 | Server state | TanStack Query v5, Axios |
 | Backend | FastAPI, SQLAlchemy 2.0, Pydantic, uvicorn |
 | Database | SQLite with FTS5 full-text search |
@@ -218,6 +218,8 @@ npm run test                                     # unit tests, watch mode
 npm run test:e2e -- --reporter=list              # Playwright E2E (always use --reporter=list)
 ```
 
+Playwright starts the frontend dev server itself but not the backend: start the backend on port 8000 first. Every spec runs twice, as the `chromium` (desktop) and `phone` (360px wide) projects. Use the `isMobile` fixture where the two layouts differ. `tests/e2e/theme.spec.ts` and `tap-targets.spec.ts` check every page listed in `tests/e2e/pages.ts`; add new routes there.
+
 ---
 
 ## Key Files
@@ -237,6 +239,8 @@ npm run test:e2e -- --reporter=list              # Playwright E2E (always use --
 - `frontend/src/lib/api/types.ts` — TypeScript types mirroring Pydantic models
 - `frontend/src/lib/api/queries.ts` — TanStack Query hooks for all API calls
 - `frontend/src/routes/` — page-level components (Home, SchoolDetail, Compare, TopScores)
+- `frontend/src/index.css` — colour tokens for light and dark mode, mapped onto the shadcn variables; `frontend/tailwind.config.js` exposes them and the font families
+- `frontend/src/components/SiteHeader.tsx`, `BottomTabBar.tsx` — desktop header navigation and phone tab bar; destinations live in `frontend/src/lib/destinations.ts`
 - `frontend/src/components/` — reusable components
 
 ---
@@ -263,6 +267,14 @@ ISBE names each Report Card after the spring its school year ends, and the app u
 - `2026` = 2026 Report Card = 2025-26 school year (tests taken spring 2026, enrollment as of Oct 1, 2025)
 - `2025` = 2024-25 school year, and so on
 - The UI shows the bare year (e.g. "2026"); it does not display "2025-26" labels
+
+### Visual System
+Tokens are defined in `frontend/src/index.css` and documented in `docs/plans/2026-11-11-design-revamp.md`:
+- Dark mode follows the system setting (`prefers-color-scheme`); there is no toggle. Tailwind `dark:` variants use the same media query.
+- Highlighter yellow (`bg-highlighter`) is reserved for "this school" and is never used for anything else.
+- Headlines (`h1`, `h2`) are Newsreader (`font-display`); everything else is Schibsted Grotesk. Table cells use tabular numerals.
+- Controls are at least 44px in both directions, and nothing depends on hover.
+- Only test results get a better or worse reading. Enrollment and demographics are shown neutrally.
 
 ### Suppressed Data (Nulls)
 ISBE suppresses metrics when student counts are <10 (privacy protection):
@@ -374,7 +386,7 @@ ISBE publishes each year's data set in late October. The year is loaded into Rep
      RATE_LIMIT_REQUESTS=100000 uv run uvicorn app.main:app --port 8100
    ```
 3. **Sync code** (`backend/app/utils/sync_from_api.py`): bump `CURRENT_YEAR`, add the previous year to `DEMOGRAPHIC_YEARS`, and classify its assessment data (`ACT_YEARS`, `SAT_YEARS`, `ACT_SUBJECT_YEARS`).
-4. **Schema** — add `*_hist_<year>` columns (`database.py`), `yr_<year>` (`models.py`, `api/schools.py`, `frontend/src/lib/api/types.ts`, `HistoricalDataTable.tsx`), and update the footer date.
+4. **Schema** — add `*_hist_<year>` columns (`database.py`), `yr_<year>` (`models.py`, `api/schools.py`, `frontend/src/lib/api/types.ts`, `HistoricalDataTable.tsx`), bump `CURRENT_YEAR` in `frontend/src/lib/trendUtils.ts` (ACT subject trends are derived from history in the frontend), and update the footer date.
 5. **Rebuild** — `rm data/schools.db`, then `REPORT_CARD_API_KEY=<throwaway> REPORT_CARD_API_URL=http://localhost:8100 uv run python -m app.utils.sync_from_api`. Check that the new `*_hist_<previous year>` values match the previous release's current-year values.
 
 ---
