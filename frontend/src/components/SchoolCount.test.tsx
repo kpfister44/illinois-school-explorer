@@ -1,11 +1,19 @@
 // ABOUTME: Unit tests for SchoolCount component
-// ABOUTME: Verifies component displays loading, error, and data states
+// ABOUTME: Verifies the home page count comes from the stats endpoint, with loading and error states
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SchoolCount from './SchoolCount';
-import * as queries from '@/lib/api/queries';
+import { apiClient } from '@/lib/api/client';
+
+vi.mock('@/lib/api/client', () => ({
+  apiClient: {
+    get: vi.fn(),
+  },
+}));
+
+const mockedGet = apiClient.get as unknown as ReturnType<typeof vi.fn>;
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -18,40 +26,33 @@ const createWrapper = () => {
   );
 };
 
+beforeEach(() => {
+  mockedGet.mockReset();
+});
+
 describe('SchoolCount', () => {
-  it('displays loading state initially', () => {
-    vi.spyOn(queries, 'useSearch').mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      isError: false,
-      error: null,
-    } as any);
+  it('displays loading state while the count is requested', () => {
+    mockedGet.mockReturnValue(new Promise(() => {}));
 
     render(<SchoolCount />, { wrapper: createWrapper() });
+
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
   });
 
-  it('displays school count when data loads', () => {
-    vi.spyOn(queries, 'useSearch').mockReturnValue({
-      data: { results: [], total: 3827 },
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as any);
+  it('displays the number of schools from the stats endpoint', async () => {
+    mockedGet.mockResolvedValue({ data: { schools: 3828, districts: 864, cities: 845 } });
 
     render(<SchoolCount />, { wrapper: createWrapper() });
-    expect(screen.getByText(/3,827 schools available/i)).toBeInTheDocument();
+
+    expect(await screen.findByText('3,828 schools available')).toBeInTheDocument();
+    expect(mockedGet).toHaveBeenCalledWith('/api/stats');
   });
 
-  it('displays error message on failure', () => {
-    vi.spyOn(queries, 'useSearch').mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isError: true,
-      error: new Error('Network error'),
-    } as any);
+  it('displays error message on failure', async () => {
+    mockedGet.mockRejectedValue(new Error('Network error'));
 
     render(<SchoolCount />, { wrapper: createWrapper() });
-    expect(screen.getByText(/failed to load/i)).toBeInTheDocument();
+
+    expect(await screen.findByText(/failed to load/i)).toBeInTheDocument();
   });
 });

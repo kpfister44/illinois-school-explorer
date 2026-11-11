@@ -3,7 +3,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { apiClient } from './client';
-import { searchQueryKey, schoolDetailQueryKey, compareQueryKey, getTopScores } from './queries';
+import {
+  searchQueryKey,
+  schoolDetailQueryKey,
+  compareQueryKey,
+  statsQueryKey,
+  getTopScores,
+} from './queries';
 
 vi.mock('./client', () => ({
   apiClient: {
@@ -31,6 +37,10 @@ describe('Query Keys', () => {
   it('generates correct compare query key', () => {
     const key = compareQueryKey(['rcdts1', 'rcdts2']);
     expect(key).toEqual(['compare', 'rcdts1,rcdts2']);
+  });
+
+  it('generates correct stats query key', () => {
+    expect(statsQueryKey()).toEqual(['stats']);
   });
 });
 

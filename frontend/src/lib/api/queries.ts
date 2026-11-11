@@ -1,5 +1,5 @@
 // ABOUTME: TanStack Query hooks for backend API
-// ABOUTME: Provides useSearch, useSchoolDetail, and useCompare hooks
+// ABOUTME: Provides useSearch, useSchoolDetail, useCompare, and useStats hooks
 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from './client';
@@ -9,6 +9,7 @@ import type {
   CompareResponse,
   Assessment,
   SchoolLevel,
+  StatsResponse,
   TopScoresResponse,
 } from './types';
 
@@ -28,6 +29,7 @@ export async function getSchoolDetail(rcdts: string): Promise<SchoolDetail> {
 export const searchQueryKey = (query: string, limit: number) => ['search', query, limit];
 export const schoolDetailQueryKey = (rcdts: string) => ['school', rcdts];
 export const compareQueryKey = (rcdtsList: string[]) => ['compare', rcdtsList.join(',')];
+export const statsQueryKey = () => ['stats'];
 export const topScoresQueryKey = (assessment: Assessment, level: SchoolLevel, limit: number) => [
   'top-scores',
   assessment,
@@ -86,5 +88,17 @@ export const useCompare = (rcdtsList: string[]) => {
     },
     enabled: rcdtsList.length >= 2 && rcdtsList.length <= 5,
     staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+// Count the schools, districts and cities in the database
+export const useStats = () => {
+  return useQuery({
+    queryKey: statsQueryKey(),
+    queryFn: async () => {
+      const { data } = await apiClient.get<StatsResponse>('/api/stats');
+      return data;
+    },
+    staleTime: 60 * 60 * 1000, // 1 hour
   });
 };

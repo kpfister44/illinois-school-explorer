@@ -37,6 +37,12 @@ describe('Home', () => {
       isError: false,
       error: null,
     } as any);
+    vi.spyOn(queries, 'useStats').mockReturnValue({
+      data: { schools: 3828, districts: 864, cities: 845 },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof queries.useStats>);
   });
 
   afterEach(() => {

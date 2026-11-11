@@ -15,6 +15,12 @@ export interface SearchResponse {
   total: number;
 }
 
+export interface StatsResponse {
+  schools: number;
+  districts: number;
+  cities: number;
+}
+
 export interface ACTScores {
   ela_avg: number | null;
   math_avg: number | null;
@@ -49,6 +55,9 @@ export interface TrendWindow {
 export interface TrendMetrics {
   enrollment?: TrendWindow;
   act?: TrendWindow;
+  iar?: TrendWindow;
+  iar_ela?: TrendWindow;
+  iar_math?: TrendWindow;
   el?: TrendWindow;
   low_income?: TrendWindow;
   white?: TrendWindow;
@@ -87,6 +96,9 @@ export interface HistoricalMetrics {
   act_ela?: HistoricalYearlyData;
   act_math?: HistoricalYearlyData;
   act_science?: HistoricalYearlyData;
+  iar?: HistoricalYearlyData;
+  iar_ela?: HistoricalYearlyData;
+  iar_math?: HistoricalYearlyData;
   el?: HistoricalYearlyData;
   low_income?: HistoricalYearlyData;
   white?: HistoricalYearlyData;
@@ -111,9 +123,19 @@ export interface SchoolMetrics {
   historical?: HistoricalMetrics;
 }
 
+export type Designation =
+  | 'Exemplary'
+  | 'Approaching Exemplary'
+  | 'Commendable'
+  | 'Developing'
+  | 'Comprehensive'
+  | 'Dually Designated';
+
 export interface SchoolDetail extends School {
+  display_name: string;
   county: string | null;
   grades_served: string | null;
+  designation: Designation | null;
   metrics: SchoolMetrics;
 }
 

@@ -1,10 +1,10 @@
 // ABOUTME: Component that displays total count of schools in database
-// ABOUTME: Demonstrates API client usage with loading and error states
+// ABOUTME: Reads the count from the stats endpoint, with loading and error states
 
-import { useSearch } from '@/lib/api/queries';
+import { useStats } from '@/lib/api/queries';
 
 export default function SchoolCount() {
-  const { data, isLoading, isError } = useSearch('a', 1);
+  const { data, isLoading, isError } = useStats();
 
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">Loading school count...</p>;
@@ -16,7 +16,7 @@ export default function SchoolCount() {
 
   return (
     <p className="text-sm text-muted-foreground">
-      {data?.total.toLocaleString()} schools available
+      {data?.schools.toLocaleString()} schools available
     </p>
   );
 }
