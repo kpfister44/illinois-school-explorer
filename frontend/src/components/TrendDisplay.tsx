@@ -1,10 +1,9 @@
 // ABOUTME: Expandable trend display component
-// ABOUTME: Handles expand/collapse state and conditional rendering
+// ABOUTME: Handles expand/collapse state, and says so when a metric has no trend
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import TrendTable from './TrendTable';
 import HistoricalDataTable from './HistoricalDataTable';
 import type { TrendWindow, HistoricalYearlyData } from '@/lib/api/types';
@@ -27,48 +26,33 @@ export default function TrendDisplay({
   unit,
 }: TrendDisplayProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const hasTrendData = trendData !== null && trendData !== undefined;
 
-  const handleToggle = () => {
-    if (hasTrendData) {
-      setIsExpanded((prev) => !prev);
-    }
-  };
+  if (trendData === null || trendData === undefined) {
+    return <p className="mt-2 text-xs text-muted-foreground">Trend data unavailable</p>;
+  }
 
   return (
     <div className="mt-2">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleToggle}
-              disabled={!hasTrendData}
-              className="h-8 px-2 text-xs"
-            >
-              {isExpanded ? (
-                <>
-                  <ChevronUp className="mr-1 h-3 w-3" aria-hidden="true" />
-                  Hide trends
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="mr-1 h-3 w-3" aria-hidden="true" />
-                  Show trends
-                </>
-              )}
-            </Button>
-          </TooltipTrigger>
-          {!hasTrendData && (
-            <TooltipContent>
-              <p>Trend data unavailable</p>
-            </TooltipContent>
-          )}
-        </Tooltip>
-      </TooltipProvider>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setIsExpanded((prev) => !prev)}
+        className="px-2 text-xs"
+      >
+        {isExpanded ? (
+          <>
+            <ChevronUp className="mr-1 h-3 w-3" aria-hidden="true" />
+            Hide trends
+          </>
+        ) : (
+          <>
+            <ChevronDown className="mr-1 h-3 w-3" aria-hidden="true" />
+            Show trends
+          </>
+        )}
+      </Button>
 
-      {isExpanded && hasTrendData && (
+      {isExpanded && (
         <div className="space-y-4">
           {historicalData && (
             <HistoricalDataTable

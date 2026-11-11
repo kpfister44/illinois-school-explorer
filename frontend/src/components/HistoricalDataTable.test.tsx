@@ -51,4 +51,19 @@ describe('HistoricalDataTable', () => {
     expect(screen.getByText('2010')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^show less$/i })).toBeInTheDocument();
   });
+
+  it('states the SAT conversion for ACT history in visible text', () => {
+    const { container } = render(
+      <HistoricalDataTable data={sampleData} metricType="score" metricLabel="ACT Overall" />
+    );
+
+    expect(screen.getByText(/2019-2024 scores converted from SAT/i)).toBeVisible();
+    expect(container.querySelector('.cursor-help')).toBeNull();
+  });
+
+  it('gives no SAT note for metrics other than ACT', () => {
+    render(<HistoricalDataTable data={sampleData} metricType="count" metricLabel="Enrollment" />);
+
+    expect(screen.queryByText(/converted from SAT/i)).not.toBeInTheDocument();
+  });
 });

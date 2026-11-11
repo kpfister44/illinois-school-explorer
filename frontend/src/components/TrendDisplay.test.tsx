@@ -1,5 +1,5 @@
 // ABOUTME: Tests for TrendDisplay component
-// ABOUTME: Verifies expand/collapse behavior and data handling
+// ABOUTME: Verifies expand/collapse behavior and the message shown when there is no trend
 
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -105,7 +105,7 @@ describe('TrendDisplay', () => {
     expect(screen.queryByText('1 Year')).not.toBeInTheDocument();
   });
 
-  it('renders disabled button when trend data is null', () => {
+  it('says in visible text when trend data is null', () => {
     render(
       <TrendDisplay
         label="Enrollment"
@@ -116,11 +116,11 @@ describe('TrendDisplay', () => {
       />
     );
 
-    const button = screen.getByRole('button', { name: /show trends/i });
-    expect(button).toBeDisabled();
+    expect(screen.getByText('Trend data unavailable')).toBeVisible();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('renders disabled button when trend data is undefined', () => {
+  it('says in visible text when trend data is undefined', () => {
     render(
       <TrendDisplay
         label="Enrollment"
@@ -131,25 +131,7 @@ describe('TrendDisplay', () => {
       />
     );
 
-    const button = screen.getByRole('button', { name: /show trends/i });
-    expect(button).toBeDisabled();
-  });
-
-  it('does not expand when clicking disabled button', async () => {
-    const user = userEvent.setup();
-    render(
-      <TrendDisplay
-        label="Enrollment"
-        currentValue={1775}
-        trendData={null}
-        metricType="count"
-        unit="students"
-      />
-    );
-
-    const button = screen.getByRole('button', { name: /show trends/i });
-    await user.click(button);
-
-    expect(screen.queryByText('1 Year')).not.toBeInTheDocument();
+    expect(screen.getByText('Trend data unavailable')).toBeVisible();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });

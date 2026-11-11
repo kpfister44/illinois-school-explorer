@@ -3,6 +3,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { ComparisonProvider } from '@/contexts/ComparisonContext';
@@ -12,8 +13,18 @@ import Compare from './Compare';
 const mockUseCompare = vi.fn();
 const mockToast = vi.fn();
 
-vi.mock('@/lib/api/queries', () => ({
+vi.mock('@/lib/api/queries', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/api/queries')>()),
   useCompare: (...args: unknown[]) => mockUseCompare(...args),
+  getSchoolDetail: (rcdts: string) =>
+    Promise.resolve({
+      id: 1,
+      rcdts,
+      school_name: `School ${rcdts}`,
+      city: 'Elk Grove Village',
+      district: 'Township HSD 214',
+      school_type: 'High School',
+    }),
 }));
 
 vi.mock('@/hooks/use-toast', () => ({
@@ -191,5 +202,33 @@ describe('Compare', () => {
       expect(screen.getByText(/failed to load comparison/i)).toBeInTheDocument();
     });
     expect(mockToast).toHaveBeenCalled();
+  });
+
+  it('lists the selected schools so they can be removed', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('school-comparison', JSON.stringify(['05-016-2140-17-0002']));
+
+    render(<Compare />, { wrapper: createWrapper() });
+
+    expect(screen.getByText('1 school selected')).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Remove School 05-016-2140-17-0002' }));
+
+    expect(screen.getByText(/no schools selected/i)).toBeInTheDocument();
+    expect(screen.queryByText(/school selected/i)).not.toBeInTheDocument();
+  });
+
+  it('clears every selected school at once', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      'school-comparison',
+      JSON.stringify(['05-016-2140-17-0002', '05-016-2140-17-0003'])
+    );
+
+    render(<Compare />, { wrapper: createWrapper() });
+
+    expect(screen.getByText('2 schools selected')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /clear all/i }));
+
+    expect(screen.getByText(/no schools selected/i)).toBeInTheDocument();
   });
 });

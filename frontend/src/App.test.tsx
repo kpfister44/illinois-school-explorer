@@ -2,7 +2,7 @@
 // ABOUTME: Verifies app renders with router and navigation
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { useComparison } from '@/contexts/ComparisonContext';
 import App from './App';
 import * as queries from '@/lib/api/queries';
@@ -56,6 +56,19 @@ describe('App', () => {
   it('renders the application header', () => {
     render(<App />);
     expect(screen.getByText('Illinois School Explorer')).toBeInTheDocument();
+  });
+
+  it('offers the main destinations in the header and in the phone tab bar', () => {
+    render(<App />);
+
+    const navigations = screen.getAllByRole('navigation', { name: 'Primary' });
+    expect(navigations).toHaveLength(2);
+    for (const navigation of navigations) {
+      expect(within(navigation).getByRole('link', { name: 'Top scores' })).toHaveAttribute(
+        'href',
+        '/top-scores'
+      );
+    }
   });
 
   it('renders home page by default', () => {

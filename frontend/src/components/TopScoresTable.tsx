@@ -79,13 +79,12 @@ export default function TopScoresTable({ entries, assessment }: TopScoresTablePr
                     {entry.enrollment ? entry.enrollment.toLocaleString() : '—'}
                   </TableCell>
                   <TableCell className="text-right">
-                    <span
-                      className="text-lg font-semibold"
-                      title={actBreakdown ?? undefined}
-                      aria-label={actBreakdown ?? scoreDisplay}
-                    >
-                      {scoreDisplay}
-                    </span>
+                    <span className="text-lg font-semibold">{scoreDisplay}</span>
+                    {actBreakdown && (
+                      <p className="whitespace-nowrap text-xs text-muted-foreground">
+                        {actBreakdown}
+                      </p>
+                    )}
                   </TableCell>
                 </TableRow>
               );
@@ -114,10 +113,8 @@ function formatScore(score: number, assessment: Assessment) {
 }
 
 function formatActBreakdown(entry: TopScoreEntry) {
-  if (entry.act_ela_avg == null && entry.act_math_avg == null) {
-    return 'ACT overall average (ELA and Math)';
+  if (entry.act_ela_avg == null || entry.act_math_avg == null) {
+    return undefined;
   }
-  const ela = entry.act_ela_avg != null ? entry.act_ela_avg.toFixed(1) : '—';
-  const math = entry.act_math_avg != null ? entry.act_math_avg.toFixed(1) : '—';
-  return `ACT subject averages · ELA ${ela}, Math ${math}`;
+  return `ELA ${entry.act_ela_avg.toFixed(1)} · Math ${entry.act_math_avg.toFixed(1)}`;
 }

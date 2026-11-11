@@ -4,26 +4,70 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    color-scheme: light;
+
+    --paper: 216 29.4% 96.7%;
+    --sheet: 0 0% 100%;
+    --ink: 219.5 48.7% 15.3%;
+    --ink-2: 220 20.6% 37.1%;
+    --rule: 218.8 25.4% 86.9%;
+    --wash: 216 29.4% 93.3%;
+    --highlighter: 45.9 100% 62.4%;
+    --highlighter-foreground: 219.5 48.7% 15.3%;
+    --benchmark: 219.4 15.4% 55.5%;
+    --link: 187.6 63.8% 29.2%;
+
+    --series-1: 198.6 68.5% 24.9%;
+    --series-2: 186.5 44.7% 44.7%;
+    --series-3: 155.7 31.1% 70.4%;
+    --series-4: 44.9 82.3% 39.8%;
+    --series-5: 296.6 22.7% 45.7%;
+    --series-6: 220 21.9% 70.4%;
+
+    --destructive: 3.2 71.3% 41%;
+    --destructive-foreground: var(--sheet);
+
+    --background: var(--paper);
+    --foreground: var(--ink);
+    --card: var(--sheet);
+    --card-foreground: var(--ink);
+    --popover: var(--sheet);
+    --popover-foreground: var(--ink);
+    --primary: var(--ink);
+    --primary-foreground: var(--sheet);
+    --secondary: var(--wash);
+    --secondary-foreground: var(--ink);
+    --muted: var(--wash);
+    --muted-foreground: var(--ink-2);
+    --accent: var(--wash);
+    --accent-foreground: var(--ink);
+    --border: var(--rule);
+    --input: var(--benchmark);
+    --ring: var(--link);
     --radius: 0.5rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+
+      --paper: 220.9 44% 9.8%;
+      --sheet: 221.4 38.7% 14.7%;
+      --ink: 220 35.3% 93.3%;
+      --ink-2: 220 22.4% 71.2%;
+      --rule: 222.6 30.6% 24.3%;
+      --wash: 220.6 36.2% 18.4%;
+      --benchmark: 220.5 16.9% 57.1%;
+      --link: 186.1 52.9% 60%;
+
+      --series-1: 198.4 52.8% 57.6%;
+      --series-4: 45.2 64.2% 52.9%;
+      --series-5: 296.2 25% 62.4%;
+      --series-6: 221.1 15.7% 47.5%;
+
+      --destructive: 4.8 81.2% 72.9%;
+      --destructive-foreground: var(--paper);
+    }
   }
 }
 
@@ -32,6 +76,10 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-foreground tabular-nums antialiased;
+  }
+  h1,
+  h2 {
+    @apply font-display;
   }
 }

@@ -5,7 +5,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { act } from 'react';
@@ -107,5 +107,39 @@ describe('SearchBar', () => {
     });
 
     expect(screen.queryByText('Elk Grove High School')).not.toBeInTheDocument();
+  });
+
+  it('hides results when the field loses focus and shows them again on return', async () => {
+    const user = userEvent.setup();
+    render(<SearchBar />, { wrapper: createWrapper() });
+
+    const input = screen.getByPlaceholderText(/search for schools/i);
+    await user.type(input, 'elk');
+    await screen.findByText('Elk Grove High School');
+
+    await user.tab();
+    expect(screen.queryByText('Elk Grove High School')).not.toBeInTheDocument();
+
+    await user.click(input);
+    expect(screen.getByText('Elk Grove High School')).toBeInTheDocument();
+  });
+
+  it('opens the school when a result is clicked', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <SearchBar />
+        <Routes>
+          <Route path="/school/:rcdts" element={<div>School page</div>} />
+          <Route path="*" element={null} />
+        </Routes>
+      </>,
+      { wrapper: createWrapper() }
+    );
+
+    await user.type(screen.getByPlaceholderText(/search for schools/i), 'elk');
+    await user.click(await screen.findByText('Elk Grove High School'));
+
+    expect(screen.getByText('School page')).toBeInTheDocument();
   });
 });

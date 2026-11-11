@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ["class"],
+  darkMode: "media",
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -41,6 +41,24 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        highlighter: {
+          DEFAULT: "hsl(var(--highlighter))",
+          foreground: "hsl(var(--highlighter-foreground))",
+        },
+        benchmark: "hsl(var(--benchmark))",
+        link: "hsl(var(--link))",
+        series: {
+          1: "hsl(var(--series-1))",
+          2: "hsl(var(--series-2))",
+          3: "hsl(var(--series-3))",
+          4: "hsl(var(--series-4))",
+          5: "hsl(var(--series-5))",
+          6: "hsl(var(--series-6))",
+        },
+      },
+      fontFamily: {
+        sans: ['"Schibsted Grotesk Variable"', '"Helvetica Neue"', "Arial", "sans-serif"],
+        display: ['"Newsreader Variable"', "Georgia", '"Times New Roman"', "serif"],
       },
       borderRadius: {
         lg: "var(--radius)",

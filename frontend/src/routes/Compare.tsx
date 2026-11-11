@@ -1,5 +1,5 @@
 // ABOUTME: School comparison page component
-// ABOUTME: Displays side-by-side comparison of multiple schools
+// ABOUTME: Displays side-by-side comparison of multiple schools, and on phones the selected list
 
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
@@ -11,8 +11,10 @@ import { useComparison } from '@/contexts/ComparisonContext';
 import { useCompare } from '@/lib/api/queries';
 import { useToast } from '@/hooks/use-toast';
 import ComparisonView from '@/components/ComparisonView';
+import SelectedSchoolList from '@/components/SelectedSchoolList';
+import { useComparisonSchools } from '@/hooks/useComparisonSchools';
 
-export default function Compare() {
+function Comparison() {
   const { comparisonList } = useComparison();
   const { toast } = useToast();
 
@@ -125,5 +127,29 @@ export default function Compare() {
       </div>
       <ComparisonView schools={data.schools} />
     </div>
+  );
+}
+
+export default function Compare() {
+  const { comparisonList, clearComparison } = useComparison();
+  const schools = useComparisonSchools();
+
+  return (
+    <>
+      {comparisonList.length > 0 && (
+        <section aria-label="Selected schools" className="space-y-3 pt-6 md:hidden">
+          <div className="flex items-center justify-between gap-4">
+            <p className="font-semibold">
+              {comparisonList.length} {comparisonList.length === 1 ? 'school' : 'schools'} selected
+            </p>
+            <Button variant="outline" onClick={clearComparison}>
+              Clear All
+            </Button>
+          </div>
+          <SelectedSchoolList schools={schools} />
+        </section>
+      )}
+      <Comparison />
+    </>
   );
 }

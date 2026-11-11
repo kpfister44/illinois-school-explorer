@@ -1,5 +1,5 @@
 // ABOUTME: SearchBar component with autocomplete functionality
-// ABOUTME: Uses Command component with debounced search API calls
+// ABOUTME: Debounced search whose results open in a list over the page while the field has focus
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -14,9 +14,11 @@ import {
 } from '@/components/ui/command';
 import { useDebounce } from '@/hooks/useDebounce';
 import { searchSchools } from '@/lib/api/queries';
+import { cn } from '@/lib/utils';
 
 export default function SearchBar() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [hasFocus, setHasFocus] = useState(false);
   const debouncedQuery = useDebounce(searchQuery, 300);
   const navigate = useNavigate();
   const shouldSearch = debouncedQuery.length >= 2;
@@ -32,18 +34,29 @@ export default function SearchBar() {
     setSearchQuery('');
   };
 
+  const hasNoMatches = shouldSearch && !isLoading && data && data.results.length === 0;
+  const hasMatches = shouldSearch && data && data.results.length > 0;
+  const showResults = hasFocus && (hasNoMatches || hasMatches);
+
   return (
-    <Command className="rounded-lg border shadow-md">
+    <Command className="relative overflow-visible rounded-lg border shadow-md [&_[cmdk-input-wrapper]]:border-b-0">
       <CommandInput
         placeholder="Search for schools by name or city..."
         value={searchQuery}
         onValueChange={setSearchQuery}
+        onFocus={() => setHasFocus(true)}
+        onBlur={() => setHasFocus(false)}
       />
-      <CommandList>
-        {shouldSearch && !isLoading && data && data.results.length === 0 && (
-          <CommandEmpty>No schools found.</CommandEmpty>
+      <CommandList
+        // Keeps focus in the field so a click on a result lands before the list closes
+        onMouseDown={(event) => event.preventDefault()}
+        className={cn(
+          'absolute inset-x-0 top-full z-50 mt-1 rounded-lg border bg-popover shadow-md',
+          !showResults && 'hidden'
         )}
-        {shouldSearch && data && data.results.length > 0 && (
+      >
+        {showResults && hasNoMatches && <CommandEmpty>No schools found.</CommandEmpty>}
+        {showResults && hasMatches && (
           <CommandGroup heading="Schools">
             {data.results.map((school) => (
               <CommandItem

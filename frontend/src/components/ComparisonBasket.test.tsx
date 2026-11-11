@@ -112,4 +112,14 @@ describe('ComparisonBasket', () => {
     const compareButton = screen.getByRole('button', { name: 'Compare' });
     expect(compareButton).toHaveAttribute('href', '/compare');
   });
+
+  it('leaves phone access to the comparison to the tab bar', () => {
+    localStorage.setItem('school-comparison', JSON.stringify(mockSchools.map((s) => s.rcdts)));
+
+    const { container } = renderWithProviders(<ComparisonBasket schools={mockSchools} />);
+
+    expect(screen.queryByRole('button', { name: 'Compare 2 schools' })).not.toBeInTheDocument();
+    expect(container.firstElementChild).toHaveClass('hidden', 'md:block');
+    expect(container.children).toHaveLength(1);
+  });
 });

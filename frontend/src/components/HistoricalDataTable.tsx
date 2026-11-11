@@ -2,9 +2,7 @@
 // ABOUTME: Shows recent years of historical values with a toggle for the full history
 
 import { useState } from 'react';
-import { Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { HistoricalYearlyData } from '@/lib/api/types';
 
 interface HistoricalDataTableProps {
@@ -44,21 +42,7 @@ export default function HistoricalDataTable({
 
   return (
     <div className="mt-2 text-sm">
-      <div className="flex items-center gap-1.5 mb-2">
-        <h4 className="text-sm font-medium text-muted-foreground">Historical {metricLabel}</h4>
-        {isACTMetric && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>ACT scores for 2019-2024 are converted from SAT scores using the official ACT/SAT concordance tables</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
-      </div>
+      <h4 className="text-sm font-medium text-muted-foreground mb-2">Historical {metricLabel}</h4>
       <table className="w-full table-fixed">
         <thead>
           <tr className="text-muted-foreground">
@@ -85,7 +69,7 @@ export default function HistoricalDataTable({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-2 text-xs"
+                    className="px-2 text-xs"
                     onClick={() => setShowAllYears((prev) => !prev)}
                   >
                     {showAllYears ? 'Show Less' : 'Show More'}

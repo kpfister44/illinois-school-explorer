@@ -242,14 +242,8 @@ describe('Trend Display', () => {
           science_avg: 18.9,
           overall_avg: 17.95,
         },
-        trends: {
-          act_ela: {
-            one_year: -0.5,
-            three_year: -1.2,
-            five_year: 0.8,
-            ten_year: 1.5,
-            fifteen_year: -2.0,
-          },
+        historical: {
+          act_ela: { yr_2026: 17.7, yr_2025: 18.2, yr_2016: 16.2 },
         },
       },
     };
@@ -259,8 +253,7 @@ describe('Trend Display', () => {
     const academicsTab = screen.getByRole('tab', { name: /academics/i });
     await user.click(academicsTab);
 
-    const trendButtons = screen.getAllByRole('button', { name: /show trends/i });
-    expect(trendButtons.length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: /show trends/i })).toHaveLength(1);
   });
 
   it('shows demographic trend buttons in demographics tab', async () => {
@@ -274,14 +267,14 @@ describe('Trend Display', () => {
           low_income_percentage: 38.4,
         },
         trends: {
-          el_percentage: {
+          el: {
             one_year: 2.0,
             three_year: 5.0,
             five_year: null,
             ten_year: null,
             fifteen_year: null,
           },
-          low_income_percentage: {
+          low_income: {
             one_year: -1.5,
             three_year: -3.0,
             five_year: -5.0,
@@ -297,8 +290,7 @@ describe('Trend Display', () => {
     const demographicsTab = screen.getByRole('tab', { name: /demographics/i });
     await user.click(demographicsTab);
 
-    const trendButtons = screen.getAllByRole('button', { name: /show trends/i });
-    expect(trendButtons.length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: /show trends/i })).toHaveLength(2);
   });
 
   it('shows each ACT subject its own trend, not the composite trend', async () => {
@@ -325,9 +317,7 @@ describe('Trend Display', () => {
     renderWithProviders(<SchoolDetailView school={schoolWithTrends} />);
     await user.click(screen.getByRole('tab', { name: /academics/i }));
 
-    const trendButtons = screen
-      .getAllByRole('button', { name: /show trends/i })
-      .filter((button) => !button.hasAttribute('disabled'));
+    const trendButtons = screen.getAllByRole('button', { name: /show trends/i });
     expect(trendButtons).toHaveLength(2);
     for (const button of trendButtons) {
       await user.click(button);

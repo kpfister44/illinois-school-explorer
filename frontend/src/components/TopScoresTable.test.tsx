@@ -40,10 +40,31 @@ const renderWithRouter = (ui: React.ReactNode) => {
 test('shows rank, school name, and score badge', () => {
   renderWithRouter(<TopScoresTable entries={ENTRIES} assessment="act" />);
   expect(screen.getByText('Sample High')).toBeVisible();
-  const score = screen.getByText('24.3');
-  expect(score).toBeVisible();
-  expect(score).toHaveAttribute('title', expect.stringContaining('ELA'));
+  expect(screen.getByText('24.3')).toBeVisible();
   expect(screen.getByText('1')).toBeVisible();
+});
+
+test('shows the ACT subject averages as visible text under the score', () => {
+  renderWithRouter(
+    <TopScoresTable
+      entries={[{ ...ENTRIES[0], act_ela_avg: 24.1, act_math_avg: 24.5 }]}
+      assessment="act"
+    />
+  );
+
+  expect(screen.getByText('ELA 24.1 · Math 24.5')).toBeVisible();
+  expect(screen.getByText('24.3')).not.toHaveAttribute('title');
+});
+
+test('shows no subject averages for IAR entries', () => {
+  renderWithRouter(
+    <TopScoresTable
+      entries={[{ ...ENTRIES[0], score: 72.5, level: 'middle' }]}
+      assessment="iar"
+    />
+  );
+
+  expect(screen.queryByText(/ELA/)).not.toBeInTheDocument();
 });
 
 test('renders percent for IAR entries', () => {
