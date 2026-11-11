@@ -440,7 +440,7 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://illinois-sch
 **Deploy times:** Backend ~2-3 min, Frontend ~1-2 min
 
 ### Backend start command
-The start command (in `backend/railway.toml`, `nixpacks.toml`, `Procfile`) runs `.venv/bin/uvicorn`, not bare `uvicorn`. `uv sync` installs into `/app/.venv`, and Railway's Nixpacks build only puts `/opt/venv/bin` on `PATH`, so bare `uvicorn` fails with "command not found" and the `/health` check never passes. Keep the explicit venv path.
+The start command (in `backend/railway.toml`, `nixpacks.toml`, `Procfile`) runs `.venv/bin/uvicorn`, not bare `uvicorn`, and the install command in `nixpacks.toml` sets `UV_PROJECT_ENVIRONMENT=/app/.venv`. Railway's Nixpacks build is not consistent about where `uv sync` puts the virtual environment: identical build plans have produced `/app/.venv` and `/opt/venv`, and only `/opt/venv/bin` is on `PATH`. A mismatch shows up as "uvicorn: command not found" or ".venv/bin/uvicorn: No such file or directory" in the deployment logs, and the `/health` check never passes. Keep both the pinned location and the explicit venv path.
 
 ### Debugging a failed Railway deploy
 - A push to `main` can fail on Railway while Vercel succeeds — check both. `gh api repos/kpfister44/illinois-school-explorer/deployments` shows each platform's status.

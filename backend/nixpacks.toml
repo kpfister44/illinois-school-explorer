@@ -2,7 +2,7 @@
 nixPkgs = ["python311", "uv"]
 
 [phases.install]
-cmds = ["uv sync --no-dev"]
+cmds = ["UV_PROJECT_ENVIRONMENT=/app/.venv uv sync --no-dev"]
 
 [phases.build]
 cmds = []
