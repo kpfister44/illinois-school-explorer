@@ -54,7 +54,7 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
       <div className="border-b border-border pb-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2">{school.school_name}</h1>
+            <h1 className="text-3xl font-medium mb-2">{school.school_name}</h1>
             <p className="text-muted-foreground">
               {school.city}
               {school.county && ` • ${school.county} County`}

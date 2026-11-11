@@ -84,7 +84,7 @@ function Comparison() {
   if (isLoading) {
     return (
       <div className="py-8 space-y-6">
-        <h2 className="text-2xl font-bold">Compare Schools</h2>
+        <h2 className="text-2xl font-medium">Compare Schools</h2>
         <p className="text-muted-foreground">Loading comparison...</p>
         <Skeleton className="h-96 w-full" />
       </div>
@@ -120,7 +120,7 @@ function Comparison() {
   return (
     <div className="py-8">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Compare Schools</h2>
+        <h2 className="text-2xl font-medium mb-2">Compare Schools</h2>
         <p className="text-muted-foreground">
           Comparing {data.schools.length} school{data.schools.length > 1 ? 's' : ''}
         </p>

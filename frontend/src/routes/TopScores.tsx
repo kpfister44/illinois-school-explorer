@@ -75,7 +75,7 @@ export default function TopScores() {
       <BackButton />
       <header className="space-y-3">
         <p className="text-sm uppercase tracking-wide text-muted-foreground">Leaderboard</p>
-        <h1 className="text-4xl font-bold">Top Illinois Schools</h1>
+        <h1 className="text-4xl font-medium">Top Illinois Schools</h1>
         <p className="text-lg text-muted-foreground">
           The 100 highest-scoring schools at each level, ranked by average ACT score for high
           schools and IAR proficiency for middle and elementary schools.

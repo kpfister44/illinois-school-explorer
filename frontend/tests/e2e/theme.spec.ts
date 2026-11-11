@@ -37,12 +37,17 @@ for (const { name, path } of PAGES) {
   });
 }
 
-test('interface text is Schibsted Grotesk with tabular numerals', async ({ page }) => {
+test('interface text is Schibsted Grotesk', async ({ page }) => {
   await openPage(page, `/school/${ELK_GROVE_HIGH}`);
 
-  const body = page.locator('body');
-  await expect(body).toHaveCSS('font-family', /^"Schibsted Grotesk Variable"/);
-  await expect(body).toHaveCSS('font-variant-numeric', 'tabular-nums');
+  await expect(page.locator('body')).toHaveCSS('font-family', /^"Schibsted Grotesk Variable"/);
+});
+
+test('figures in tables use tabular numerals and running text does not', async ({ page }) => {
+  await openPage(page, '/top-scores');
+
+  await expect(page.locator('td').first()).toHaveCSS('font-variant-numeric', 'tabular-nums');
+  await expect(page.getByText(/highest-scoring schools/)).toHaveCSS('font-variant-numeric', 'normal');
 });
 
 test('school names and headlines are Newsreader', async ({ page }) => {

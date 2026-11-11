@@ -76,7 +76,10 @@
     @apply border-border;
   }
   body {
-    @apply bg-background font-sans text-foreground tabular-nums antialiased;
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+  td {
+    @apply tabular-nums;
   }
   h1,
   h2 {

@@ -9,7 +9,7 @@ export default function NotFound() {
 
   return (
     <div className="flex flex-col items-center justify-center py-12">
-      <h2 className="text-4xl font-bold mb-4">404 - Page Not Found</h2>
+      <h2 className="text-4xl font-medium mb-4">404 - Page Not Found</h2>
       <p className="text-muted-foreground mb-8">
         The page you're looking for doesn't exist.
       </p>
