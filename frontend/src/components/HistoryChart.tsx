@@ -41,7 +41,11 @@ interface ReadoutProps {
 
 const INK = 'hsl(var(--ink))';
 const INK_2 = 'hsl(var(--ink-2))';
-const YEAR_TICKS = [2010, 2014, 2018, 2022, 2026];
+const YEARS_BETWEEN_TICKS = 4;
+const YEAR_TICKS = Array.from(
+  { length: Math.floor((CURRENT_YEAR - FIRST_YEAR) / YEARS_BETWEEN_TICKS) + 1 },
+  (_, index) => FIRST_YEAR + index * YEARS_BETWEEN_TICKS
+);
 const AXIS_TEXT = { fontSize: 11, fill: INK_2 };
 
 export default function HistoryChart({ label, series, kind, satYears = false }: HistoryChartProps) {

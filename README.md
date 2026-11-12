@@ -53,26 +53,27 @@ Full-text search powered by SQLite FTS5, ranking results by relevance across sch
 
 ### 2. Detailed School Profiles
 
-Comprehensive school information with current metrics and historical trends spanning up to 15 years.
+One scrolling page per school: key facts, the state designation, test scores, history back to 2010, students and enrollment.
 
 ![School Detail Page](./docs/screenshots/school-detail.png)
-*Screenshot: School detail page showing enrollment, ACT scores, demographics, and diversity metrics*
+*Screenshot: School detail page*
 
-**Metrics displayed:**
-- **Enrollment:** Current enrollment with 1/3/5/10/15-year trend analysis
-- **Test Scores:** ACT composite scores (high schools) and IAR proficiency rates (elementary/middle schools)
-- **Demographics:** English Learner percentage, Low Income percentage
-- **Diversity:** 8-category racial/ethnic breakdown with trend data
-- **Historical Data:** Year-by-year values from 2010-2026
+**Sections, in order:**
+- **Key facts:** Grades, students, low-income share
+- **State designation:** The school's 2026 level on ISBE's five-step scale, with a link to its Illinois Report Card profile
+- **Test scores:** ACT average (high schools) or IAR proficiency (elementary/middle schools) with the change from 2025
+- **Over time:** ACT line chart from 2010 with the SAT years shaded and missing years left as gaps; IAR shows 2025 against 2026
+- **Students:** English learners and low income with sparklines, and one bar for all race and ethnicity groups with data
+- **Enrollment:** Current figure, change since the first reported year, sparkline
 
 ![Historical Trends](./docs/screenshots/historical-trends.png)
-*Screenshot: Expandable historical trend tables with 15 years of data*
+*Screenshot: Year-by-year history*
 
 **Technical highlights:**
-- Expandable/collapsible trend sections for better UX
+- Recharts line chart with touch scrubbing; sparklines and the composition bar are plain SVG and CSS
+- Tapping a sparkline opens the full chart and a year-by-year table in a bottom sheet
 - Null-safe rendering for suppressed data (privacy protection)
-- Computed metrics (e.g., IAR overall proficiency from ELA + Math)
-- Responsive tables with proper semantic HTML
+- Sticky section links; two columns on desktop
 
 ---
 
@@ -180,7 +181,7 @@ Ranked lists of top-performing schools by ACT composite (high schools) or IAR pr
 **Component Patterns:**
 - Presentational/Container separation
 - Custom hooks for API integration (`useSchoolDetail`, `useSearch`)
-- Compound components for complex UI (TrendDisplay + TrendTable + HistoricalDataTable)
+- Composed components for complex UI (HistorySparkline = Sparkline + HistorySheet + HistoryChart)
 - Type-safe props with TypeScript interfaces
 
 **State Management:**
@@ -261,9 +262,11 @@ illinois-school-explorer/
 │   │   │   ├── SchoolDetailView.tsx     # School profile display
 │   │   │   ├── SiteHeader.tsx           # Site title, desktop search and navigation
 │   │   │   ├── BottomTabBar.tsx         # Phone navigation with Compare count
-│   │   │   ├── TrendTable.tsx           # Trend data visualization
-│   │   │   ├── TrendDisplay.tsx         # Expandable trend container
-│   │   │   ├── HistoricalDataTable.tsx  # Year-by-year data table
+│   │   │   ├── HistoryChart.tsx         # Line chart of a metric since 2010
+│   │   │   ├── HistorySheet.tsx         # Bottom sheet: chart and year-by-year table
+│   │   │   ├── Sparkline.tsx            # Small inline trend line
+│   │   │   ├── CompositionBar.tsx       # Stacked bar for race and ethnicity
+│   │   │   ├── DesignationScale.tsx     # State designation on the five-step scale
 │   │   │   ├── SchoolComparisonCard.tsx # Individual comparison card
 │   │   │   └── ui/                      # shadcn/ui components
 │   │   ├── routes/                # Page components
@@ -276,11 +279,12 @@ illinois-school-explorer/
 │   │   │   │   ├── client.ts      # Axios instance with base config
 │   │   │   │   ├── types.ts       # TypeScript types matching backend
 │   │   │   │   └── queries.ts     # TanStack Query hooks
+│   │   │   ├── history.ts         # Year series, gaps and change wording
 │   │   │   └── trendUtils.ts      # Trend formatting utilities
 │   │   └── App.tsx                # Root component with routing
 │   ├── tests/
 │   │   ├── e2e/                   # Playwright end-to-end tests
-│   │   └── [component].test.tsx  # 28 Vitest unit test files
+│   │   └── [component].test.tsx  # 36 Vitest unit test files
 │   └── CLAUDE.md                  # Frontend setup & component docs
 │
 ├── docs/
@@ -380,8 +384,8 @@ npm run test:e2e:ui
 ```
 
 **Test Coverage:**
-- 28 unit test files (171 tests)
-- 8 E2E test files, each run at desktop and phone width, covering critical user flows, the theme in light and dark mode, and tap target sizes
+- 36 unit test files (242 tests)
+- 9 E2E test files, each run at desktop and phone width, covering critical user flows, the school page for each kind of school, the theme in light and dark mode, and tap target sizes
 - Tests for components, API integration, routing, and full user journeys
 
 ---

@@ -158,7 +158,7 @@ React (Vite) ──── Axios ──── FastAPI ──── SQLAlchemy ─
 | Layer | Technology |
 |---|---|
 | Frontend | React 19, TypeScript 5, Vite, React Router v7 |
-| UI | shadcn/ui (Radix UI), Tailwind CSS, lucide-react, self-hosted Newsreader and Schibsted Grotesk (`@fontsource-variable`) |
+| UI | shadcn/ui (Radix UI), Tailwind CSS, lucide-react, Recharts (line chart only), self-hosted Newsreader and Schibsted Grotesk (`@fontsource-variable`) |
 | Server state | TanStack Query v5, Axios |
 | Backend | FastAPI, SQLAlchemy 2.0, Pydantic, uvicorn |
 | Database | SQLite with FTS5 full-text search |
@@ -218,7 +218,7 @@ npm run test                                     # unit tests, watch mode
 npm run test:e2e -- --reporter=list              # Playwright E2E (always use --reporter=list)
 ```
 
-Playwright starts the frontend dev server itself but not the backend: start the backend on port 8000 first. Every spec runs twice, as the `chromium` (desktop) and `phone` (360px wide) projects. Use the `isMobile` fixture where the two layouts differ. `tests/e2e/theme.spec.ts` and `tap-targets.spec.ts` check every page listed in `tests/e2e/pages.ts`; add new routes there.
+Playwright starts the frontend dev server itself but not the backend: start the backend on port 8000 first. Every spec runs twice, as the `chromium` (desktop) and `phone` (360px wide) projects. Use the `isMobile` fixture where the two layouts differ. `tests/e2e/theme.spec.ts` and `tap-targets.spec.ts` check every page listed in `tests/e2e/pages.ts`; add new routes there. `page.goto` is a full load, so a test of in-app behaviour (the Back button, the query cache) must navigate by clicking.
 
 ---
 
@@ -241,6 +241,9 @@ Playwright starts the frontend dev server itself but not the backend: start the 
 - `frontend/src/routes/` — page-level components (Home, SchoolDetail, Compare, TopScores)
 - `frontend/src/index.css` — colour tokens for light and dark mode, mapped onto the shadcn variables; `frontend/tailwind.config.js` exposes them and the font families
 - `frontend/src/components/SiteHeader.tsx`, `BottomTabBar.tsx` — desktop header navigation and phone tab bar; destinations live in `frontend/src/lib/destinations.ts`
+- `frontend/src/components/SchoolDetailView.tsx` — the school page: one scroll of key facts, designation, test scores, history, students, enrollment
+- `frontend/src/components/HistoryChart.tsx` (Recharts line chart), `Sparkline.tsx`, `HistorySheet.tsx`, `HistorySparkline.tsx` — a metric's history; `frontend/src/lib/history.ts` builds the year series
+- `frontend/src/components/CompositionBar.tsx`, `DesignationScale.tsx`, `SectionLinks.tsx`, `Facts.tsx` — other school page parts
 - `frontend/src/components/` — reusable components
 
 ---
@@ -275,6 +278,8 @@ Tokens are defined in `frontend/src/index.css` and documented in `docs/plans/202
 - Headlines (`h1`, `h2`) are Newsreader (`font-display`); everything else is Schibsted Grotesk. Table cells use tabular numerals.
 - Controls are at least 44px in both directions, and nothing depends on hover.
 - Only test results get a better or worse reading. Enrollment and demographics are shown neutrally.
+- History is drawn, not tabulated: a line chart or sparkline with gaps at missing years. The year-by-year table sits in a bottom sheet (`HistorySheet`). ACT charts shade 2019-2024 as SAT years.
+- Standalone figures (headline numbers, facts) use proportional numerals; tabular numerals are for columns of figures.
 
 ### State Designation
 `designation` is the school's 2026 Profiles of Performance level from ISBE (`summative_designation` in ReportCardAPI):
@@ -403,7 +408,7 @@ ISBE publishes each year's data set in late October. The year is loaded into Rep
      RATE_LIMIT_REQUESTS=100000 uv run uvicorn app.main:app --port 8100
    ```
 3. **Sync code** (`backend/app/utils/sync_from_api.py`): bump `CURRENT_YEAR`, add the previous year to `DEMOGRAPHIC_YEARS`, and classify its assessment data (`ACT_YEARS`, `SAT_YEARS`, `ACT_SUBJECT_YEARS`, and `IAR_YEARS` if the previous year's IAR totals are comparable).
-4. **Schema** — add `*_hist_<year>` columns (`database.py`, including `iar*_hist_<year>`), `yr_<year>` (`models.py`, `api/schools.py`, `frontend/src/lib/api/types.ts`, `HistoricalDataTable.tsx`), bump `CURRENT_YEAR` in `frontend/src/lib/trendUtils.ts` (ACT subject trends are derived from history in the frontend), and update the footer date.
+4. **Schema** — add `*_hist_<year>` columns (`database.py`, including `iar*_hist_<year>`), `yr_<year>` (`models.py`, `api/schools.py`, `frontend/src/lib/api/types.ts`), bump `CURRENT_YEAR` in `frontend/src/lib/trendUtils.ts` (charts, sparklines and year tables take their year range from it; the school page's IAR comparison is `CURRENT_YEAR - 1` against `CURRENT_YEAR`), and update the footer date. `HistoricalDataTable.tsx` also lists years while it exists.
 5. **Rebuild** — `rm data/schools.db`, then `REPORT_CARD_API_KEY=<throwaway> REPORT_CARD_API_URL=http://localhost:8100 uv run python -m app.utils.sync_from_api`. Check that the new `*_hist_<previous year>` values match the previous release's current-year values.
 
 ---
