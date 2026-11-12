@@ -16,9 +16,11 @@ from app.models import (
     HistoricalYearlyData,
     SchoolDetail,
     SchoolMetrics,
+    SimilarSchoolsResponse,
     TrendMetrics,
     TrendWindow,
 )
+from app.services.benchmarks import ASSESSMENTS, Benchmarks, get_benchmarks
 
 router = APIRouter(prefix="/api/schools", tags=["schools"])
 
@@ -142,6 +144,7 @@ HISTORICAL_FIELD_MAP = {
 def compare_schools(
     rcdts: Annotated[str, Query(description="Comma-separated RCDTS codes (2-5)")],
     db: Session = Depends(get_db),
+    benchmarks: Benchmarks = Depends(get_benchmarks),
 ) -> CompareResponse:
     """Compare multiple schools side-by-side."""
     rcdts_list = [code.strip() for code in rcdts.split(",") if code.strip()]
@@ -156,12 +159,12 @@ def compare_schools(
     for rcdts_code in rcdts_list:
         school = get_school_by_rcdts(db, rcdts_code)
         if school:
-            schools.append(build_school_detail(school))
+            schools.append(build_school_detail(school, benchmarks))
 
     return CompareResponse(schools=schools)
 
 
-def build_school_detail(school) -> SchoolDetail:
+def build_school_detail(school, benchmarks: Benchmarks) -> SchoolDetail:
     """Convert School ORM model to SchoolDetail schema."""
     act_scores: Optional[ACTScores] = None
     if any([school.act_ela_avg, school.act_math_avg, school.act_science_avg]):
@@ -207,6 +210,7 @@ def build_school_detail(school) -> SchoolDetail:
         grades_served=school.grades_served,
         designation=school.designation,
         metrics=metrics,
+        benchmarks=benchmarks.for_school(school.rcdts),
     )
 
 
@@ -214,6 +218,7 @@ def build_school_detail(school) -> SchoolDetail:
 def get_school_detail(
     rcdts: Annotated[str, Path(description="School RCDTS identifier")],
     db: Session = Depends(get_db),
+    benchmarks: Benchmarks = Depends(get_benchmarks),
 ) -> SchoolDetail:
     """Get detailed information for a specific school by RCDTS."""
     school = get_school_by_rcdts(db, rcdts)
@@ -221,7 +226,24 @@ def get_school_detail(
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
 
-    return build_school_detail(school)
+    return build_school_detail(school, benchmarks)
+
+
+@router.get("/{rcdts}/similar", response_model=SimilarSchoolsResponse)
+def get_similar_schools(
+    rcdts: Annotated[str, Path(description="School RCDTS identifier")],
+    assessment: Annotated[str, Query(description="act or iar")],
+    benchmarks: Benchmarks = Depends(get_benchmarks),
+) -> SimilarSchoolsResponse:
+    """List the 25 schools most like a school in income, English learners and size."""
+    if assessment not in ASSESSMENTS:
+        raise HTTPException(status_code=422, detail="Invalid assessment")
+
+    similar = benchmarks.similar(rcdts, assessment)
+    if similar is None:
+        raise HTTPException(status_code=404, detail="School not found")
+
+    return similar
 
 
 def _build_trend_metrics(school) -> Optional[TrendMetrics]:

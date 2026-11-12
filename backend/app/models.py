@@ -143,6 +143,27 @@ class SchoolMetrics(BaseModel):
     historical: Optional[HistoricalMetrics] = None
 
 
+class MetricBenchmark(BaseModel):
+    """Yardsticks for one of a school's metrics, drawn from schools of one level."""
+
+    level: str
+    state_average: float
+    state_schools: int
+    district_average: Optional[float] = None
+    district_schools: int
+    percentile: Optional[int] = None
+    similar_average: Optional[float] = None
+
+
+class SchoolBenchmarks(BaseModel):
+    """Yardsticks for each benchmarked metric of a school."""
+
+    act: Optional[MetricBenchmark] = None
+    iar: Optional[MetricBenchmark] = None
+    el: Optional[MetricBenchmark] = None
+    low_income: Optional[MetricBenchmark] = None
+
+
 class SchoolDetail(BaseModel):
     """Complete school information with all metrics."""
 
@@ -159,6 +180,49 @@ class SchoolDetail(BaseModel):
     grades_served: Optional[str] = None
     designation: Optional[str] = None
     metrics: SchoolMetrics
+    benchmarks: Optional[SchoolBenchmarks] = None
+
+
+class SimilarSchool(BaseModel):
+    """One of the schools most like another in income, English learners and size."""
+
+    rcdts: str
+    school_name: str
+    display_name: str
+    city: str
+    district: Optional[str] = None
+    enrollment: int
+    low_income_percentage: float
+    el_percentage: Optional[float] = None
+    score: float
+
+
+class SimilarSchoolsResponse(BaseModel):
+    """The schools most like one school, nearest first, and their average score."""
+
+    assessment: str
+    level: str
+    average: Optional[float] = None
+    schools: List[SimilarSchool]
+
+
+class StateYearAverage(BaseModel):
+    """Average of a metric across the schools that reported it in one year."""
+
+    year: int
+    average: float
+    schools: int
+
+
+class StateBenchmark(BaseModel):
+    """Statewide yardsticks for a metric among schools of one level."""
+
+    metric: str
+    level: str
+    schools: int
+    band_low: Optional[float] = None
+    band_high: Optional[float] = None
+    years: List[StateYearAverage]
 
 
 class TopScoreEntry(BaseModel):
