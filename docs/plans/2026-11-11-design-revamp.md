@@ -250,6 +250,15 @@ Each phase ships on its own. All work follows the TDD and testing rules in the r
 - Dot plot component, state line on the chart, plain-language sentence, similar-schools list, "How this works" page.
 - **Done when:** benchmark values are covered by tests against the committed database and appear on the school page.
 
+**Notes from phase 3:**
+- `SchoolDetail` does not return `level`. The school page (`SchoolDetailView.tsx`) shows ACT, IAR or both according to which data the school has. 69 schools report both, mostly grades 6-12 and 7-12, and get both blocks. Benchmarks are defined per level, so decide which level's benchmarks such a school gets for each test, and expose `level` if the page needs it.
+- `HistoryChart.tsx` draws one series. The dashed state line needs a second one.
+- Two pieces of text on the school page stand in for benchmarks. Under the headline score, the sentence is the one-year change ("Up 0.2 points since 2025."); the percentile sentence goes there. Under English learners and low income, the secondary line is the first reported year ("6.8% in 2010"); the mockup has the state figure there.
+- The dot plot belongs in the Test scores section of `SchoolDetailView.tsx`, under the sentence.
+- Recharts renders at zero size in jsdom. Unit tests cover what surrounds a chart; Playwright checks what is drawn.
+- `npm run lint` reports 8 errors in files that predate phase 3 (`App.test.tsx`, `ui/badge.tsx`, `ui/button.tsx`, `ComparisonContext.tsx`, `use-toast.ts`, `Home.test.tsx`, `TopScores.test.tsx`).
+- `docs/screenshots/` still shows the tabbed school page.
+
 ### Phase 5: Browse, results, districts (large)
 - List and district endpoints; results rows with metrics; filter sheet and desktop filter column; district page; district and city names become links; URL-driven state.
 - **Done when:** a parent can go from Home to a town or district and to a school without typing a school name.
