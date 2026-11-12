@@ -408,7 +408,7 @@ ISBE publishes each year's data set in late October. The year is loaded into Rep
      RATE_LIMIT_REQUESTS=100000 uv run uvicorn app.main:app --port 8100
    ```
 3. **Sync code** (`backend/app/utils/sync_from_api.py`): bump `CURRENT_YEAR`, add the previous year to `DEMOGRAPHIC_YEARS`, and classify its assessment data (`ACT_YEARS`, `SAT_YEARS`, `ACT_SUBJECT_YEARS`, and `IAR_YEARS` if the previous year's IAR totals are comparable).
-4. **Schema** — add `*_hist_<year>` columns (`database.py`, including `iar*_hist_<year>`), `yr_<year>` (`models.py`, `api/schools.py`, `frontend/src/lib/api/types.ts`), bump `CURRENT_YEAR` in `frontend/src/lib/trendUtils.ts` (charts, sparklines and year tables take their year range from it; the school page's IAR comparison is `CURRENT_YEAR - 1` against `CURRENT_YEAR`), and update the footer date. `HistoricalDataTable.tsx` also lists years while it exists.
+4. **Schema** — add `*_hist_<year>` columns (`database.py`, including `iar*_hist_<year>`), `yr_<year>` (`models.py`, `api/schools.py`, `frontend/src/lib/api/types.ts`), bump `CURRENT_YEAR` in `frontend/src/lib/trendUtils.ts` (charts, sparklines and year tables take their year range from it; the school page's IAR comparison is `CURRENT_YEAR - 1` against `CURRENT_YEAR`), and update the footer date.
 5. **Rebuild** — `rm data/schools.db`, then `REPORT_CARD_API_KEY=<throwaway> REPORT_CARD_API_URL=http://localhost:8100 uv run python -m app.utils.sync_from_api`. Check that the new `*_hist_<previous year>` values match the previous release's current-year values.
 
 ---

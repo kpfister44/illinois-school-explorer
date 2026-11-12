@@ -284,7 +284,7 @@ illinois-school-explorer/
 │   │   └── App.tsx                # Root component with routing
 │   ├── tests/
 │   │   ├── e2e/                   # Playwright end-to-end tests
-│   │   └── [component].test.tsx  # 36 Vitest unit test files
+│   │   └── [component].test.tsx  # 33 Vitest unit test files
 │   └── CLAUDE.md                  # Frontend setup & component docs
 │
 ├── docs/
@@ -384,7 +384,7 @@ npm run test:e2e:ui
 ```
 
 **Test Coverage:**
-- 36 unit test files (242 tests)
+- 33 unit test files (221 tests)
 - 9 E2E test files, each run at desktop and phone width, covering critical user flows, the school page for each kind of school, the theme in light and dark mode, and tap target sizes
 - Tests for components, API integration, routing, and full user journeys
 
