@@ -8,6 +8,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 
 from app.api.benchmarks import router as benchmarks_router
+from app.api.cities import router as cities_router
+from app.api.districts import router as districts_router
 from app.api.search import router as search_router
 from app.api.schools import router as schools_router
 from app.api.stats import router as stats_router
@@ -35,6 +37,8 @@ app.add_middleware(
 app.include_router(search_router)
 app.include_router(benchmarks_router)
 app.include_router(schools_router)
+app.include_router(districts_router)
+app.include_router(cities_router)
 app.include_router(stats_router)
 app.include_router(top_scores_router)
 

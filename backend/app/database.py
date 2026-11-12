@@ -508,18 +508,13 @@ def create_fts_index(target_engine):
         conn.commit()
 
 
-def search_schools(db: Session, query: str, limit: int = 10) -> List[School]:
-    """Search schools via FTS5 index and return ordered School objects."""
-    if not query:
-        return []
-
-    cleaned_query = re.sub(r"[^\w\s]", " ", query)
+def search_school_ids(db: Session, query: str, limit: Optional[int] = None) -> List[int]:
+    """Ids of the schools matching a query in the FTS5 index, best match first."""
+    cleaned_query = re.sub(r"[^\w\s]", " ", query or "")
     cleaned_query = re.sub(r"\s+", " ", cleaned_query).strip()
 
     if not cleaned_query:
         return []
-
-    limit = max(1, min(limit, 50))
 
     stmt = text(
         """
@@ -531,11 +526,16 @@ def search_schools(db: Session, query: str, limit: int = 10) -> List[School]:
         """
     )
 
-    rows = db.execute(stmt, {"query": cleaned_query, "limit": limit}).fetchall()
-    school_ids = [row.id for row in rows]
+    rows = db.execute(stmt, {"query": cleaned_query, "limit": -1 if limit is None else limit})
+    return [row.id for row in rows]
+
+
+def search_schools(db: Session, query: str, limit: int = 10) -> List[School]:
+    """Search schools via FTS5 index and return ordered School objects."""
+    limit = max(1, min(limit, 50))
 
     results: List[School] = []
-    for school_id in school_ids:
+    for school_id in search_school_ids(db, query, limit):
         school = db.get(School, school_id)
         if school:
             results.append(school)

@@ -64,13 +64,17 @@ def district_code(rcdts: str) -> str:
 
 
 @dataclass(frozen=True)
-class _SchoolRow:
+class SchoolRow:
+    id: int
     rcdts: str
     school_name: str
     display_name: str
     city: str
+    county: Optional[str]
     district: Optional[str]
     level: str
+    grades_served: Optional[str]
+    designation: Optional[str]
     enrollment: Optional[int]
     low_income: Optional[float]
     el: Optional[float]
@@ -90,7 +94,7 @@ class _SchoolRow:
 class _Group:
     """The schools of one level that report one metric."""
 
-    def __init__(self, metric: str, rows: list[_SchoolRow]):
+    def __init__(self, metric: str, rows: list[SchoolRow]):
         self.metric = metric
         self.rows = rows
         self.values = [row.values[metric] for row in rows]
@@ -110,7 +114,7 @@ class _Group:
         return (deciles[0], deciles[-1])
 
     @cached_property
-    def matchable(self) -> list[_SchoolRow]:
+    def matchable(self) -> list[SchoolRow]:
         return [row for row in self.rows if row.matching_values is not None]
 
     @cached_property
@@ -128,13 +132,13 @@ class _Group:
             row.values[self.metric] for row in self.rows if district_code(row.rcdts) == code
         ]
 
-    def nearest(self, school: _SchoolRow) -> list[_SchoolRow]:
+    def nearest(self, school: SchoolRow) -> list[SchoolRow]:
         """The group's schools most like a school, nearest first."""
         target = school.matching_values
         if target is None:
             return []
 
-        def distance(row: _SchoolRow) -> float:
+        def distance(row: SchoolRow) -> float:
             return math.sqrt(
                 sum(
                     ((value - target_value) / spread) ** 2
@@ -169,15 +173,19 @@ class Benchmarks:
         self._history = {metric: self._read_history(db, metric) for metric in METRICS}
 
     @staticmethod
-    def _read_schools(db: Session) -> list[_SchoolRow]:
+    def _read_schools(db: Session) -> list[SchoolRow]:
         rows = db.execute(
             select(
+                School.id,
                 School.rcdts,
                 School.school_name,
                 School.display_name,
                 School.city,
+                School.county,
                 School.district,
                 School.level,
+                School.grades_served,
+                School.designation,
                 School.student_enrollment,
                 School.low_income_percentage,
                 School.el_percentage,
@@ -185,13 +193,17 @@ class Benchmarks:
             )
         ).all()
         return [
-            _SchoolRow(
+            SchoolRow(
+                id=row.id,
                 rcdts=row.rcdts,
                 school_name=row.school_name,
                 display_name=row.display_name or row.school_name,
                 city=row.city,
+                county=row.county,
                 district=row.district,
                 level=row.level,
+                grades_served=row.grades_served,
+                designation=row.designation,
                 enrollment=row.student_enrollment,
                 low_income=row.low_income_percentage,
                 el=row.el_percentage,
@@ -225,6 +237,13 @@ class Benchmarks:
                     )
         return history
 
+    @property
+    def schools(self) -> list[SchoolRow]:
+        return list(self._schools.values())
+
+    def group(self, metric: str, level: str) -> _Group:
+        return self._groups[(metric, level)]
+
     def for_school(self, rcdts: str) -> Optional[SchoolBenchmarks]:
         school = self._schools.get(rcdts)
         if school is None:
@@ -233,7 +252,7 @@ class Benchmarks:
             **{metric: self._metric_benchmark(school, metric) for metric in METRICS}
         )
 
-    def _metric_benchmark(self, school: _SchoolRow, metric: str) -> Optional[MetricBenchmark]:
+    def _metric_benchmark(self, school: SchoolRow, metric: str) -> Optional[MetricBenchmark]:
         value = school.values[metric]
         is_assessment = metric in ASSESSMENTS
         if is_assessment and value is None:
@@ -259,7 +278,7 @@ class Benchmarks:
         return benchmark
 
     @staticmethod
-    def _similar_average(similar: list[_SchoolRow], metric: str) -> Optional[float]:
+    def _similar_average(similar: list[SchoolRow], metric: str) -> Optional[float]:
         if not similar:
             return None
         return round(fmean(row.values[metric] for row in similar), 2)

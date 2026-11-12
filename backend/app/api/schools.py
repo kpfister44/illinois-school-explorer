@@ -1,12 +1,12 @@
-# ABOUTME: School detail and comparison endpoints
-# ABOUTME: Retrieves individual school data and multi-school comparisons
+# ABOUTME: School list, detail, comparison and similar-schools endpoints
+# ABOUTME: Lists schools by filter and retrieves individual school data and multi-school comparisons
 
-from typing import Annotated, List, Optional
+from typing import Annotated, List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
 
-from app.database import get_db, get_school_by_rcdts
+from app.database import get_db, get_school_by_rcdts, search_school_ids
 from app.models import (
     ACTScores,
     CompareResponse,
@@ -15,12 +15,14 @@ from app.models import (
     HistoricalMetrics,
     HistoricalYearlyData,
     SchoolDetail,
+    SchoolListResponse,
     SchoolMetrics,
     SimilarSchoolsResponse,
     TrendMetrics,
     TrendWindow,
 )
 from app.services.benchmarks import ASSESSMENTS, Benchmarks, get_benchmarks
+from app.services.browse import SchoolFilters, list_schools
 
 router = APIRouter(prefix="/api/schools", tags=["schools"])
 
@@ -138,6 +140,58 @@ HISTORICAL_FIELD_MAP = {
     "two_or_more": "two_or_more_hist",
     "mena": "mena_hist",
 }
+
+
+@router.get("", response_model=SchoolListResponse)
+def get_schools(
+    q: Annotated[Optional[str], Query(description="Search by school, city or district")] = None,
+    level: Annotated[
+        Optional[Literal["elementary", "middle", "high", "other"]], Query()
+    ] = None,
+    county: Annotated[Optional[str], Query()] = None,
+    district: Annotated[
+        Optional[str], Query(description="First 14 characters of an RCDTS code")
+    ] = None,
+    city: Annotated[Optional[str], Query()] = None,
+    designation: Annotated[Optional[str], Query()] = None,
+    enrollment_min: Annotated[Optional[int], Query(ge=0)] = None,
+    enrollment_max: Annotated[Optional[int], Query(ge=0)] = None,
+    low_income_min: Annotated[Optional[float], Query(ge=0, le=100)] = None,
+    low_income_max: Annotated[Optional[float], Query(ge=0, le=100)] = None,
+    sort: Annotated[
+        Optional[Literal["name", "score", "enrollment"]],
+        Query(description="Defaults to the best match for a search, otherwise to name"),
+    ] = None,
+    order: Annotated[Literal["asc", "desc"], Query()] = "asc",
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    db: Session = Depends(get_db),
+    benchmarks: Benchmarks = Depends(get_benchmarks),
+) -> SchoolListResponse:
+    """List schools by filter, each with the one test score that applies to its level."""
+    if sort == "score" and level is None:
+        raise HTTPException(status_code=422, detail="Sorting by score needs a level")
+
+    filters = SchoolFilters(
+        level=level,
+        county=county,
+        district=district,
+        city=city,
+        designation=designation,
+        enrollment_min=enrollment_min,
+        enrollment_max=enrollment_max,
+        low_income_min=low_income_min,
+        low_income_max=low_income_max,
+    )
+    return list_schools(
+        benchmarks,
+        filters,
+        sort=sort,
+        descending=order == "desc",
+        limit=limit,
+        offset=offset,
+        search_matches=None if q is None else search_school_ids(db, q),
+    )
 
 
 @router.get("/compare", response_model=CompareResponse)

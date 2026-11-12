@@ -225,6 +225,81 @@ class StateBenchmark(BaseModel):
     years: List[StateYearAverage]
 
 
+class SchoolListItem(BaseModel):
+    """One school in a list, with the one test score that applies to its level."""
+
+    rcdts: str
+    school_name: str
+    display_name: str
+    city: str
+    county: Optional[str] = None
+    district: Optional[str] = None
+    district_id: str
+    level: str
+    grades_served: Optional[str] = None
+    enrollment: Optional[int] = None
+    low_income_percentage: Optional[float] = None
+    designation: Optional[str] = None
+    assessment: str
+    score: Optional[float] = None
+
+
+class SchoolListResponse(BaseModel):
+    """One page of a filtered list of schools and the number of schools that match."""
+
+    results: List[SchoolListItem]
+    total: int
+
+
+class DistrictLevel(BaseModel):
+    """A district's schools of one level, highest score first, with the averages for that level."""
+
+    level: str
+    assessment: str
+    state_average: Optional[float] = None
+    district_average: Optional[float] = None
+    schools: List[SchoolListItem]
+
+
+class DistrictDetail(BaseModel):
+    """A district's summary and its schools grouped by level."""
+
+    id: str
+    name: Optional[str] = None
+    county: Optional[str] = None
+    school_count: int
+    enrollment: int
+    levels: List[DistrictLevel]
+
+
+class DistrictSummary(BaseModel):
+    """A district in the list of districts."""
+
+    id: str
+    name: Optional[str] = None
+    county: Optional[str] = None
+    school_count: int
+
+
+class DistrictListResponse(BaseModel):
+    """Response wrapper for the list of districts."""
+
+    districts: List[DistrictSummary]
+
+
+class CitySummary(BaseModel):
+    """A city or town in the list of places with schools."""
+
+    name: str
+    school_count: int
+
+
+class CityListResponse(BaseModel):
+    """Response wrapper for the list of cities."""
+
+    cities: List[CitySummary]
+
+
 class TopScoreEntry(BaseModel):
     """Single ranked school entry for the top scores endpoint."""
 
