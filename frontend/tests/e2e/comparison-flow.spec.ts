@@ -36,6 +36,11 @@ async function showSelection(page: Page, isMobile: boolean) {
   }
 }
 
+// The name as shown on the Compare page itself, not in the desktop bar that sits on every page
+function comparedSchool(page: Page, schoolName: string) {
+  return page.getByRole('main').getByText(schoolName).filter({ visible: true }).first();
+}
+
 function getCompareButton(page: Page) {
   return page.getByRole('button', { name: /^compare$/i });
 }
@@ -62,8 +67,8 @@ test.describe('School Comparison Flow', () => {
     }
 
     await expect(page).toHaveURL('/compare');
-    await expect(page.getByText('Elk Grove High School').first()).toBeVisible();
-    await expect(page.getByText('Rolling Meadows High School').first()).toBeVisible();
+    await expect(comparedSchool(page, 'Elk Grove High School')).toBeVisible();
+    await expect(comparedSchool(page, 'Rolling Meadows High School')).toBeVisible();
     if (isMobile) {
       await expect(page.getByText('Enrollment', { exact: true }).filter({ visible: true })).toHaveCount(1);
       await expect(page.getByText('ACT ELA Average').filter({ visible: true })).toHaveCount(1);
