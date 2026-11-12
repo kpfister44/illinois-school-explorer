@@ -114,7 +114,7 @@ Ranked lists of top-performing schools by ACT composite (high schools) or IAR pr
 - **SQLite with FTS5** - Lightweight database with full-text search capabilities
 - **SQLAlchemy 2.0** - ORM with modern async-ready query patterns
 - **Pydantic** - Request/response validation and serialization
-- **pytest** - Comprehensive test suite with 79 tests and >80% coverage
+- **pytest** - Comprehensive test suite with 198 tests and 98% coverage
 
 ### Frontend
 - **React 19 + TypeScript** - Type-safe component-based UI
@@ -250,7 +250,7 @@ illinois-school-explorer/
 │   │   ├── API_ENDPOINTS.md       # Complete API reference with examples
 │   │   └── DATABASE_SCHEMA.md     # Detailed schema documentation
 │   ├── data/schools.db            # SQLite database (committed, deployed with the API)
-│   ├── tests/                     # 11 test files (119 tests, 98% coverage)
+│   ├── tests/                     # 14 test files (198 tests, 98% coverage)
 │   │   ├── test_schools_api.py    # API endpoint tests
 │   │   ├── test_sync_from_api.py  # Data sync tests
 │   │   └── ...
@@ -267,24 +267,28 @@ illinois-school-explorer/
 │   │   │   ├── Sparkline.tsx            # Small inline trend line
 │   │   │   ├── CompositionBar.tsx       # Stacked bar for race and ethnicity
 │   │   │   ├── DesignationScale.tsx     # State designation on the five-step scale
+│   │   │   ├── DotPlot.tsx              # A figure beside its yardsticks on one scale
+│   │   │   ├── SimilarSchoolsSheet.tsx  # Bottom sheet: the 25 similar schools
 │   │   │   ├── SchoolComparisonCard.tsx # Individual comparison card
 │   │   │   └── ui/                      # shadcn/ui components
 │   │   ├── routes/                # Page components
 │   │   │   ├── Home.tsx           # Landing page with search
 │   │   │   ├── SchoolDetail.tsx   # School profile page
 │   │   │   ├── Compare.tsx        # Side-by-side comparison
-│   │   │   └── TopScores.tsx      # Leaderboard page
+│   │   │   ├── TopScores.tsx      # Leaderboard page
+│   │   │   └── HowThisWorks.tsx   # How the yardsticks are worked out
 │   │   ├── lib/
 │   │   │   ├── api/               # API integration layer
 │   │   │   │   ├── client.ts      # Axios instance with base config
 │   │   │   │   ├── types.ts       # TypeScript types matching backend
 │   │   │   │   └── queries.ts     # TanStack Query hooks
 │   │   │   ├── history.ts         # Year series, gaps and change wording
+│   │   │   ├── benchmarks.ts      # Benchmark wording, scales and state series
 │   │   │   └── trendUtils.ts      # Trend formatting utilities
 │   │   └── App.tsx                # Root component with routing
 │   ├── tests/
 │   │   ├── e2e/                   # Playwright end-to-end tests
-│   │   └── [component].test.tsx  # 33 Vitest unit test files
+│   │   └── [component].test.tsx  # 37 Vitest unit test files
 │   └── CLAUDE.md                  # Frontend setup & component docs
 │
 ├── docs/
@@ -361,8 +365,8 @@ uv run pytest tests/test_schools_api.py -v
 ```
 
 **Test Coverage:**
-- 13 test files, 79 total tests
-- >80% overall coverage
+- 14 test files, 198 total tests
+- 98% overall coverage
 - >95% coverage on API modules
 
 ### Frontend Tests (Vitest + Playwright)
@@ -384,7 +388,7 @@ npm run test:e2e:ui
 ```
 
 **Test Coverage:**
-- 33 unit test files (199 tests)
+- 37 unit test files (232 tests)
 - 9 E2E test files, each run at desktop and phone width, covering critical user flows, the school page for each kind of school, the theme in light and dark mode, and tap target sizes
 - Tests for components, API integration, routing, and full user journeys
 
@@ -404,6 +408,8 @@ npm run test:e2e:ui
 | `/api/schools/{rcdts}` | GET | Retrieve complete school details by RCDTS identifier |
 | `/api/schools/compare` | GET | Compare 2-5 schools side-by-side |
 | `/api/top-scores` | GET | Ranked leaderboard by ACT or IAR scores |
+| `/api/schools/{rcdts}/similar` | GET | The 25 schools most like a school in income, English learners and size |
+| `/api/benchmarks/state` | GET | State average by year and the band where most schools fall |
 | `/api/stats` | GET | School, district and city counts |
 | `/health` | GET | Health check endpoint |
 

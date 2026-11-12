@@ -263,6 +263,18 @@ Each phase ships on its own. All work follows the TDD and testing rules in the r
 - List and district endpoints; results rows with metrics; filter sheet and desktop filter column; district page; district and city names become links; URL-driven state.
 - **Done when:** a parent can go from Home to a town or district and to a school without typing a school name.
 
+**Notes from phase 4:**
+- Each metric is compared with schools of one level, returned as `level` on its benchmark. Kyle chose "by test": the ACT is always compared with high schools; the IAR with the school's own level, or with middle schools when the school is neither elementary nor middle. `SchoolDetail` still does not return the school's own `level`; list rows will need it for "the one score that applies to its level".
+- A district is the first 14 characters of the RCDTS code (`district_code` in `backend/app/services/benchmarks.py`), matching `/api/stats`. No district name maps to two codes or the reverse, so it is safe as the district id.
+- Similar-school candidates are the schools of the compared level that report the test and have a low-income share and enrollment. Elk Grove's 25 average 18.27.
+- `Benchmarks` holds every school in memory after the first request (`get_benchmarks`). The list and district endpoints can reuse its groups and `in_district` for district and state averages.
+- `DotPlot` takes rows, a fixed `scale` and an optional `band`. Rows are not links yet; the district page needs each school's row to open the school. ACT uses a 10 to 32 scale (`ASSESSMENT_SCALES`), since school averages run from 11.9 to 29.9.
+- The year-by-year sheet (`HistorySheet`) has no state column; the state line is on the chart only.
+- `/api/schools/compare` returns `benchmarks` for each school; Compare does not show them yet.
+- The school page drops the one-year change sentence under the headline score. The ACT change is visible on the chart and the IAR change in the Over time table.
+- `npm run lint` still reports the same 8 errors in files that predate phase 3.
+- `docs/screenshots/` still shows the tabbed school page.
+
 ### Phase 6: Compare (medium, frontend)
 - Dot-plot comparison on phones, table on desktop, designation row, shareable URL, "compare all" from a district.
 - Remove the carousel and `framer-motion`.

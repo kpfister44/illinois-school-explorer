@@ -228,6 +228,7 @@ Playwright starts the frontend dev server itself but not the backend: start the 
 - `backend/app/main.py` — FastAPI app setup, CORS, exception handlers
 - `backend/app/database.py` — SQLAlchemy models (School, FTS5 index), DB helpers
 - `backend/app/models.py` — Pydantic response schemas
+- `backend/app/services/benchmarks.py` — state and district averages, percentiles and similar schools, computed from one read of the database and kept in memory
 - `backend/app/utils/sync_from_api.py` — ReportCardAPI → SQLite sync pipeline (run manually to refresh data)
 - `backend/app/utils/api_client.py` — HTTP client for ReportCardAPI (auth, pagination, retry)
 - `backend/tests/conftest.py` — test fixtures (test_db, client)
@@ -243,7 +244,9 @@ Playwright starts the frontend dev server itself but not the backend: start the 
 - `frontend/src/components/SiteHeader.tsx`, `BottomTabBar.tsx` — desktop header navigation and phone tab bar; destinations live in `frontend/src/lib/destinations.ts`
 - `frontend/src/components/SchoolDetailView.tsx` — the school page: one scroll of key facts, designation, test scores, history, students, enrollment
 - `frontend/src/components/HistoryChart.tsx` (Recharts line chart), `Sparkline.tsx`, `HistorySheet.tsx`, `HistorySparkline.tsx` — a metric's history; `frontend/src/lib/history.ts` builds the year series
+- `frontend/src/components/DotPlot.tsx` — a figure beside its yardsticks on one scale, with the band where most schools fall; `SimilarSchoolsSheet.tsx` lists the 25 similar schools; `frontend/src/lib/benchmarks.ts` holds the wording and scales
 - `frontend/src/components/CompositionBar.tsx`, `DesignationScale.tsx`, `SectionLinks.tsx`, `Facts.tsx` — other school page parts
+- `frontend/src/routes/HowThisWorks.tsx` — plain-language explanation of every yardstick; keep it in step with `benchmarks.py`
 - `frontend/src/components/` — reusable components
 
 ---
@@ -289,6 +292,15 @@ Tokens are defined in `frontend/src/index.css` and documented in `docs/plans/202
 - New in 2026; earlier years used different categories, so there is no history
 - `summative_designation_student_groups` is not synced: it is "NA" for every school
 
+### Benchmarks
+`benchmarks` on school detail gives each of `act`, `iar`, `el` and `low_income` its yardsticks (`backend/app/services/benchmarks.py`):
+- State and district averages are simple means across schools, each school counting once, so they differ from ISBE's student-weighted figures. A district average needs 3 or more schools.
+- The percentile (share of schools with a lower value), the similar-schools average and the 10th to 90th percentile band are for test scores only.
+- Similar schools are the 25 nearest by low-income share, English learner share and log enrollment, each divided by its standard deviation. A suppressed English learner share counts as zero for matching. A school with no low-income share or enrollment cannot be matched.
+- Each metric is compared with schools of one level (`level` on the benchmark). The ACT is always compared with high schools. The IAR is compared with the school's own level, or with middle schools when the school is neither elementary nor middle (69 schools report both tests, mostly grades 6-12 and 7-12). `SchoolDetail` still does not return the school's own `level`.
+- A district is the first 14 characters of the RCDTS code, as in `/api/stats`.
+- Benchmarks are built on the first request and kept for the life of the process. The database is read-only while serving, so nothing invalidates them.
+
 ### Display Names
 `display_name` is the official `school_name` with abbreviations spelled out (`display_name` in `sync_from_api.py`):
 - Elem, Sch, Hs/HS and JHS are always expanded
@@ -316,6 +328,9 @@ Pre-calculated changes (current value minus base-year value) stored as `{metric}
 GET /api/search?q={query}&limit={n}                          — full-text search
 GET /api/schools/{rcdts}                                     — school detail
 GET /api/schools/compare?rcdts={rcdts1},{rcdts2},...         — compare 2-5 schools
+GET /api/schools/{rcdts}/similar?assessment={act|iar}        — the 25 similar schools
+GET /api/benchmarks/state?metric={act|iar|el|low_income}&level={elementary|middle|high|other}
+                                                             — state average by year and the 10th-90th percentile band
 GET /api/top-scores?assessment={act|iar}&level={high|middle|elementary}&limit={1-100}
 GET /api/stats                                               — school, district and city counts
 GET /health                                                  — health check
@@ -328,6 +343,8 @@ Swagger UI: `http://localhost:8000/docs` (local) or Railway URL + `/docs`
 - `useSchoolDetail(rcdts)`
 - `useCompare(rcdtsList)`
 - `useStats()`
+- `useStateBenchmark(metric, level)`
+- `useSimilarSchools(rcdts, assessment, enabled)`
 - `getTopScores(params)` + `topScoresQueryKey(...)` — used directly with `useQuery` (no `useTopScores` hook)
 
 ---

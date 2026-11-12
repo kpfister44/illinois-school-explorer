@@ -70,6 +70,8 @@ The sync script handles all format differences automatically via a probe-then-fe
 | `/api/schools/{rcdts}` | GET | Get complete school information | [→](docs/API_ENDPOINTS.md#get-school-detail) |
 | `/api/schools/compare` | GET | Compare 2-5 schools side-by-side | [→](docs/API_ENDPOINTS.md#compare-schools) |
 | `/api/top-scores` | GET | Ranked list of top schools by assessment | [→](docs/API_ENDPOINTS.md#get-top-scores) |
+| `/api/schools/{rcdts}/similar` | GET | The 25 schools most like a school | [→](docs/API_ENDPOINTS.md#get-similar-schools) |
+| `/api/benchmarks/state` | GET | State average by year and the band where most schools fall | [→](docs/API_ENDPOINTS.md#get-state-benchmark) |
 | `/api/stats` | GET | School, district and city counts | [→](docs/API_ENDPOINTS.md#get-stats) |
 
 ### Common Examples
@@ -272,6 +274,12 @@ All API responses use Pydantic models for validation and serialization:
 - `HistoricalYearlyData`: Yearly values 2010-2026 for a single metric
 - `HistoricalMetrics`: Historical yearly data for all metrics
 
+**Benchmarks:**
+- `MetricBenchmark`: State and district averages, percentile and similar-schools average for one metric
+- `SchoolBenchmarks`: `MetricBenchmark` for `act`, `iar`, `el` and `low_income`; the `benchmarks` field of `SchoolDetail`
+- `SimilarSchool`, `SimilarSchoolsResponse`: The 25 schools most like a school
+- `StateYearAverage`, `StateBenchmark`: State average by year and the 10th to 90th percentile band
+
 **Top Scores:**
 - `TopScoreEntry`: Single ranked school entry with rank, score, and basic info
 - `TopScoresResponse`: Wrapper for top scores results array
@@ -349,11 +357,13 @@ backend/
 │   ├── api/
 │   │   ├── __init__.py
 │   │   ├── search.py        # GET /api/search
-│   │   ├── schools.py       # GET /api/schools/{rcdts}, /compare
+│   │   ├── schools.py       # GET /api/schools/{rcdts}, /compare, /{rcdts}/similar
+│   │   ├── benchmarks.py    # GET /api/benchmarks/state
 │   │   ├── stats.py         # GET /api/stats
 │   │   └── top_scores.py    # GET /api/top-scores
 │   ├── services/
 │   │   ├── __init__.py
+│   │   ├── benchmarks.py    # State and district averages, percentiles, similar schools
 │   │   └── top_scores.py    # Top scores business logic
 │   └── utils/
 │       ├── __init__.py
@@ -369,6 +379,8 @@ backend/
 │   ├── test_top_scores_api.py           # Top scores endpoint tests
 │   ├── test_top_scores_service.py       # Top scores service tests
 │   ├── test_stats_api.py                # Stats endpoint tests
+│   ├── test_benchmarks_api.py           # Benchmarks on school detail, similar and state endpoints
+│   ├── test_benchmarks_service.py       # Benchmark figures against the committed schools.db
 │   ├── test_api_client.py               # ReportCardAPI client tests
 │   ├── test_sync_from_api.py            # Sync pipeline tests
 │   └── test_integration.py              # End-to-end integration tests
@@ -503,14 +515,16 @@ def client(test_db):
 - `test_schools_api.py`: Detail & compare endpoints, error cases
 - `test_top_scores_api.py`: Top scores endpoint, filters, ranking
 - `test_stats_api.py`: School, district and city counts
+- `test_benchmarks_api.py`: Benchmarks on school detail and compare, similar-schools and state endpoints
 
 **Service Tests:**
 - `test_top_scores_service.py`: Top scores business logic, ranking algorithms
+- `test_benchmarks_service.py`: Averages, percentiles and the band re-derived with SQL from the committed `data/schools.db`; similar-school matching rules on small made-up sets
 
 **Integration Tests:**
 - `test_integration.py`: Full pipeline, end-to-end flows (marked `@pytest.mark.slow`)
 
-**Total:** 12 active test files with comprehensive coverage
+**Total:** 14 active test files with comprehensive coverage
 
 ### Coverage Targets
 

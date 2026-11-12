@@ -19,6 +19,8 @@ Complete endpoint documentation for the Illinois School Explorer REST API.
 | [`/api/schools/{rcdts}`](#get-school-detail) | GET | Get complete school information |
 | [`/api/schools/compare`](#compare-schools) | GET | Compare 2-5 schools side-by-side |
 | [`/api/top-scores`](#get-top-scores) | GET | Ranked list of top schools by assessment |
+| [`/api/schools/{rcdts}/similar`](#get-similar-schools) | GET | The 25 schools most like a school |
+| [`/api/benchmarks/state`](#get-state-benchmark) | GET | State average by year and the band where most schools fall |
 | [`/api/stats`](#get-stats) | GET | School, district and city counts |
 
 ---
@@ -269,6 +271,17 @@ See [`../app/models.py`](../app/models.py) for complete type definitions:
 **Name and designation:**
 - `display_name` (string) - `school_name` with abbreviations spelled out ("Clearmont Elem School" → "Clearmont Elementary School")
 - `designation` (string | null) - 2026 Profiles of Performance level. Best first: "Exemplary", "Approaching Exemplary", "Commendable", "Developing", "Comprehensive". "Dually Designated" marks a school spanning grade bands, which gets one designation per band. `null` when ISBE gave none.
+
+<a id="benchmarks"></a>
+**Benchmarks:**
+- `benchmarks` (object | null) - Yardsticks for `act`, `iar`, `el` and `low_income`. A test's entry is `null` when the school has no score for it. Also returned for each school by the compare endpoint.
+- Each entry has:
+  - `level` (string) - Level of the schools compared with. The ACT is always compared with high schools. The IAR is compared with the school's own level, or with middle schools when the school is not an elementary or middle school (grades 6-12, for example). `el` and `low_income` use the school's own level.
+  - `state_average` (float), `state_schools` (integer) - Simple mean across the schools of that level reporting the metric, and how many there are. Each school counts once, so this differs from ISBE's student-weighted state figures.
+  - `district_average` (float | null), `district_schools` (integer) - The same within the school's district. The average is `null` when fewer than 3 schools are counted.
+  - `percentile` (integer | null) - Share of the compared schools with a lower value. Tests only.
+  - `similar_average` (float | null) - Mean score of the 25 similar schools. Tests only; `null` when the school cannot be matched.
+- Benchmarks are computed from one read of the database on the first request and kept in memory (`app/services/benchmarks.py`).
 
 **Trends:**
 - `trends` (object | null) - Changes (current minus base-year value) over 1/3/5/10/15 year windows
@@ -609,6 +622,108 @@ const { data } = useQuery({
 - Results cached client-side by TanStack Query
 - Consider rate limiting for public deployments
 - Limit capped at 100 to prevent excessive data transfer
+
+---
+
+### Get Similar Schools
+
+List the 25 schools most like a school in low-income share, English learner share and enrollment, nearest first.
+
+**Endpoint:** `GET /api/schools/{rcdts}/similar`
+
+**Query Parameters:**
+- `assessment` (required) - `act` or `iar`. Decides which schools are candidates: those of the compared level that report this test.
+
+**Example Request:**
+```bash
+curl "http://localhost:8000/api/schools/05-016-2140-17-0002/similar?assessment=act"
+```
+
+**Example Response:**
+```json
+{
+  "assessment": "act",
+  "level": "high",
+  "average": 18.27,
+  "schools": [
+    {
+      "rcdts": "05-016-2070-17-0002",
+      "school_name": "Maine East High School",
+      "display_name": "Maine East High School",
+      "city": "Park Ridge",
+      "district": "Maine Township HSD 207",
+      "enrollment": 1951,
+      "low_income_percentage": 35.0,
+      "el_percentage": 20.1,
+      "score": 19.1
+    }
+  ]
+}
+```
+
+**Response Fields:**
+- `level` (string) - Level of the schools compared with (see [Benchmarks](#benchmarks))
+- `average` (float | null) - Mean `score` of the listed schools; `null` when the list is empty
+- `schools` (array) - Up to 25 schools, nearest first. Empty when the school has no published low-income share or enrollment, since it cannot be matched.
+- `score` (float) - ACT average (English and math) or IAR overall proficiency
+
+**Matching:** Euclidean distance over low-income share, English learner share and the natural log of enrollment, each divided by its standard deviation across the candidate schools. A suppressed English learner share counts as zero.
+
+**Status Codes:**
+- `200 OK` - List returned
+- `404 Not Found` - School not found
+- `422 Unprocessable Entity` - Missing or invalid `assessment`
+
+**Frontend Integration:**
+```typescript
+const { data } = useSimilarSchools(rcdts, 'act', isOpen);
+```
+
+---
+
+### Get State Benchmark
+
+A metric's average by year across schools of one level, and the band where most of them fall this year.
+
+**Endpoint:** `GET /api/benchmarks/state`
+
+**Query Parameters:**
+- `metric` (required) - `act`, `iar`, `el` or `low_income`
+- `level` (required) - `elementary`, `middle`, `high` or `other`
+
+**Example Request:**
+```bash
+curl "http://localhost:8000/api/benchmarks/state?metric=act&level=high"
+```
+
+**Example Response:**
+```json
+{
+  "metric": "act",
+  "level": "high",
+  "schools": 684,
+  "band_low": 14.2,
+  "band_high": 20.7,
+  "years": [
+    { "year": 2010, "average": 20.1, "schools": 530 },
+    { "year": 2026, "average": 17.55, "schools": 684 }
+  ]
+}
+```
+
+**Response Fields:**
+- `schools` (integer) - Schools of the level reporting the metric this year
+- `band_low`, `band_high` (float | null) - 10th and 90th percentile of this year's values; `null` when no school reports the metric
+- `years` (array) - One entry per year with data, oldest first. Years with no data (ACT in 2018 and 2020) are left out. IAR covers 2025 and 2026 only.
+
+**Status Codes:**
+- `200 OK` - Benchmark returned (with `schools: 0` and no years when nothing is reported)
+- `422 Unprocessable Entity` - Invalid `metric` or `level`
+
+**Frontend Integration:**
+```typescript
+const { data: state } = useStateBenchmark('act', 'high');
+```
 
 ---
 
