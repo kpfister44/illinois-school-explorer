@@ -384,7 +384,7 @@ npm run test:e2e:ui
 ```
 
 **Test Coverage:**
-- 33 unit test files (221 tests)
+- 33 unit test files (199 tests)
 - 9 E2E test files, each run at desktop and phone width, covering critical user flows, the school page for each kind of school, the theme in light and dark mode, and tap target sizes
 - Tests for components, API integration, routing, and full user journeys
 
