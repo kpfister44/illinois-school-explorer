@@ -1,7 +1,7 @@
 // ABOUTME: Small inline trend line for a metric's history
-// ABOUTME: Leaves gaps at missing years and highlights the latest year with a value
+// ABOUTME: Leaves gaps at missing years and highlights the endpoint when the final year has a value
 
-import { latestReported, reportedRuns, type ReportedYear, type YearValue } from '@/lib/history';
+import { reportedRuns, type ReportedYear, type YearValue } from '@/lib/history';
 import { cn } from '@/lib/utils';
 
 interface SparklineProps {
@@ -28,7 +28,8 @@ export default function Sparkline({ series, className }: SparklineProps) {
       ? HEIGHT / 2
       : HEIGHT - INSET - ((point.value - lowest) / (highest - lowest)) * (HEIGHT - 2 * INSET);
 
-  const latest = latestReported(series);
+  const finalYear = series.at(-1);
+  const endpoint = finalYear && finalYear.value !== null ? { ...finalYear, value: finalYear.value } : null;
 
   return (
     <svg
@@ -51,10 +52,10 @@ export default function Sparkline({ series, className }: SparklineProps) {
           />
         )
       )}
-      {latest && (
+      {endpoint && (
         <circle
-          cx={x(latest)}
-          cy={y(latest)}
+          cx={x(endpoint)}
+          cy={y(endpoint)}
           r={3.2}
           strokeWidth={1.2}
           className="fill-highlighter stroke-foreground"

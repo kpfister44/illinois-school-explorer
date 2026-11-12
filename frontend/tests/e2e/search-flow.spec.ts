@@ -23,19 +23,14 @@ test.describe('Search to Detail Flow', () => {
       page.getByRole('heading', { name: 'Elk Grove High School' })
     ).toBeVisible();
 
-    await expect(page.getByRole('tab', { name: /overview/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /academics/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /demographics/i })).toBeVisible();
+    await expect(page.getByRole('tab')).toHaveCount(0);
 
-    await page.getByRole('tab', { name: /academics/i }).click();
+    await expect(page.getByRole('heading', { level: 2, name: 'Test scores · 2026' })).toBeVisible();
+    await expect(page.getByText('average ACT, out of 36')).toBeVisible();
 
-    await expect(page.getByText(/ELA/i)).toBeVisible();
-    await expect(page.getByText(/Math/i)).toBeVisible();
-
-    await page.getByRole('tab', { name: /demographics/i }).click();
-
-    await expect(page.getByText(/English Learners/i)).toBeVisible();
-    await expect(page.getByText(/Low Income/i)).toBeVisible();
+    const students = page.getByRole('region', { name: 'Students' });
+    await expect(students.getByText('English learners')).toBeVisible();
+    await expect(students.getByText('Low income')).toBeVisible();
   });
 
   test('search results appear quickly (< 100ms)', async ({ page }) => {

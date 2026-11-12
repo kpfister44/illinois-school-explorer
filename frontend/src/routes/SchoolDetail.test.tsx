@@ -20,11 +20,13 @@ const mockSchoolDetail = {
   id: 1,
   rcdts: '05-016-2140-17-0002',
   school_name: 'Elk Grove High School',
+  display_name: 'Elk Grove High School',
   city: 'Elk Grove Village',
   district: 'Township HSD 214',
   county: 'Cook',
   school_type: 'High School',
-  grades_served: '9-12',
+  grades_served: '9 - 12',
+  designation: 'Approaching Exemplary',
   metrics: {
     enrollment: 1775,
     act: {

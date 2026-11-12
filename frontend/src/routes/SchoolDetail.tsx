@@ -36,7 +36,7 @@ export default function SchoolDetail() {
 
   if (isLoading) {
     return (
-      <div className="py-8 max-w-4xl mx-auto space-y-6">
+      <div className="py-8 max-w-6xl mx-auto space-y-6">
         <Skeleton className="h-10 w-3/4" />
         <Skeleton className="h-6 w-1/2" />
         <Skeleton className="h-10 w-64" />
@@ -47,7 +47,7 @@ export default function SchoolDetail() {
 
   if (isError) {
     return (
-      <div className="py-8 max-w-4xl mx-auto">
+      <div className="py-8 max-w-6xl mx-auto">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
@@ -61,7 +61,7 @@ export default function SchoolDetail() {
 
   if (!school) {
     return (
-      <div className="py-8 max-w-4xl mx-auto">
+      <div className="py-8 max-w-6xl mx-auto">
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Not Found</AlertTitle>
@@ -72,7 +72,7 @@ export default function SchoolDetail() {
   }
 
   return (
-    <div className="py-8 max-w-4xl mx-auto">
+    <div className="py-8 max-w-6xl mx-auto">
       <SchoolDetailView school={school} />
     </div>
   );

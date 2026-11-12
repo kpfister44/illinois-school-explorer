@@ -37,17 +37,17 @@ for (const { name, path } of PAGES) {
   });
 }
 
-test('school page tabs and trend controls are large enough to tap', async ({ page }) => {
+test('school page history sheets are large enough to tap', async ({ page }) => {
   await openPage(page, `/school/${ELK_GROVE_HIGH}`);
 
-  for (const tab of ['Overview', 'Academics', 'Demographics']) {
-    await page.getByRole('tab', { name: tab }).click();
-    const showTrends = page.getByRole('button', { name: 'Show trends' });
-    while ((await showTrends.count()) > 0) {
-      await showTrends.first().click();
-    }
+  for (const control of ['See every year', 'English learners history', 'Enrollment history']) {
+    await page.getByRole('button', { name: control }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
 
     expect(await undersizedControls(page)).toEqual([]);
+
+    await page.getByRole('button', { name: 'Close' }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
   }
 });
 

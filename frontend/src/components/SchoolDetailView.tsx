@@ -1,44 +1,316 @@
 // ABOUTME: SchoolDetailView component for detailed school display
-// ABOUTME: Organizes overview, academics, and demographics in tabs
+// ABOUTME: One scroll: facts, state designation, test scores, history, students and enrollment
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import { Plus, Minus } from 'lucide-react';
 import { useComparison } from '@/contexts/ComparisonContext';
 import BackButton from '@/components/BackButton';
-import TrendDisplay from '@/components/TrendDisplay';
-import { trendFromHistory } from '@/lib/trendUtils';
-import type { SchoolDetail } from '@/lib/api/types';
+import CompositionBar from '@/components/CompositionBar';
+import DesignationScale from '@/components/DesignationScale';
+import Facts from '@/components/Facts';
+import HistoryChart from '@/components/HistoryChart';
+import HistorySheet from '@/components/HistorySheet';
+import HistorySparkline from '@/components/HistorySparkline';
+import SectionLinks from '@/components/SectionLinks';
+import { formatGrades, formatMetric, type MetricKind } from '@/lib/format';
+import {
+  describeChange,
+  firstReported,
+  latestReported,
+  percentChange,
+  yearSeries,
+  type YearValue,
+} from '@/lib/history';
+import { CURRENT_YEAR, formatTrendValue } from '@/lib/trendUtils';
+import type { HistoricalYearlyData, SchoolDetail, SchoolMetrics } from '@/lib/api/types';
 
 interface SchoolDetailViewProps {
   school: SchoolDetail;
 }
 
-const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
+const PREVIOUS_YEAR = CURRENT_YEAR - 1;
+const NOT_REPORTED = 'Not reported';
 
-function formatNumber(value: number | null): string {
-  if (value === null) {
-    return 'N/A';
-  }
-  if (Number.isInteger(value)) {
-    return numberFormatter.format(value);
-  }
-  return value.toFixed(1);
+const SECTIONS = [
+  { id: 'scores', label: 'Scores' },
+  { id: 'over-time', label: 'Over time' },
+  { id: 'students', label: 'Students' },
+  { id: 'enrollment', label: 'Enrollment' },
+];
+
+const IAR_SUBJECTS = [
+  { label: 'Overall', history: 'iar', current: 'iar_overall_proficiency_pct' },
+  { label: 'English language arts', history: 'iar_ela', current: 'iar_ela_proficiency_pct' },
+  { label: 'Math', history: 'iar_math', current: 'iar_math_proficiency_pct' },
+] as const;
+
+function formatOrNotReported(value: number | null | undefined, kind: MetricKind): string {
+  return value == null ? NOT_REPORTED : formatMetric(value, kind);
 }
 
-function formatPercent(value: number | null): string {
-  if (value === null) {
-    return 'N/A';
+function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <section id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-16 space-y-4">
+      <h2
+        id={`${id}-heading`}
+        className="border-t-2 border-foreground pt-2 font-sans text-xs font-bold uppercase tracking-widest text-muted-foreground"
+      >
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+function Headline({ value, caption }: { value: string; caption: string }) {
+  return (
+    <p>
+      <span className="block text-5xl font-bold leading-none tracking-tight">{value}</span>{' '}
+      <span className="mt-1 block text-sm font-medium text-muted-foreground">{caption}</span>
+    </p>
+  );
+}
+
+function Measure({
+  label,
+  value,
+  detail,
+  series,
+  kind,
+}: {
+  label: string;
+  value: string;
+  detail?: string;
+  series: YearValue[];
+  kind: MetricKind;
+}) {
+  return (
+    <div className="flex items-end justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="text-2xl font-bold">{value}</p>
+        {detail && <p className="text-sm text-muted-foreground">{detail}</p>}
+      </div>
+      <HistorySparkline label={label} series={series} kind={kind} />
+    </div>
+  );
+}
+
+function StudentShare({
+  label,
+  value,
+  history,
+}: {
+  label: string;
+  value: number | null;
+  history: HistoricalYearlyData | undefined;
+}) {
+  const series = yearSeries(history);
+  const first = firstReported(series);
+  const startedAt =
+    first && first.year < CURRENT_YEAR
+      ? `${formatMetric(first.value, 'percentage')} in ${first.year}`
+      : undefined;
+
+  return (
+    <Measure
+      label={label}
+      value={formatOrNotReported(value, 'percentage')}
+      detail={value === null ? 'ISBE withholds small counts to protect privacy.' : startedAt}
+      series={series}
+      kind="percentage"
+    />
+  );
+}
+
+function oneYearChange(delta: number | null | undefined): string | null {
+  return delta == null ? null : `${describeChange(delta, ' points', PREVIOUS_YEAR)}.`;
+}
+
+function TestScores({ metrics }: { metrics: SchoolMetrics }) {
+  const actAverage = metrics.act?.overall_avg ?? null;
+  const iarProficiency = metrics.iar_overall_proficiency_pct;
+
+  if (actAverage === null && iarProficiency === null) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No {CURRENT_YEAR} test scores are published for this school. ISBE withholds results for
+        small groups, and some grades are not tested.
+      </p>
+    );
   }
-  return `${value.toFixed(1)}%`;
+
+  const actChange = oneYearChange(metrics.trends?.act?.one_year);
+  const iarChange = oneYearChange(metrics.trends?.iar?.one_year);
+
+  return (
+    <>
+      {actAverage !== null && (
+        <div className="space-y-2">
+          <Headline value={formatMetric(actAverage, 'score')} caption="average ACT, out of 36" />
+          {actChange && <p>{actChange}</p>}
+          <p className="text-sm text-muted-foreground">
+            The average of the English and math scores in grade 11.
+          </p>
+        </div>
+      )}
+      {iarProficiency !== null && (
+        <div className="space-y-2">
+          <Headline
+            value={formatMetric(iarProficiency, 'percentage')}
+            caption="of students proficient on the IAR"
+          />
+          <p>{iarChange ?? `No ${PREVIOUS_YEAR} result to compare.`}</p>
+          <p className="text-sm text-muted-foreground">
+            Illinois Assessment of Readiness, English language arts and math averaged.
+          </p>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ActOverTime({ metrics }: { metrics: SchoolMetrics }) {
+  const series = yearSeries(metrics.historical?.act);
+  const subjects = [
+    { label: 'English', value: metrics.act?.ela_avg },
+    { label: 'Math', value: metrics.act?.math_avg },
+    { label: 'Science', value: metrics.act?.science_avg },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <HistoryChart label="Average ACT" series={series} kind="score" satYears />
+      <p className="text-sm text-muted-foreground">
+        From 2019 to 2024 Illinois gave the SAT, converted here to the ACT scale. A break in the
+        line is a year with no published score.
+      </p>
+      <HistorySheet title="Average ACT" series={series} kind="score" satYears chart={false}>
+        <Button variant="outline" className="w-full sm:w-auto">
+          See every year
+        </Button>
+      </HistorySheet>
+      {subjects.some((subject) => subject.value != null) && (
+        <Facts
+          label="ACT subject scores"
+          facts={subjects.map((subject) => ({
+            label: subject.label,
+            value: formatOrNotReported(subject.value, 'score'),
+          }))}
+        />
+      )}
+    </div>
+  );
+}
+
+function IarOverTime({ metrics }: { metrics: SchoolMetrics }) {
+  return (
+    <div className="space-y-3">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b-2 border-foreground text-muted-foreground">
+            <th scope="col" className="py-2 text-left font-medium">
+              <span className="sr-only">Subject</span>
+            </th>
+            <th scope="col" className="py-2 text-right font-medium">
+              {PREVIOUS_YEAR}
+            </th>
+            <th scope="col" className="py-2 text-right font-medium">
+              {CURRENT_YEAR}
+            </th>
+            <th scope="col" className="py-2 text-right font-medium">
+              Change
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {IAR_SUBJECTS.map((subject) => {
+            const previous = metrics.historical?.[subject.history]?.[`yr_${PREVIOUS_YEAR}`];
+            const current = metrics[subject.current];
+            const change = metrics.trends?.[subject.history]?.one_year;
+
+            return (
+              <tr key={subject.label} className="border-b border-border">
+                <th scope="row" className="py-2 pr-2 text-left font-medium">
+                  {subject.label}
+                </th>
+                {[previous, current].map((value, index) => (
+                  <td key={index} className="py-2 pl-3 text-right">
+                    {value == null ? (
+                      <span className="text-muted-foreground">No data</span>
+                    ) : (
+                      formatMetric(value, 'percentage')
+                    )}
+                  </td>
+                ))}
+                <td className="whitespace-nowrap py-2 pl-3 text-right">
+                  {change == null ? (
+                    <span className="text-muted-foreground">No data</span>
+                  ) : (
+                    <span className="font-semibold">{formatTrendValue(change, 'pts')}</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="text-sm text-muted-foreground">
+        Share of students proficient. IAR scoring changed in {PREVIOUS_YEAR}, so earlier years
+        cannot be compared.
+      </p>
+    </div>
+  );
+}
+
+function OverTime({ metrics }: { metrics: SchoolMetrics }) {
+  const hasAct =
+    metrics.act?.overall_avg != null || latestReported(yearSeries(metrics.historical?.act)) !== null;
+  const hasIar = metrics.iar_overall_proficiency_pct !== null;
+
+  if (!hasAct && !hasIar) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No test score history is published for this school.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      {hasAct && hasIar && <h3 className="font-semibold">ACT</h3>}
+      {hasAct && <ActOverTime metrics={metrics} />}
+      {hasAct && hasIar && <h3 className="font-semibold">IAR</h3>}
+      {hasIar && <IarOverTime metrics={metrics} />}
+    </>
+  );
+}
+
+function Enrollment({ metrics }: { metrics: SchoolMetrics }) {
+  const series = yearSeries(metrics.historical?.enrollment);
+  const first = firstReported(series);
+  const change =
+    metrics.enrollment !== null && first && first.year < CURRENT_YEAR
+      ? percentChange(first.value, metrics.enrollment)
+      : null;
+
+  return (
+    <Measure
+      label="Enrollment"
+      value={formatOrNotReported(metrics.enrollment, 'count')}
+      detail={change !== null && first ? describeChange(change, '%', first.year) : undefined}
+      series={series}
+      kind="count"
+    />
+  );
 }
 
 export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
   const { addToComparison, removeFromComparison, isInComparison, canAddMore } = useComparison();
   const inComparison = isInComparison(school.rcdts);
+  const { metrics } = school;
+  const { diversity } = metrics;
 
   const handleComparisonToggle = () => {
     if (inComparison) {
@@ -48,29 +320,47 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
     }
   };
 
+  const location = [school.city, school.district, school.county && `${school.county} County`]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <div className="space-y-6">
       <BackButton />
-      <div className="border-b border-border pb-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-medium mb-2">{school.school_name}</h1>
-            <p className="text-muted-foreground">
-              {school.city}
-              {school.county && ` • ${school.county} County`}
-              {school.district && ` • ${school.district}`}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {school.school_type && <Badge variant="secondary">{school.school_type}</Badge>}
-            {school.grades_served && <Badge variant="outline">Grades {school.grades_served}</Badge>}
-          </div>
-        </div>
-        <div className="mt-4">
+      <SectionLinks sections={SECTIONS} />
+
+      <div className="grid gap-8 lg:grid-cols-[5fr_6fr] lg:gap-12">
+        <div className="space-y-6">
+          <header className="space-y-1">
+            <h1 className="text-3xl font-medium leading-tight lg:text-4xl">{school.display_name}</h1>
+            <p className="text-muted-foreground">{location}</p>
+            {school.display_name !== school.school_name && (
+              <p className="text-sm text-muted-foreground">Official name: {school.school_name}</p>
+            )}
+          </header>
+
+          <Facts
+            label="Key facts"
+            facts={[
+              {
+                label: 'Grades',
+                value: school.grades_served ? formatGrades(school.grades_served) : NOT_REPORTED,
+              },
+              { label: 'Students', value: formatOrNotReported(metrics.enrollment, 'count') },
+              {
+                label: 'Low income',
+                value: formatOrNotReported(metrics.demographics.low_income_percentage, 'percentage'),
+              },
+            ]}
+          />
+
+          <DesignationScale designation={school.designation} rcdts={school.rcdts} />
+
           <Button
             onClick={handleComparisonToggle}
             variant={inComparison ? 'outline' : 'default'}
             disabled={!inComparison && !canAddMore}
+            className="w-full sm:w-auto"
           >
             {inComparison ? (
               <>
@@ -84,333 +374,49 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
               </>
             )}
           </Button>
+
+          <Section id="scores" title={`Test scores · ${CURRENT_YEAR}`}>
+            <TestScores metrics={metrics} />
+          </Section>
         </div>
+
+        <Section id="over-time" title="Over time">
+          <OverTime metrics={metrics} />
+        </Section>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="academics">Academics</TabsTrigger>
-          <TabsTrigger value="demographics">Demographics</TabsTrigger>
-        </TabsList>
+      <div className="grid gap-8 lg:grid-cols-[5fr_6fr] lg:gap-12">
+        <Section id="students" title="Students">
+          <StudentShare
+            label="English learners"
+            value={metrics.demographics.el_percentage}
+            history={metrics.historical?.el}
+          />
+          <StudentShare
+            label="Low income"
+            value={metrics.demographics.low_income_percentage}
+            history={metrics.historical?.low_income}
+          />
+          <h3 className="pt-2 text-sm text-muted-foreground">Race and ethnicity</h3>
+          <CompositionBar
+            label="Race and ethnicity"
+            groups={[
+              { label: 'White', value: diversity.white },
+              { label: 'Black', value: diversity.black },
+              { label: 'Hispanic', value: diversity.hispanic },
+              { label: 'Asian', value: diversity.asian },
+              { label: 'Pacific Islander', value: diversity.pacific_islander },
+              { label: 'Native American', value: diversity.native_american },
+              { label: 'Two or more races', value: diversity.two_or_more },
+              { label: 'Middle Eastern or North African', value: diversity.mena },
+            ]}
+          />
+        </Section>
 
-        <TabsContent value="overview" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Enrollment</CardTitle>
-              <CardDescription>Total student population</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-4xl font-bold">
-                {formatNumber(school.metrics.enrollment)}
-              </p>
-              {school.metrics.enrollment !== null && (
-                <TrendDisplay
-                  label="Enrollment"
-                  currentValue={school.metrics.enrollment}
-                  trendData={school.metrics.trends?.enrollment}
-                  historicalData={school.metrics.historical?.enrollment}
-                  metricType="count"
-                  unit="students"
-                />
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="academics" className="space-y-4">
-          {/* Show ACT Scores for high schools */}
-          {school.metrics.act && (
-            <Card>
-              <CardHeader>
-                <CardTitle>ACT Scores</CardTitle>
-                <CardDescription>Average Grade 11 performance (out of 36)</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {school.metrics.act.overall_avg !== null && (
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium">Overall</span>
-                      <span className="text-sm font-bold">
-                        {school.metrics.act.overall_avg.toFixed(1)}
-                      </span>
-                    </div>
-                    <Progress value={(school.metrics.act.overall_avg / 36) * 100} />
-                    <TrendDisplay
-                      label="ACT Overall"
-                      currentValue={school.metrics.act.overall_avg}
-                      trendData={school.metrics.trends?.act}
-                      historicalData={school.metrics.historical?.act}
-                      metricType="score"
-                      unit="points"
-                    />
-                  </div>
-                )}
-                {school.metrics.act.ela_avg !== null && (
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium">ELA</span>
-                      <span className="text-sm font-bold">
-                        {school.metrics.act.ela_avg.toFixed(1)}
-                      </span>
-                    </div>
-                    <Progress value={(school.metrics.act.ela_avg / 36) * 100} />
-                    <TrendDisplay
-                      label="ACT ELA"
-                      currentValue={school.metrics.act.ela_avg}
-                      trendData={trendFromHistory(
-                        school.metrics.act.ela_avg,
-                        school.metrics.historical?.act_ela
-                      )}
-                      historicalData={school.metrics.historical?.act_ela}
-                      metricType="score"
-                      unit="points"
-                    />
-                  </div>
-                )}
-                {school.metrics.act.math_avg !== null && (
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium">Math</span>
-                      <span className="text-sm font-bold">
-                        {school.metrics.act.math_avg.toFixed(1)}
-                      </span>
-                    </div>
-                    <Progress value={(school.metrics.act.math_avg / 36) * 100} />
-                    <TrendDisplay
-                      label="ACT Math"
-                      currentValue={school.metrics.act.math_avg}
-                      trendData={trendFromHistory(
-                        school.metrics.act.math_avg,
-                        school.metrics.historical?.act_math
-                      )}
-                      historicalData={school.metrics.historical?.act_math}
-                      metricType="score"
-                      unit="points"
-                    />
-                  </div>
-                )}
-                {school.metrics.act.science_avg !== null && (
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium">Science</span>
-                      <span className="text-sm font-bold">
-                        {school.metrics.act.science_avg.toFixed(1)}
-                      </span>
-                    </div>
-                    <Progress value={(school.metrics.act.science_avg / 36) * 100} />
-                    <TrendDisplay
-                      label="ACT Science"
-                      currentValue={school.metrics.act.science_avg}
-                      trendData={trendFromHistory(
-                        school.metrics.act.science_avg,
-                        school.metrics.historical?.act_science
-                      )}
-                      historicalData={school.metrics.historical?.act_science}
-                      metricType="score"
-                      unit="points"
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Show IAR Scores for elementary/middle schools */}
-          {school.metrics.iar_overall_proficiency_pct !== null && (
-            <Card>
-              <CardHeader>
-                <CardTitle>IAR Scores</CardTitle>
-                <CardDescription>Illinois Assessment of Readiness proficiency rates</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">Overall Proficiency</span>
-                    <span className="text-sm font-bold">
-                      {school.metrics.iar_overall_proficiency_pct.toFixed(1)}%
-                    </span>
-                  </div>
-                  <Progress value={school.metrics.iar_overall_proficiency_pct} />
-                </div>
-                {school.metrics.iar_ela_proficiency_pct !== null && (
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium">ELA Proficiency</span>
-                      <span className="text-sm font-bold">
-                        {school.metrics.iar_ela_proficiency_pct.toFixed(1)}%
-                      </span>
-                    </div>
-                    <Progress value={school.metrics.iar_ela_proficiency_pct} />
-                  </div>
-                )}
-                {school.metrics.iar_math_proficiency_pct !== null && (
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium">Math Proficiency</span>
-                      <span className="text-sm font-bold">
-                        {school.metrics.iar_math_proficiency_pct.toFixed(1)}%
-                      </span>
-                    </div>
-                    <Progress value={school.metrics.iar_math_proficiency_pct} />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="demographics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Demographics</CardTitle>
-              <CardDescription>Student support indicators</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">English Learners</span>
-                  <span className="text-lg font-semibold">
-                    {formatPercent(school.metrics.demographics.el_percentage)}
-                  </span>
-                </div>
-                {school.metrics.demographics.el_percentage !== null && (
-                  <TrendDisplay
-                    label="English Learners"
-                    currentValue={school.metrics.demographics.el_percentage}
-                    trendData={school.metrics.trends?.el}
-                    historicalData={school.metrics.historical?.el}
-                    metricType="percentage"
-                    unit="percentage points"
-                  />
-                )}
-              </div>
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Low Income</span>
-                  <span className="text-lg font-semibold">
-                    {formatPercent(school.metrics.demographics.low_income_percentage)}
-                  </span>
-                </div>
-                {school.metrics.demographics.low_income_percentage !== null && (
-                  <TrendDisplay
-                    label="Low Income"
-                    currentValue={school.metrics.demographics.low_income_percentage}
-                    trendData={school.metrics.trends?.low_income}
-                    historicalData={school.metrics.historical?.low_income}
-                    metricType="percentage"
-                    unit="percentage points"
-                  />
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Racial Diversity</CardTitle>
-              <CardDescription>Student population breakdown</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {school.metrics.diversity.white !== null && (
-                <div>
-                  <div className="flex justify-between mb-2 text-sm">
-                    <span>White</span>
-                    <span className="font-medium">
-                      {formatPercent(school.metrics.diversity.white)}
-                    </span>
-                  </div>
-                  <Progress value={school.metrics.diversity.white} />
-                  <TrendDisplay
-                    label="White"
-                    currentValue={school.metrics.diversity.white}
-                    trendData={school.metrics.trends?.white}
-                    historicalData={school.metrics.historical?.white}
-                    metricType="percentage"
-                    unit="percentage points"
-                  />
-                </div>
-              )}
-              {school.metrics.diversity.hispanic !== null && (
-                <div>
-                  <div className="flex justify-between mb-2 text-sm">
-                    <span>Hispanic</span>
-                    <span className="font-medium">
-                      {formatPercent(school.metrics.diversity.hispanic)}
-                    </span>
-                  </div>
-                  <Progress value={school.metrics.diversity.hispanic} />
-                  <TrendDisplay
-                    label="Hispanic"
-                    currentValue={school.metrics.diversity.hispanic}
-                    trendData={school.metrics.trends?.hispanic}
-                    historicalData={school.metrics.historical?.hispanic}
-                    metricType="percentage"
-                    unit="percentage points"
-                  />
-                </div>
-              )}
-              {school.metrics.diversity.asian !== null && (
-                <div>
-                  <div className="flex justify-between mb-2 text-sm">
-                    <span>Asian</span>
-                    <span className="font-medium">
-                      {formatPercent(school.metrics.diversity.asian)}
-                    </span>
-                  </div>
-                  <Progress value={school.metrics.diversity.asian} />
-                  <TrendDisplay
-                    label="Asian"
-                    currentValue={school.metrics.diversity.asian}
-                    trendData={school.metrics.trends?.asian}
-                    historicalData={school.metrics.historical?.asian}
-                    metricType="percentage"
-                    unit="percentage points"
-                  />
-                </div>
-              )}
-              {school.metrics.diversity.black !== null && (
-                <div>
-                  <div className="flex justify-between mb-2 text-sm">
-                    <span>Black</span>
-                    <span className="font-medium">
-                      {formatPercent(school.metrics.diversity.black)}
-                    </span>
-                  </div>
-                  <Progress value={school.metrics.diversity.black} />
-                  <TrendDisplay
-                    label="Black"
-                    currentValue={school.metrics.diversity.black}
-                    trendData={school.metrics.trends?.black}
-                    historicalData={school.metrics.historical?.black}
-                    metricType="percentage"
-                    unit="percentage points"
-                  />
-                </div>
-              )}
-              {school.metrics.diversity.two_or_more !== null && (
-                <div>
-                  <div className="flex justify-between mb-2 text-sm">
-                    <span>Two or More Races</span>
-                    <span className="font-medium">
-                      {formatPercent(school.metrics.diversity.two_or_more)}
-                    </span>
-                  </div>
-                  <Progress value={school.metrics.diversity.two_or_more} />
-                  <TrendDisplay
-                    label="Two or More Races"
-                    currentValue={school.metrics.diversity.two_or_more}
-                    trendData={school.metrics.trends?.two_or_more}
-                    historicalData={school.metrics.historical?.two_or_more}
-                    metricType="percentage"
-                    unit="percentage points"
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        <Section id="enrollment" title="Enrollment">
+          <Enrollment metrics={metrics} />
+        </Section>
+      </div>
     </div>
   );
 }

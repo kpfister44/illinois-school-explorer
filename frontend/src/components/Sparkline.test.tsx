@@ -1,5 +1,5 @@
 // ABOUTME: Tests for the Sparkline component
-// ABOUTME: Verifies line segments, gaps for missing years and the highlighted endpoint
+// ABOUTME: Verifies line segments, gaps for missing years and the highlighted final year
 
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
@@ -23,8 +23,8 @@ describe('Sparkline', () => {
     expect(container.querySelectorAll('polyline')).toHaveLength(2);
   });
 
-  it('highlights the latest year with a value', () => {
-    const series = yearSeries({ yr_2010: 5, yr_2025: 9 });
+  it('highlights the final year when it has a value', () => {
+    const series = yearSeries({ yr_2010: 5, yr_2026: 9 });
 
     const { container } = render(<Sparkline series={series} />);
 
@@ -33,6 +33,14 @@ describe('Sparkline', () => {
     const everyX = [...container.querySelectorAll('circle')].map((circle) => Number(circle.getAttribute('cx')));
     expect(endpoint).not.toBeNull();
     expect(lastX).toBe(Math.max(...everyX));
+  });
+
+  it('highlights nothing when the final year has no value', () => {
+    const series = yearSeries({ yr_2010: 5, yr_2011: 6, yr_2020: 9 });
+
+    const { container } = render(<Sparkline series={series} />);
+
+    expect(container.querySelector('circle.fill-highlighter')).toBeNull();
   });
 
   it('places higher values nearer the top', () => {

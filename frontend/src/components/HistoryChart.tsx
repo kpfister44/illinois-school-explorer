@@ -70,6 +70,9 @@ export default function HistoryChart({ label, series, kind, satYears = false }: 
     const isFirst = point.year === first.year;
     const isLatest = point.year === latest.year;
     const standsAlone = !hasValue(index - 1) && !hasValue(index + 1);
+    // The label sits on the side of the point that the line does not head towards
+    const neighbour = series[isLatest ? index - 1 : index + 1]?.value ?? null;
+    const labelBelow = neighbour !== null && neighbour > point.value;
 
     return (
       <g key={index}>
@@ -81,7 +84,7 @@ export default function HistoryChart({ label, series, kind, satYears = false }: 
         {(isFirst || isLatest) && (
           <text
             x={cx}
-            y={cy - 10}
+            y={labelBelow ? cy + 20 : cy - 10}
             textAnchor={isLatest && !isFirst ? 'end' : 'start'}
             fontSize={12}
             fontWeight={700}
@@ -113,7 +116,7 @@ export default function HistoryChart({ label, series, kind, satYears = false }: 
         responsive
         data={series}
         style={{ width: '100%', height: 240 }}
-        margin={{ top: 28, right: 14, bottom: 0, left: 0 }}
+        margin={{ top: 8, right: 14, bottom: 0, left: 0 }}
         accessibilityLayer={false}
       >
         {satYears && (
@@ -139,6 +142,7 @@ export default function HistoryChart({ label, series, kind, satYears = false }: 
         <YAxis
           width={kind === 'count' ? 44 : 34}
           domain={['auto', 'auto']}
+          padding={{ top: 24, bottom: 24 }}
           allowDecimals={kind !== 'count'}
           tickLine={false}
           axisLine={false}
