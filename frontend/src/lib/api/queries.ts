@@ -1,5 +1,5 @@
 // ABOUTME: TanStack Query hooks for backend API
-// ABOUTME: Provides useSearch, useSchoolDetail, useCompare, and useStats hooks
+// ABOUTME: Provides hooks for search, school detail, comparison, stats and benchmarks
 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from './client';
@@ -8,7 +8,11 @@ import type {
   SchoolDetail,
   CompareResponse,
   Assessment,
+  BenchmarkedMetric,
+  BenchmarkLevel,
   SchoolLevel,
+  SimilarSchoolsResponse,
+  StateBenchmark,
   StatsResponse,
   TopScoresResponse,
 } from './types';
@@ -30,6 +34,16 @@ export const searchQueryKey = (query: string, limit: number) => ['search', query
 export const schoolDetailQueryKey = (rcdts: string) => ['school', rcdts];
 export const compareQueryKey = (rcdtsList: string[]) => ['compare', rcdtsList.join(',')];
 export const statsQueryKey = () => ['stats'];
+export const stateBenchmarkQueryKey = (metric: BenchmarkedMetric, level: BenchmarkLevel) => [
+  'state-benchmark',
+  metric,
+  level,
+];
+export const similarSchoolsQueryKey = (rcdts: string, assessment: Assessment) => [
+  'similar-schools',
+  rcdts,
+  assessment,
+];
 export const topScoresQueryKey = (assessment: Assessment, level: SchoolLevel, limit: number) => [
   'top-scores',
   assessment,
@@ -99,6 +113,37 @@ export const useStats = () => {
       const { data } = await apiClient.get<StatsResponse>('/api/stats');
       return data;
     },
+    staleTime: 60 * 60 * 1000, // 1 hour
+  });
+};
+
+// A metric's state average by year and the band where most schools of a level fall
+export const useStateBenchmark = (metric: BenchmarkedMetric, level: BenchmarkLevel | undefined) => {
+  return useQuery({
+    queryKey: stateBenchmarkQueryKey(metric, level ?? 'other'),
+    queryFn: async () => {
+      const { data } = await apiClient.get<StateBenchmark>('/api/benchmarks/state', {
+        params: { metric, level },
+      });
+      return data;
+    },
+    enabled: level !== undefined,
+    staleTime: 60 * 60 * 1000, // 1 hour
+  });
+};
+
+// The 25 schools most like a school in income, English learners and size
+export const useSimilarSchools = (rcdts: string, assessment: Assessment, enabled: boolean) => {
+  return useQuery({
+    queryKey: similarSchoolsQueryKey(rcdts, assessment),
+    queryFn: async () => {
+      const { data } = await apiClient.get<SimilarSchoolsResponse>(
+        `/api/schools/${rcdts}/similar`,
+        { params: { assessment } }
+      );
+      return data;
+    },
+    enabled,
     staleTime: 60 * 60 * 1000, // 1 hour
   });
 };

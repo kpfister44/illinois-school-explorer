@@ -51,6 +51,14 @@ test('school page history sheets are large enough to tap', async ({ page }) => {
   }
 });
 
+test('similar schools list is large enough to tap', async ({ page }) => {
+  await openPage(page, `/school/${ELK_GROVE_HIGH}`);
+  await page.getByRole('button', { name: 'See similar schools' }).click();
+  await expect(page.getByRole('dialog').getByRole('link')).toHaveCount(25);
+
+  expect(await undersizedControls(page)).toEqual([]);
+});
+
 test('search suggestions are large enough to tap', async ({ page }) => {
   await openPage(page, '/');
   await page.getByPlaceholder(/search for schools/i).fill('elk grove');

@@ -20,6 +20,7 @@ export const PAGES = [
   { name: 'school without test scores', path: `/school/${AVON_ELEMENTARY}` },
   { name: 'compare', path: '/compare' },
   { name: 'top scores', path: '/top-scores' },
+  { name: 'how this works', path: '/how-this-works' },
   { name: 'not found', path: '/no-such-page' },
 ];
 

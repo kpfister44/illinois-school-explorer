@@ -1,13 +1,67 @@
 // ABOUTME: Tests for SchoolDetailView component
-// ABOUTME: Verifies the single-scroll school page for high, elementary and mixed schools, including missing data
+// ABOUTME: Verifies the single-scroll school page for high, elementary and mixed schools, including benchmarks and missing data
 
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ComparisonProvider } from '@/contexts/ComparisonContext';
 import SchoolDetailView from './SchoolDetailView';
-import type { SchoolDetail } from '@/lib/api/types';
+import { apiClient } from '@/lib/api/client';
+import type { SchoolDetail, SimilarSchoolsResponse, StateBenchmark } from '@/lib/api/types';
+
+vi.mock('@/lib/api/client', () => ({
+  apiClient: {
+    get: vi.fn(),
+  },
+}));
+
+const mockedGet = apiClient.get as unknown as ReturnType<typeof vi.fn>;
+
+const STATE_BENCHMARKS: Record<string, StateBenchmark> = {
+  act: {
+    metric: 'act',
+    level: 'high',
+    schools: 684,
+    band_low: 14.2,
+    band_high: 20.7,
+    years: [
+      { year: 2010, average: 20.1, schools: 530 },
+      { year: 2026, average: 17.55, schools: 684 },
+    ],
+  },
+  iar: {
+    metric: 'iar',
+    level: 'elementary',
+    schools: 2143,
+    band_low: 21.5,
+    band_high: 76.3,
+    years: [
+      { year: 2025, average: 47.9, schools: 2130 },
+      { year: 2026, average: 49.6, schools: 2143 },
+    ],
+  },
+};
+
+const SIMILAR_SCHOOLS: SimilarSchoolsResponse = {
+  assessment: 'act',
+  level: 'high',
+  average: 18.27,
+  schools: [
+    {
+      rcdts: '05-016-2070-17-0002',
+      school_name: 'Maine East High School',
+      display_name: 'Maine East High School',
+      city: 'Park Ridge',
+      district: 'Maine Township HSD 207',
+      enrollment: 1804,
+      low_income_percentage: 38.1,
+      el_percentage: 21.4,
+      score: 19.25,
+    },
+  ],
+};
 
 const highSchool: SchoolDetail = {
   id: 1,
@@ -20,6 +74,36 @@ const highSchool: SchoolDetail = {
   school_type: 'High School',
   grades_served: '9 - 12',
   designation: 'Approaching Exemplary',
+  benchmarks: {
+    act: {
+      level: 'high',
+      state_average: 17.55,
+      state_schools: 684,
+      district_average: 20.47,
+      district_schools: 6,
+      percentile: 64,
+      similar_average: 18.27,
+    },
+    iar: null,
+    el: {
+      level: 'high',
+      state_average: 18.14,
+      state_schools: 379,
+      district_average: 21.3,
+      district_schools: 6,
+      percentile: null,
+      similar_average: null,
+    },
+    low_income: {
+      level: 'high',
+      state_average: 48.93,
+      state_schools: 691,
+      district_average: 27.1,
+      district_schools: 6,
+      percentile: null,
+      similar_average: null,
+    },
+  },
   metrics: {
     enrollment: 1721,
     act: {
@@ -68,6 +152,36 @@ const elementarySchool: SchoolDetail = {
   school_type: 'Elementary School',
   grades_served: 'K - 5',
   designation: 'Exemplary',
+  benchmarks: {
+    act: null,
+    iar: {
+      level: 'elementary',
+      state_average: 49.6,
+      state_schools: 2143,
+      district_average: 44.12,
+      district_schools: 11,
+      percentile: 58,
+      similar_average: 52.4,
+    },
+    el: {
+      level: 'elementary',
+      state_average: 15.2,
+      state_schools: 1637,
+      district_average: 30.5,
+      district_schools: 11,
+      percentile: null,
+      similar_average: null,
+    },
+    low_income: {
+      level: 'elementary',
+      state_average: 51.3,
+      state_schools: 2365,
+      district_average: 45.0,
+      district_schools: 11,
+      percentile: null,
+      similar_average: null,
+    },
+  },
   metrics: {
     enrollment: 388,
     act: null,
@@ -103,11 +217,19 @@ const elementarySchool: SchoolDetail = {
 };
 
 function renderWithProviders(ui: React.ReactElement) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter>
-      <ComparisonProvider>{ui}</ComparisonProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <ComparisonProvider>{ui}</ComparisonProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
+}
+
+function paragraph(text: string) {
+  return (_: string, element: Element | null) =>
+    element?.tagName === 'P' && element.textContent === text;
 }
 
 function section(name: RegExp | string) {
@@ -116,6 +238,16 @@ function section(name: RegExp | string) {
 
 beforeEach(() => {
   localStorage.clear();
+  mockedGet.mockReset();
+  mockedGet.mockImplementation(async (url: string, config?: { params?: { metric?: string } }) => {
+    if (url === '/api/benchmarks/state') {
+      return { data: STATE_BENCHMARKS[config?.params?.metric ?? ''] };
+    }
+    if (url.endsWith('/similar')) {
+      return { data: SIMILAR_SCHOOLS };
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  });
 });
 
 describe('SchoolDetailView header', () => {
@@ -177,14 +309,16 @@ describe('SchoolDetailView header', () => {
   it('returns to the previous page from the back button', async () => {
     const user = userEvent.setup();
     render(
-      <MemoryRouter initialEntries={['/top-scores', '/school/05-016-2140-17-0002']} initialIndex={1}>
-        <ComparisonProvider>
-          <Routes>
-            <Route path="/top-scores" element={<div>Leaderboard</div>} />
-            <Route path="/school/:rcdts" element={<SchoolDetailView school={highSchool} />} />
-          </Routes>
-        </ComparisonProvider>
-      </MemoryRouter>
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={['/top-scores', '/school/05-016-2140-17-0002']} initialIndex={1}>
+          <ComparisonProvider>
+            <Routes>
+              <Route path="/top-scores" element={<div>Leaderboard</div>} />
+              <Route path="/school/:rcdts" element={<SchoolDetailView school={highSchool} />} />
+            </Routes>
+          </ComparisonProvider>
+        </MemoryRouter>
+      </QueryClientProvider>
     );
 
     await user.click(screen.getByRole('button', { name: /back/i }));
@@ -217,24 +351,116 @@ describe('SchoolDetailView layout', () => {
 });
 
 describe('SchoolDetailView for a high school', () => {
-  it('leads the test scores with the ACT average and its change from last year', () => {
+  it('leads the test scores with the ACT average and where it stands', () => {
     renderWithProviders(<SchoolDetailView school={highSchool} />);
 
     const scores = section('Test scores · 2026');
-    expect(scores.getByText('18.1')).toBeInTheDocument();
     expect(scores.getByText('average ACT, out of 36')).toBeInTheDocument();
-    expect(scores.getByText('Up 0.2 points since 2025.')).toBeInTheDocument();
+    expect(
+      scores.getByText(
+        paragraph(
+          'Higher than 64% of Illinois high schools, and below the average for its district.'
+        )
+      )
+    ).toBeInTheDocument();
   });
 
-  it('leaves out the change when there is no score from last year', () => {
+  it('compares the ACT average with Illinois, the district and similar schools', () => {
+    renderWithProviders(<SchoolDetailView school={highSchool} />);
+
+    const rows = within(
+      section('Test scores · 2026').getByRole('list', { name: 'Average ACT compared' })
+    ).getAllByRole('listitem');
+    expect(rows.map((row) => row.textContent)).toEqual([
+      'This school18.1',
+      'Illinois17.6',
+      'District20.5',
+      'Similar schools18.3',
+    ]);
+  });
+
+  it('leaves out the district when it has too few schools to average', () => {
     const school: SchoolDetail = {
       ...highSchool,
-      metrics: { ...highSchool.metrics, trends: { act: undefined } },
+      benchmarks: {
+        ...highSchool.benchmarks!,
+        act: { ...highSchool.benchmarks!.act!, district_average: null, district_schools: 1 },
+      },
     };
 
     renderWithProviders(<SchoolDetailView school={school} />);
 
-    expect(section('Test scores · 2026').queryByText(/since 2025/)).not.toBeInTheDocument();
+    const scores = section('Test scores · 2026');
+    expect(
+      scores.getByText(paragraph('Higher than 64% of Illinois high schools.'))
+    ).toBeInTheDocument();
+    expect(scores.queryByText('District')).not.toBeInTheDocument();
+  });
+
+  it('leaves out similar schools when the school cannot be matched', () => {
+    const school: SchoolDetail = {
+      ...highSchool,
+      benchmarks: {
+        ...highSchool.benchmarks!,
+        act: { ...highSchool.benchmarks!.act!, similar_average: null },
+      },
+    };
+
+    renderWithProviders(<SchoolDetailView school={school} />);
+
+    const scores = section('Test scores · 2026');
+    expect(scores.queryByText(/Similar schools/)).not.toBeInTheDocument();
+    expect(scores.queryByRole('button', { name: 'See similar schools' })).not.toBeInTheDocument();
+  });
+
+  it('says where most schools fall once the state figures arrive', async () => {
+    renderWithProviders(<SchoolDetailView school={highSchool} />);
+
+    expect(
+      await section('Test scores · 2026').findByText(
+        /Shaded band: where most Illinois high schools fall, 14.2 to 20.7\./
+      )
+    ).toBeInTheDocument();
+    expect(mockedGet).toHaveBeenCalledWith('/api/benchmarks/state', {
+      params: { metric: 'act', level: 'high' },
+    });
+  });
+
+  it('opens the list of similar schools', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<SchoolDetailView school={highSchool} />);
+
+    await user.click(screen.getByRole('button', { name: 'See similar schools' }));
+
+    const dialog = within(screen.getByRole('dialog', { name: 'Similar schools' }));
+    expect(await dialog.findByRole('link', { name: /Maine East High School/ })).toBeInTheDocument();
+  });
+
+  it('links to the explanation of the yardsticks', () => {
+    renderWithProviders(<SchoolDetailView school={highSchool} />);
+
+    expect(
+      section('Test scores · 2026').getByRole('link', { name: 'How this works' })
+    ).toHaveAttribute('href', '/how-this-works');
+  });
+
+  it('shows the score without yardsticks when the school has no benchmarks', () => {
+    renderWithProviders(<SchoolDetailView school={{ ...highSchool, benchmarks: null }} />);
+
+    const scores = section('Test scores · 2026');
+    expect(scores.getByText('18.1')).toBeInTheDocument();
+    expect(scores.queryByRole('list', { name: 'Average ACT compared' })).not.toBeInTheDocument();
+    expect(scores.queryByText(/Higher than/)).not.toBeInTheDocument();
+  });
+
+  it('draws the Illinois average on the ACT chart', async () => {
+    renderWithProviders(<SchoolDetailView school={highSchool} />);
+
+    expect(
+      await section('Over time').findByRole('img', {
+        name: /Illinois high school average: 17.6 in 2026\.$/,
+      })
+    ).toBeInTheDocument();
   });
 
   it('charts the ACT average over time with the SAT years explained', () => {
@@ -278,13 +504,36 @@ describe('SchoolDetailView for a high school', () => {
 });
 
 describe('SchoolDetailView for an elementary school', () => {
-  it('leads the test scores with IAR proficiency and its change from last year', () => {
+  it('leads the test scores with IAR proficiency and where it stands', () => {
     renderWithProviders(<SchoolDetailView school={elementarySchool} />);
 
     const scores = section('Test scores · 2026');
-    expect(scores.getByText('56.6%')).toBeInTheDocument();
     expect(scores.getByText('of students proficient on the IAR')).toBeInTheDocument();
-    expect(scores.getByText('Up 4.4 points since 2025.')).toBeInTheDocument();
+    expect(
+      scores.getByText(
+        paragraph(
+          'Higher than 58% of Illinois elementary schools, and above the average for its district.'
+        )
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('compares IAR proficiency with Illinois, the district and similar schools', async () => {
+    renderWithProviders(<SchoolDetailView school={elementarySchool} />);
+
+    const scores = section('Test scores · 2026');
+    const rows = within(scores.getByRole('list', { name: 'IAR proficiency compared' })).getAllByRole(
+      'listitem'
+    );
+    expect(rows.map((row) => row.textContent)).toEqual([
+      'This school56.6%',
+      'Illinois49.6%',
+      'District44.1%',
+      'Similar schools52.4%',
+    ]);
+    expect(
+      await scores.findByText(/where most Illinois elementary schools fall, 21.5% to 76.3%\./)
+    ).toBeInTheDocument();
   });
 
   it('compares 2025 and 2026 for each IAR subject', () => {
@@ -322,7 +571,6 @@ describe('SchoolDetailView for an elementary school', () => {
 
     renderWithProviders(<SchoolDetailView school={school} />);
 
-    expect(section('Test scores · 2026').getByText('No 2025 result to compare.')).toBeInTheDocument();
     expect(section('Over time').getByRole('row', { name: /Overall/ })).toHaveTextContent(
       'OverallNo data56.6%No data'
     );
@@ -400,8 +648,8 @@ describe('SchoolDetailView test score edge cases', () => {
     renderWithProviders(<SchoolDetailView school={school} />);
 
     const scores = section('Test scores · 2026');
-    expect(scores.getByText('18.1')).toBeInTheDocument();
-    expect(scores.getByText('56.6%')).toBeInTheDocument();
+    expect(scores.getByText('average ACT, out of 36')).toBeInTheDocument();
+    expect(scores.getByText('of students proficient on the IAR')).toBeInTheDocument();
     const overTime = section('Over time');
     expect(overTime.getByRole('img', { name: /^Average ACT/ })).toBeInTheDocument();
     expect(overTime.getByRole('row', { name: /Overall/ })).toBeInTheDocument();
@@ -409,16 +657,22 @@ describe('SchoolDetailView test score edge cases', () => {
 });
 
 describe('SchoolDetailView students', () => {
-  it('shows English learners and low income with where each started', () => {
+  it('shows English learners and low income beside the state figures', () => {
     renderWithProviders(<SchoolDetailView school={highSchool} />);
 
     const students = section('Students');
     expect(students.getByText('English learners')).toBeInTheDocument();
     expect(students.getByText('30.7%')).toBeInTheDocument();
-    expect(students.getByText('5.7% in 2010')).toBeInTheDocument();
+    expect(students.getByText('Illinois high schools: 18.1%')).toBeInTheDocument();
     expect(students.getByText('Low income')).toBeInTheDocument();
     expect(students.getByText('35.2%')).toBeInTheDocument();
-    expect(students.getByText('26.0% in 2010')).toBeInTheDocument();
+    expect(students.getByText('Illinois high schools: 48.9%')).toBeInTheDocument();
+  });
+
+  it('shows no state figure when the school has no benchmarks', () => {
+    renderWithProviders(<SchoolDetailView school={{ ...highSchool, benchmarks: null }} />);
+
+    expect(section('Students').queryByText(/Illinois high schools/)).not.toBeInTheDocument();
   });
 
   it('opens the history of a student measure from its sparkline', async () => {

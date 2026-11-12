@@ -131,20 +131,69 @@ export type Designation =
   | 'Comprehensive'
   | 'Dually Designated';
 
+export type Assessment = 'act' | 'iar';
+export type SchoolLevel = 'high' | 'middle' | 'elementary';
+export type BenchmarkedMetric = Assessment | 'el' | 'low_income';
+export type BenchmarkLevel = SchoolLevel | 'other';
+
+export interface MetricBenchmark {
+  level: BenchmarkLevel;
+  state_average: number;
+  state_schools: number;
+  district_average: number | null;
+  district_schools: number;
+  percentile: number | null;
+  similar_average: number | null;
+}
+
+export type SchoolBenchmarks = Record<BenchmarkedMetric, MetricBenchmark | null>;
+
 export interface SchoolDetail extends School {
   display_name: string;
   county: string | null;
   grades_served: string | null;
   designation: Designation | null;
   metrics: SchoolMetrics;
+  benchmarks?: SchoolBenchmarks | null;
+}
+
+export interface SimilarSchool {
+  rcdts: string;
+  school_name: string;
+  display_name: string;
+  city: string;
+  district: string | null;
+  enrollment: number;
+  low_income_percentage: number;
+  el_percentage: number | null;
+  score: number;
+}
+
+export interface SimilarSchoolsResponse {
+  assessment: Assessment;
+  level: BenchmarkLevel;
+  average: number | null;
+  schools: SimilarSchool[];
+}
+
+export interface StateYearAverage {
+  year: number;
+  average: number;
+  schools: number;
+}
+
+export interface StateBenchmark {
+  metric: BenchmarkedMetric;
+  level: BenchmarkLevel;
+  schools: number;
+  band_low: number | null;
+  band_high: number | null;
+  years: StateYearAverage[];
 }
 
 export interface CompareResponse {
   schools: SchoolDetail[];
 }
-
-export type Assessment = 'act' | 'iar';
-export type SchoolLevel = 'high' | 'middle' | 'elementary';
 
 export interface TopScoreEntry {
   rank: number;

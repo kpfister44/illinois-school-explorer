@@ -25,6 +25,36 @@ describe('HistoryChart', () => {
     expect(screen.getByRole('img', { name: 'Enrollment: 412 in 2026.' })).toBeInTheDocument();
   });
 
+  it('adds the benchmark to the summary and names both lines', () => {
+    const series = yearSeries({ yr_2010: 22.5, yr_2026: 18.1 });
+    const benchmark = {
+      label: 'Illinois high school average',
+      series: yearSeries({ yr_2010: 20.1, yr_2026: 17.55 }),
+    };
+
+    render(<HistoryChart label="Average ACT" series={series} kind="score" benchmark={benchmark} />);
+
+    expect(
+      screen.getByRole('img', {
+        name: 'Average ACT from 2010 to 2026: 22.5 in 2010, 18.1 in 2026. Illinois high school average: 17.6 in 2026.',
+      })
+    ).toBeInTheDocument();
+    expect(screen.getByText('This school')).toBeInTheDocument();
+    expect(screen.getByText('Illinois high school average')).toBeInTheDocument();
+  });
+
+  it('leaves out a benchmark that has no values', () => {
+    const series = yearSeries({ yr_2010: 22.5, yr_2026: 18.1 });
+    const benchmark = { label: 'Illinois high school average', series: yearSeries({}) };
+
+    render(<HistoryChart label="Average ACT" series={series} kind="score" benchmark={benchmark} />);
+
+    expect(
+      screen.getByRole('img', { name: 'Average ACT from 2010 to 2026: 22.5 in 2010, 18.1 in 2026.' })
+    ).toBeInTheDocument();
+    expect(screen.queryByText('This school')).not.toBeInTheDocument();
+  });
+
   it('says so when no year has a value', () => {
     render(<HistoryChart label="Average ACT" series={yearSeries({})} kind="score" />);
 

@@ -15,6 +15,7 @@ import SearchResults from './routes/SearchResults';
 import SchoolDetail from './routes/SchoolDetail';
 import Compare from './routes/Compare';
 import TopScores from './routes/TopScores';
+import HowThisWorks from './routes/HowThisWorks';
 import NotFound from './routes/NotFound';
 
 const queryClient = new QueryClient({
@@ -40,6 +41,7 @@ function AppRoutes() {
             <Route path="/school/:rcdts" element={<SchoolDetail />} />
             <Route path="/compare" element={<Compare />} />
             <Route path="/top-scores" element={<TopScores />} />
+            <Route path="/how-this-works" element={<HowThisWorks />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>

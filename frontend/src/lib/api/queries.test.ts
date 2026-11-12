@@ -8,6 +8,8 @@ import {
   schoolDetailQueryKey,
   compareQueryKey,
   statsQueryKey,
+  stateBenchmarkQueryKey,
+  similarSchoolsQueryKey,
   getTopScores,
 } from './queries';
 
@@ -41,6 +43,18 @@ describe('Query Keys', () => {
 
   it('generates correct stats query key', () => {
     expect(statsQueryKey()).toEqual(['stats']);
+  });
+
+  it('generates correct state benchmark query key', () => {
+    expect(stateBenchmarkQueryKey('act', 'high')).toEqual(['state-benchmark', 'act', 'high']);
+  });
+
+  it('generates correct similar schools query key', () => {
+    expect(similarSchoolsQueryKey('05-016-2140-17-0002', 'act')).toEqual([
+      'similar-schools',
+      '05-016-2140-17-0002',
+      'act',
+    ]);
   });
 });
 

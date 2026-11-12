@@ -1,18 +1,28 @@
 // ABOUTME: SchoolDetailView component for detailed school display
-// ABOUTME: One scroll: facts, state designation, test scores, history, students and enrollment
+// ABOUTME: One scroll: facts, state designation, test scores with their yardsticks, history, students and enrollment
 
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus, Minus } from 'lucide-react';
 import { useComparison } from '@/contexts/ComparisonContext';
 import BackButton from '@/components/BackButton';
 import CompositionBar from '@/components/CompositionBar';
 import DesignationScale from '@/components/DesignationScale';
+import DotPlot, { type DotPlotRow } from '@/components/DotPlot';
 import Facts from '@/components/Facts';
 import HistoryChart from '@/components/HistoryChart';
 import HistorySheet from '@/components/HistorySheet';
 import HistorySparkline from '@/components/HistorySparkline';
 import SectionLinks from '@/components/SectionLinks';
+import SimilarSchoolsSheet from '@/components/SimilarSchoolsSheet';
+import { useStateBenchmark } from '@/lib/api/queries';
+import {
+  ASSESSMENT_SCALES,
+  describeLevel,
+  districtStanding,
+  stateSeries,
+} from '@/lib/benchmarks';
 import { formatGrades, formatMetric, type MetricKind } from '@/lib/format';
 import {
   describeChange,
@@ -23,7 +33,13 @@ import {
   type YearValue,
 } from '@/lib/history';
 import { CURRENT_YEAR, formatTrendValue } from '@/lib/trendUtils';
-import type { HistoricalYearlyData, SchoolDetail, SchoolMetrics } from '@/lib/api/types';
+import type {
+  Assessment,
+  HistoricalYearlyData,
+  MetricBenchmark,
+  SchoolDetail,
+  SchoolMetrics,
+} from '@/lib/api/types';
 
 interface SchoolDetailViewProps {
   school: SchoolDetail;
@@ -101,34 +117,103 @@ function StudentShare({
   label,
   value,
   history,
+  benchmark,
 }: {
   label: string;
   value: number | null;
   history: HistoricalYearlyData | undefined;
+  benchmark: MetricBenchmark | null | undefined;
 }) {
-  const series = yearSeries(history);
-  const first = firstReported(series);
-  const startedAt =
-    first && first.year < CURRENT_YEAR
-      ? `${formatMetric(first.value, 'percentage')} in ${first.year}`
-      : undefined;
+  const stateFigure = benchmark
+    ? `${describeLevel(benchmark.level)}: ${formatMetric(benchmark.state_average, 'percentage')}`
+    : undefined;
 
   return (
     <Measure
       label={label}
       value={formatOrNotReported(value, 'percentage')}
-      detail={value === null ? 'ISBE withholds small counts to protect privacy.' : startedAt}
-      series={series}
+      detail={value === null ? 'ISBE withholds small counts to protect privacy.' : stateFigure}
+      series={yearSeries(history)}
       kind="percentage"
     />
   );
 }
 
-function oneYearChange(delta: number | null | undefined): string | null {
-  return delta == null ? null : `${describeChange(delta, ' points', PREVIOUS_YEAR)}.`;
+const ASSESSMENT_DISPLAY: Record<Assessment, { name: string; kind: MetricKind }> = {
+  act: { name: 'Average ACT', kind: 'score' },
+  iar: { name: 'IAR proficiency', kind: 'percentage' },
+};
+
+function Yardsticks({
+  rcdts,
+  assessment,
+  value,
+  benchmark,
+}: {
+  rcdts: string;
+  assessment: Assessment;
+  value: number;
+  benchmark: MetricBenchmark;
+}) {
+  const { data: state } = useStateBenchmark(assessment, benchmark.level);
+  const { name, kind } = ASSESSMENT_DISPLAY[assessment];
+  const comparedWith = describeLevel(benchmark.level);
+  const hasSimilarSchools = benchmark.similar_average !== null;
+
+  const rows: DotPlotRow[] = [
+    { label: 'This school', value, highlighted: true },
+    { label: 'Illinois', value: benchmark.state_average },
+  ];
+  if (benchmark.district_average !== null) {
+    rows.push({ label: 'District', value: benchmark.district_average });
+  }
+  if (benchmark.similar_average !== null) {
+    rows.push({ label: 'Similar schools', value: benchmark.similar_average });
+  }
+
+  const band =
+    state && state.band_low !== null && state.band_high !== null
+      ? { low: state.band_low, high: state.band_high }
+      : undefined;
+
+  return (
+    <div className="space-y-3">
+      {benchmark.percentile !== null && (
+        <p>
+          Higher than <strong>{benchmark.percentile}%</strong> of {comparedWith}
+          {benchmark.district_average !== null &&
+            `, and ${districtStanding(value, benchmark.district_average)} the average for its district`}
+          .
+        </p>
+      )}
+      <DotPlot
+        label={`${name} compared`}
+        rows={rows}
+        kind={kind}
+        scale={ASSESSMENT_SCALES[assessment]}
+        band={band}
+      />
+      {(band || hasSimilarSchools) && (
+        <p className="text-sm text-muted-foreground">
+          {band &&
+            `Shaded band: where most ${comparedWith} fall, ${formatMetric(band.low, kind)} to ${formatMetric(band.high, kind)}. `}
+          {hasSimilarSchools &&
+            'Similar schools: the 25 most alike in family income, English learners and size.'}
+        </p>
+      )}
+      {hasSimilarSchools && (
+        <SimilarSchoolsSheet rcdts={rcdts} assessment={assessment} level={benchmark.level}>
+          <Button variant="outline" className="w-full sm:w-auto">
+            See similar schools
+          </Button>
+        </SimilarSchoolsSheet>
+      )}
+    </div>
+  );
 }
 
-function TestScores({ metrics }: { metrics: SchoolMetrics }) {
+function TestScores({ school }: { school: SchoolDetail }) {
+  const { metrics, benchmarks } = school;
   const actAverage = metrics.act?.overall_avg ?? null;
   const iarProficiency = metrics.iar_overall_proficiency_pct;
 
@@ -141,15 +226,19 @@ function TestScores({ metrics }: { metrics: SchoolMetrics }) {
     );
   }
 
-  const actChange = oneYearChange(metrics.trends?.act?.one_year);
-  const iarChange = oneYearChange(metrics.trends?.iar?.one_year);
-
   return (
     <>
       {actAverage !== null && (
         <div className="space-y-2">
           <Headline value={formatMetric(actAverage, 'score')} caption="average ACT, out of 36" />
-          {actChange && <p>{actChange}</p>}
+          {benchmarks?.act && (
+            <Yardsticks
+              rcdts={school.rcdts}
+              assessment="act"
+              value={actAverage}
+              benchmark={benchmarks.act}
+            />
+          )}
           <p className="text-sm text-muted-foreground">
             The average of the English and math scores in grade 11.
           </p>
@@ -161,18 +250,32 @@ function TestScores({ metrics }: { metrics: SchoolMetrics }) {
             value={formatMetric(iarProficiency, 'percentage')}
             caption="of students proficient on the IAR"
           />
-          <p>{iarChange ?? `No ${PREVIOUS_YEAR} result to compare.`}</p>
+          {benchmarks?.iar && (
+            <Yardsticks
+              rcdts={school.rcdts}
+              assessment="iar"
+              value={iarProficiency}
+              benchmark={benchmarks.iar}
+            />
+          )}
           <p className="text-sm text-muted-foreground">
             Illinois Assessment of Readiness, English language arts and math averaged.
           </p>
         </div>
       )}
+      <Link
+        to="/how-this-works"
+        className="inline-flex min-h-11 items-center text-sm font-medium text-link underline underline-offset-4"
+      >
+        How this works
+      </Link>
     </>
   );
 }
 
 function ActOverTime({ metrics }: { metrics: SchoolMetrics }) {
   const series = yearSeries(metrics.historical?.act);
+  const { data: state } = useStateBenchmark('act', 'high');
   const subjects = [
     { label: 'English', value: metrics.act?.ela_avg },
     { label: 'Math', value: metrics.act?.math_avg },
@@ -181,7 +284,13 @@ function ActOverTime({ metrics }: { metrics: SchoolMetrics }) {
 
   return (
     <div className="space-y-3">
-      <HistoryChart label="Average ACT" series={series} kind="score" satYears />
+      <HistoryChart
+        label="Average ACT"
+        series={series}
+        kind="score"
+        satYears
+        benchmark={{ label: 'Illinois high school average', series: stateSeries(state) }}
+      />
       <p className="text-sm text-muted-foreground">
         From 2019 to 2024 Illinois gave the SAT, converted here to the ACT scale. A break in the
         line is a year with no published score.
@@ -376,7 +485,7 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
           </Button>
 
           <Section id="scores" title={`Test scores · ${CURRENT_YEAR}`}>
-            <TestScores metrics={metrics} />
+            <TestScores school={school} />
           </Section>
         </div>
 
@@ -391,11 +500,13 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
             label="English learners"
             value={metrics.demographics.el_percentage}
             history={metrics.historical?.el}
+            benchmark={school.benchmarks?.el}
           />
           <StudentShare
             label="Low income"
             value={metrics.demographics.low_income_percentage}
             history={metrics.historical?.low_income}
+            benchmark={school.benchmarks?.low_income}
           />
           <h3 className="pt-2 text-sm text-muted-foreground">Race and ethnicity</h3>
           <CompositionBar

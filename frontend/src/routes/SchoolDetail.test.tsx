@@ -61,7 +61,17 @@ const server = setupServer(
       return HttpResponse.json(mockSchoolDetail);
     }
     return new HttpResponse(null, { status: 404 });
-  })
+  }),
+  http.get('http://localhost:8000/api/benchmarks/state', () =>
+    HttpResponse.json({
+      metric: 'act',
+      level: 'high',
+      schools: 684,
+      band_low: 14.2,
+      band_high: 20.7,
+      years: [{ year: 2026, average: 17.55, schools: 684 }],
+    })
+  )
 );
 
 beforeAll(() => server.listen());

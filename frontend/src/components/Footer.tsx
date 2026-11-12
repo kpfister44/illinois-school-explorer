@@ -1,5 +1,7 @@
 // ABOUTME: Site-wide footer component with data source attribution
-// ABOUTME: Displays ISBE data source link and last updated date
+// ABOUTME: Displays ISBE data source link, last updated date and a link to how figures are worked out
+
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
   return (
@@ -17,6 +19,10 @@ export default function Footer() {
           </a>
           {' | '}
           Report Card Data | Last Updated: October 30, 2026
+          {' | '}
+          <Link to="/how-this-works" className="underline hover:text-foreground transition-colors">
+            How this works
+          </Link>
         </p>
       </div>
     </footer>
