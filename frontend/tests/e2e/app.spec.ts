@@ -7,5 +7,5 @@ test('app displays header and initial content', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.getByText('Illinois School Explorer')).toBeVisible();
-  await expect(page.getByText(/search for illinois schools/i)).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /look up any illinois public school/i })).toBeVisible();
 });

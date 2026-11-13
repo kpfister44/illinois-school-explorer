@@ -61,7 +61,7 @@ test('similar schools list is large enough to tap', async ({ page }) => {
 
 test('search suggestions are large enough to tap', async ({ page }) => {
   await openPage(page, '/');
-  await page.getByPlaceholder(/search for schools/i).fill('elk grove');
+  await page.getByPlaceholder(/school, city or district/i).fill('elk grove');
   await expect(page.getByRole('option').first()).toBeVisible();
 
   expect(await undersizedControls(page)).toEqual([]);

@@ -9,10 +9,15 @@ export const CLEARMONT_ELEMENTARY = '05-016-0590-04-2003';
 export const AC_CENTRAL_MIDDLE = '01-009-2620-26-1002';
 export const ALWOOD_MIDDLE_HIGH = '28-037-2250-26-0001';
 export const AVON_ELEMENTARY = '33-048-2760-26-2002';
+export const DISTRICT_59 = '05-016-0590-04';
 
 export const PAGES = [
   { name: 'home', path: '/' },
   { name: 'search results', path: '/search?q=elk' },
+  { name: 'filtered school list', path: '/search?level=high&county=Cook&sort=score' },
+  { name: 'browse districts', path: '/browse?by=district' },
+  { name: 'browse cities', path: '/browse?by=city' },
+  { name: 'district', path: `/district/${DISTRICT_59}` },
   { name: 'high school', path: `/school/${ELK_GROVE_HIGH}` },
   { name: 'elementary school', path: `/school/${CLEARMONT_ELEMENTARY}` },
   { name: 'middle school', path: `/school/${AC_CENTRAL_MIDDLE}` },

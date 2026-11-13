@@ -10,14 +10,17 @@ test.describe('Search to Detail Flow', () => {
 
   test('complete search flow: home -> search -> detail', async ({ page }) => {
     await expect(
-      page.getByRole('heading', { name: /search for illinois schools/i })
+      page.getByRole('heading', { level: 1, name: /look up any illinois public school/i })
     ).toBeVisible();
 
-    await page.goto('http://localhost:5173/search?q=elk');
+    await page.getByPlaceholder(/school, city or district/i).fill('elk');
+    await expect(page.getByRole('option', { name: 'See all results for “elk”' })).toBeVisible();
+    await page.keyboard.press('Enter');
 
-    await expect(page.getByText('Elk Grove High School')).toBeVisible({ timeout: 2000 });
-
-    await page.getByText('Elk Grove High School').first().click();
+    await expect(page).toHaveURL('/search?q=elk');
+    await expect(page.getByRole('heading', { level: 1, name: 'Results for “elk”' })).toBeVisible();
+    const results = page.getByRole('list', { name: 'Schools' });
+    await results.getByRole('link', { name: /^Elk Grove High School/ }).click();
 
     await expect(
       page.getByRole('heading', { name: 'Elk Grove High School' })
@@ -53,7 +56,7 @@ test.describe('Search to Detail Flow', () => {
   test('autocomplete works in SearchBar', async ({ page }) => {
     await page.goto('http://localhost:5173');
 
-    const searchInput = page.getByPlaceholder(/search for schools/i);
+    const searchInput = page.getByPlaceholder(/school, city or district/i);
 
     if (await searchInput.isVisible()) {
       await searchInput.type('elk', { delay: 100 });
@@ -66,7 +69,17 @@ test.describe('Search to Detail Flow', () => {
     }
   });
 
-  test('top scores CTA is visible on home', async ({ page }) => {
-    await expect(page.getByRole('link', { name: /Explore Top 100 Scores/i })).toBeVisible();
+  test('home offers level chips and ways to browse', async ({ page }) => {
+    const levels = page.getByRole('navigation', { name: 'School level' });
+    await expect(levels.getByRole('link')).toHaveText([
+      'High schools',
+      'Middle schools',
+      'Elementary schools',
+    ]);
+
+    const browse = page.getByRole('region', { name: 'Browse' });
+    await expect(browse.getByRole('link', { name: /^By district/ })).toContainText('districts');
+    await expect(browse.getByRole('link', { name: /^By city or town/ })).toContainText('places');
+    await expect(browse.getByRole('link', { name: /^Top scores/ })).toBeVisible();
   });
 });

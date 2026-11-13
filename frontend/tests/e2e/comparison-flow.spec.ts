@@ -5,7 +5,7 @@ import { test, expect, Page } from '@playwright/test';
 
 async function searchAndOpenSchool(page: Page, searchTerm: string, schoolName: string) {
   await page.goto('/');
-  await page.getByPlaceholder(/search for schools/i).fill(searchTerm);
+  await page.getByPlaceholder(/school, city or district/i).fill(searchTerm);
   await expect(page.getByRole('option', { name: new RegExp(schoolName, 'i') })).toBeVisible({ timeout: 2000 });
   await page.getByRole('option', { name: new RegExp(schoolName, 'i') }).first().click();
   await expect(page).toHaveURL(/\/school\//);
