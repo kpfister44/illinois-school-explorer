@@ -4,7 +4,7 @@
 import { useId, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useDistricts } from '@/lib/api/queries';
+import RegionFields, { LABEL_CLASS, SELECT_CLASS } from '@/components/RegionFields';
 import type { Designation } from '@/lib/api/types';
 import { FORM_FILTERS, type SchoolListFilters } from '@/lib/schoolList';
 
@@ -41,10 +41,6 @@ const RANGES = [
 
 type RangeName = (typeof RANGES)[number]['low' | 'high']['name'];
 
-const SELECT_CLASS =
-  'h-11 w-full rounded-md border border-input bg-background px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm';
-const LABEL_CLASS = 'mb-1 block text-sm font-medium';
-
 function withoutFormFilters(filters: SchoolListFilters): SchoolListFilters {
   const kept = { ...filters };
   for (const name of FORM_FILTERS) {
@@ -54,7 +50,6 @@ function withoutFormFilters(filters: SchoolListFilters): SchoolListFilters {
 }
 
 export default function SchoolFilterForm({ filters, onApply }: SchoolFilterFormProps) {
-  const { data: districts = [] } = useDistricts();
   const fieldId = useId();
   const [county, setCounty] = useState(filters.county ?? '');
   const [district, setDistrict] = useState(filters.district ?? '');
@@ -66,18 +61,6 @@ export default function SchoolFilterForm({ filters, onApply }: SchoolFilterFormP
     low_income_max: filters.low_income_max?.toString() ?? '',
   });
 
-  const counties = [...new Set(districts.map((item) => item.county).filter(Boolean))].sort();
-  const districtsOffered = county ? districts.filter((item) => item.county === county) : districts;
-
-  const handleCountyChange = (chosen: string) => {
-    setCounty(chosen);
-    const districtIsInCounty = districts.some(
-      (item) => item.id === district && item.county === chosen
-    );
-    if (chosen && !districtIsInCounty) {
-      setDistrict('');
-    }
-  };
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -96,43 +79,14 @@ export default function SchoolFilterForm({ filters, onApply }: SchoolFilterFormP
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label htmlFor={`${fieldId}-county`} className={LABEL_CLASS}>
-          County
-        </label>
-        <select
-          id={`${fieldId}-county`}
-          value={county}
-          onChange={(event) => handleCountyChange(event.target.value)}
-          className={SELECT_CLASS}
-        >
-          <option value="">Any county</option>
-          {counties.map((name) => (
-            <option key={name} value={name!}>
-              {name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor={`${fieldId}-district`} className={LABEL_CLASS}>
-          District
-        </label>
-        <select
-          id={`${fieldId}-district`}
-          value={district}
-          onChange={(event) => setDistrict(event.target.value)}
-          className={SELECT_CLASS}
-        >
-          <option value="">Any district</option>
-          {districtsOffered.map((item) => (
-            <option key={item.id} value={item.id}>
-              {county || !item.county ? item.name : `${item.name} (${item.county})`}
-            </option>
-          ))}
-        </select>
-      </div>
+      <RegionFields
+        county={county}
+        district={district}
+        onChange={(region) => {
+          setCounty(region.county);
+          setDistrict(region.district);
+        }}
+      />
 
       <div>
         <label htmlFor={`${fieldId}-designation`} className={LABEL_CLASS}>
