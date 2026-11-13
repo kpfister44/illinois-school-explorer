@@ -280,6 +280,16 @@ Each phase ships on its own. All work follows the TDD and testing rules in the r
 - Remove the carousel and `framer-motion`.
 - **Done when:** five schools are comparable on a 360px screen with no swiping and a copied URL reproduces the comparison.
 
+**Notes from phase 5:**
+- `/search` is the one school list. Search, level, city, filters and sort live in its URL (`listPath` and `readFilters` in `frontend/src/lib/schoolList.ts`). A shareable Compare URL can follow the same pattern.
+- The district page's "Compare all" (2 to 5 schools of one level) calls `replaceComparison` and opens `/compare`, so it replaces whatever was selected.
+- Compare still shows the official `school_name` ("Friendship Jr High School"), while the district page and lists show `display_name` ("Friendship Junior High School"). `tests/e2e/browse-flow.spec.ts` asserts the official names on Compare for now.
+- List rows (`SchoolListItem`) carry `level`, `assessment`, `score`, `low_income_percentage` and `designation`; Top scores can reuse them for its context columns.
+- `GET /api/schools` sorts by score only within a level and answers 422 otherwise; the list drops the sort when no level is chosen.
+- `SchoolCard` is no longer used by any page.
+- `display_name` leaves "Schl" unexpanded ("Devry Advantage Academy High Schl").
+- `npm run lint` now reports 7 errors, all in files that predate phase 3.
+
 ### Phase 7: Top scores (small)
 - Context columns, designation label, region filter, rank lookup, URL state, accurate explainer.
 - **Done when:** enrollment and low-income share are visible on phones for every row.

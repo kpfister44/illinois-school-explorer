@@ -22,6 +22,10 @@ Complete endpoint documentation for the Illinois School Explorer REST API.
 | [`/api/schools/{rcdts}/similar`](#get-similar-schools) | GET | The 25 schools most like a school |
 | [`/api/benchmarks/state`](#get-state-benchmark) | GET | State average by year and the band where most schools fall |
 | [`/api/stats`](#get-stats) | GET | School, district and city counts |
+| [`/api/schools`](#list-schools) | GET | Filtered, sorted, paged list of schools with each one's headline score |
+| [`/api/districts`](#list-districts) | GET | Every district with its county and number of schools |
+| [`/api/districts/{id}`](#get-district) | GET | A district's summary and its schools by level |
+| [`/api/cities`](#list-cities) | GET | Every city and town with its number of schools |
 
 ---
 
@@ -766,6 +770,183 @@ const { data: stats } = useStats();
 
 ---
 
+### List Schools
+
+One page of the schools that pass the filters, each with the one test score that applies to its level: the ACT average for high schools, IAR proficiency for every other level.
+
+**Endpoint:** `GET /api/schools`
+
+**Query Parameters (all optional):**
+- `q` - Search by school, city or district. Only matching schools are listed, best match first unless `sort` is given.
+- `level` - `elementary`, `middle`, `high` or `other`
+- `county`, `city` - Exact name, ignoring case and surrounding spaces
+- `district` - District id: the first 14 characters of an RCDTS code (e.g. `05-016-2140-17`)
+- `designation` - One of the five designations, or `Dually Designated`
+- `enrollment_min`, `enrollment_max` - Whole numbers, 0 or more
+- `low_income_min`, `low_income_max` - Percentages from 0 to 100
+- `sort` - `name`, `score` or `enrollment`. Defaults to the best match for a search, otherwise to name. `score` needs a `level`, since levels take different tests.
+- `order` - `asc` (default) or `desc`. Schools without the sorted figure come last in either order.
+- `limit` - 1 to 100 (default: 25)
+- `offset` - 0 or more (default: 0)
+
+A school with no value for a range filter's figure is left out whenever that range is set.
+
+**Example Request:**
+```bash
+curl "http://localhost:8000/api/schools?city=Elk%20Grove%20Village&level=high"
+```
+
+**Example Response:**
+```json
+{
+  "results": [
+    {
+      "rcdts": "05-016-2140-17-0002",
+      "school_name": "Elk Grove High School",
+      "display_name": "Elk Grove High School",
+      "city": "Elk Grove Village",
+      "county": "Cook",
+      "district": "Township HSD 214",
+      "district_id": "05-016-2140-17",
+      "level": "high",
+      "grades_served": "9 - 12",
+      "enrollment": 1721,
+      "low_income_percentage": 35.2,
+      "designation": "Approaching Exemplary",
+      "assessment": "act",
+      "score": 18.1
+    }
+  ],
+  "total": 1
+}
+```
+
+**Response Fields:**
+- `total` (integer) - Number of schools that match, across all pages
+- `assessment` (string) - `act` or `iar`: the test `score` is from
+- `score` (float | null) - The school's ACT average or IAR proficiency percentage; `null` when not published
+
+**Status Codes:**
+- `200 OK` - Page returned (an empty `results` with `total: 0` when nothing matches)
+- `422 Unprocessable Entity` - Invalid parameter, or `sort=score` without a `level`
+
+**Frontend Integration:**
+```typescript
+// Filters, sort and search are read from and written to the /search URL (src/lib/schoolList.ts)
+const { data, fetchNextPage, hasNextPage } = useSchoolList({ level: 'high', county: 'Cook' });
+```
+
+---
+
+### List Districts
+
+Every district by name, with its county and number of schools. Districts that share a name are told apart by county.
+
+**Endpoint:** `GET /api/districts`
+
+**Example Request:**
+```bash
+curl "http://localhost:8000/api/districts"
+```
+
+**Example Response:**
+```json
+{
+  "districts": [
+    { "id": "01-009-2620-26", "name": "A-C Central CUSD 262", "county": "Cass", "school_count": 3 },
+    { "id": "33-048-2760-26", "name": "Abingdon-Avon CUSD 276", "county": "Knox", "school_count": 4 }
+  ]
+}
+```
+
+**Frontend Integration:**
+```typescript
+const { data: districts } = useDistricts();
+```
+
+---
+
+### Get District
+
+A district's summary and its schools grouped by level, each level with its district and state averages for the level's headline test.
+
+**Endpoint:** `GET /api/districts/{id}`
+
+**Path Parameters:**
+- `id` - The first 14 characters of an RCDTS code (e.g. `05-016-2140-17`)
+
+**Example Request:**
+```bash
+curl "http://localhost:8000/api/districts/05-016-2140-17"
+```
+
+**Example Response:**
+```json
+{
+  "id": "05-016-2140-17",
+  "name": "Township HSD 214",
+  "county": "Cook",
+  "school_count": 6,
+  "enrollment": 11205,
+  "levels": [
+    {
+      "level": "high",
+      "assessment": "act",
+      "state_average": 17.55,
+      "district_average": 20.46,
+      "schools": [
+        { "rcdts": "05-016-2140-17-0004", "display_name": "John Hersey High School", "score": 23.85, "...": "same fields as /api/schools" }
+      ]
+    }
+  ]
+}
+```
+
+**Response Fields:**
+- `levels` (array) - One entry per level the district has, in the order elementary, middle, high, other
+- `schools` (array) - The level's schools, highest score first; schools with no score come last
+- `district_average` (float | null) - Simple mean of the level's scores in the district; `null` with fewer than 3 scored schools
+- `state_average` (float | null) - Simple mean across Illinois schools of the level
+
+**Status Codes:**
+- `200 OK` - District returned
+- `404 Not Found` - No school has this district id
+
+**Frontend Integration:**
+```typescript
+const { data: district } = useDistrict('05-016-2140-17');
+```
+
+---
+
+### List Cities
+
+Every city and town with a school, by name. Spellings that differ only in capitalisation are listed once, under the spelling most of their schools use.
+
+**Endpoint:** `GET /api/cities`
+
+**Example Request:**
+```bash
+curl "http://localhost:8000/api/cities"
+```
+
+**Example Response:**
+```json
+{
+  "cities": [
+    { "name": "Abingdon", "school_count": 2 },
+    { "name": "Addison", "school_count": 10 }
+  ]
+}
+```
+
+**Frontend Integration:**
+```typescript
+const { data: cities } = useCities();
+```
+
+---
+
 ## Common Patterns
 
 ### Error Handling
@@ -810,12 +991,7 @@ Always handle nulls gracefully in client code.
 
 ### Pagination
 
-Currently, only the search endpoint supports limiting results via the `limit` parameter. There is no offset-based pagination implemented.
-
-For future pagination needs:
-- Add `offset` parameter to search endpoint
-- Return total count for client-side pagination logic
-- Consider cursor-based pagination for large datasets
+`/api/schools` pages with `limit` and `offset` and returns `total`, the number of matching schools across all pages. `/api/search` and `/api/top-scores` take a `limit` only.
 
 ### Caching Recommendations
 

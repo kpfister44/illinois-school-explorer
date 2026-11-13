@@ -229,6 +229,7 @@ Playwright starts the frontend dev server itself but not the backend: start the 
 - `backend/app/database.py` — SQLAlchemy models (School, FTS5 index), DB helpers
 - `backend/app/models.py` — Pydantic response schemas
 - `backend/app/services/benchmarks.py` — state and district averages, percentiles and similar schools, computed from one read of the database and kept in memory
+- `backend/app/services/browse.py` — the school list, district and city lists, worked from the schools the benchmarks service holds in memory
 - `backend/app/utils/sync_from_api.py` — ReportCardAPI → SQLite sync pipeline (run manually to refresh data)
 - `backend/app/utils/api_client.py` — HTTP client for ReportCardAPI (auth, pagination, retry)
 - `backend/tests/conftest.py` — test fixtures (test_db, client)
@@ -239,12 +240,13 @@ Playwright starts the frontend dev server itself but not the backend: start the 
 - `frontend/src/lib/api/client.ts` — Axios instance with base config
 - `frontend/src/lib/api/types.ts` — TypeScript types mirroring Pydantic models
 - `frontend/src/lib/api/queries.ts` — TanStack Query hooks for all API calls
-- `frontend/src/routes/` — page-level components (Home, SchoolDetail, Compare, TopScores)
+- `frontend/src/routes/` — page-level components (Home, SearchResults, Browse, District, SchoolDetail, Compare, TopScores)
+- `frontend/src/lib/schoolList.ts` — the school list's filters and sort as they travel through the `/search` URL and to `GET /api/schools`; `SearchResults.tsx` reads them, `SchoolFilterForm.tsx` and `SchoolListRow.tsx` are its filter form and rows
 - `frontend/src/index.css` — colour tokens for light and dark mode, mapped onto the shadcn variables; `frontend/tailwind.config.js` exposes them and the font families
 - `frontend/src/components/SiteHeader.tsx`, `BottomTabBar.tsx` — desktop header navigation and phone tab bar; destinations live in `frontend/src/lib/destinations.ts`
 - `frontend/src/components/SchoolDetailView.tsx` — the school page: one scroll of key facts, designation, test scores, history, students, enrollment
 - `frontend/src/components/HistoryChart.tsx` (Recharts line chart), `Sparkline.tsx`, `HistorySheet.tsx`, `HistorySparkline.tsx` — a metric's history; `frontend/src/lib/history.ts` builds the year series
-- `frontend/src/components/DotPlot.tsx` — a figure beside its yardsticks on one scale, with the band where most schools fall; `SimilarSchoolsSheet.tsx` lists the 25 similar schools; `frontend/src/lib/benchmarks.ts` holds the wording and scales
+- `frontend/src/components/DotPlot.tsx` — a figure beside its yardsticks on one scale, with the band where most schools fall; rows can link to a page (the district page); `SimilarSchoolsSheet.tsx` lists the 25 similar schools; `frontend/src/lib/benchmarks.ts` holds the wording and scales
 - `frontend/src/components/CompositionBar.tsx`, `DesignationScale.tsx`, `SectionLinks.tsx`, `Facts.tsx` — other school page parts
 - `frontend/src/routes/HowThisWorks.tsx` — plain-language explanation of every yardstick; keep it in step with `benchmarks.py`
 - `frontend/src/components/` — reusable components
@@ -301,6 +303,14 @@ Tokens are defined in `frontend/src/index.css` and documented in `docs/plans/202
 - A district is the first 14 characters of the RCDTS code, as in `/api/stats`.
 - Benchmarks are built on the first request and kept for the life of the process. The database is read-only while serving, so nothing invalidates them.
 
+### Browsing and the School List
+- `/search` is the one list of schools. Its URL holds the search (`q`), `level`, `city`, the filter form's choices (`county`, `district`, `designation`, enrollment and low-income ranges) and `sort`. `listPath` and `readFilters` in `frontend/src/lib/schoolList.ts` write and read it, in a fixed order.
+- Each row shows the one score for its level: the ACT average for high schools, IAR proficiency for every other level (`headline_assessment` in `browse.py`).
+- Sorting by score needs a level, since levels take different tests. The API answers 422 otherwise and the list drops the sort.
+- `/browse?by=district` and `/browse?by=city` list places; a district opens `/district/{id}`, a city opens `/search?city=`.
+- The district page plots each level's scores on the level's `ASSESSMENT_SCALES` scale and offers "Compare all" when the level has 2 to 5 schools. It replaces the comparison selection.
+- The school page's city and district are links to the same places.
+
 ### Display Names
 `display_name` is the official `school_name` with abbreviations spelled out (`display_name` in `sync_from_api.py`):
 - Elem, Sch, Hs/HS and JHS are always expanded
@@ -333,6 +343,12 @@ GET /api/benchmarks/state?metric={act|iar|el|low_income}&level={elementary|middl
                                                              — state average by year and the 10th-90th percentile band
 GET /api/top-scores?assessment={act|iar}&level={high|middle|elementary}&limit={1-100}
 GET /api/stats                                               — school, district and city counts
+GET /api/schools?q=&level=&county=&district=&city=&designation=&enrollment_min=&enrollment_max=
+    &low_income_min=&low_income_max=&sort={name|score|enrollment}&order={asc|desc}&limit=&offset=
+                                                             — filtered, sorted, paged list; each row has its level's one score
+GET /api/districts                                           — every district with county and school count
+GET /api/districts/{id}                                      — a district's schools by level, with district and state averages
+GET /api/cities                                              — every city and town with its school count
 GET /health                                                  — health check
 ```
 
@@ -345,6 +361,8 @@ Swagger UI: `http://localhost:8000/docs` (local) or Railway URL + `/docs`
 - `useStats()`
 - `useStateBenchmark(metric, level)`
 - `useSimilarSchools(rcdts, assessment, enabled)`
+- `useSchoolList(filters)` — infinite query, 25 schools a page
+- `useDistrict(id)`, `useDistricts()`, `useCities()`
 - `getTopScores(params)` + `topScoresQueryKey(...)` — used directly with `useQuery` (no `useTopScores` hook)
 
 ---

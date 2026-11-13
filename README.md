@@ -49,6 +49,13 @@ Full-text search powered by SQLite FTS5, ranking results by relevance across sch
 - Keyboard navigation support
 - TanStack Query for intelligent caching
 
+**Browsing without a school name:**
+- Pick a district or a city or town from Home, narrow the list by name, and open its schools
+- Each row in a results list shows the district, grades, enrollment, state designation and the one test score for its level
+- Level chips, plus filters for county, district, designation, enrollment and low-income share (a sheet on phones, a column on desktop)
+- Filters and sort live in the URL, so a list can be bookmarked or shared
+- A district page plots every school's headline score against the district and state averages, and offers to compare a level of 2 to 5 schools
+
 ---
 
 ### 2. Detailed School Profiles
@@ -411,6 +418,10 @@ npm run test:e2e:ui
 | `/api/schools/{rcdts}/similar` | GET | The 25 schools most like a school in income, English learners and size |
 | `/api/benchmarks/state` | GET | State average by year and the band where most schools fall |
 | `/api/stats` | GET | School, district and city counts |
+| `/api/schools` | GET | Filtered, sorted, paged list of schools with each one's headline score |
+| `/api/districts` | GET | Every district with its county and number of schools |
+| `/api/districts/{id}` | GET | A district's summary and its schools by level |
+| `/api/cities` | GET | Every city and town with its number of schools |
 | `/health` | GET | Health check endpoint |
 
 ### Example API Calls
