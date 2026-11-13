@@ -116,11 +116,11 @@ function SchoolKey({ schools, onRemove }: ComparisonViewProps) {
             <div className="min-w-0 flex-1">
               <Link
                 to={`/school/${school.rcdts}`}
-                className="font-medium text-link underline underline-offset-4"
+                className="flex min-h-11 items-center font-medium text-link underline underline-offset-4"
               >
                 {school.display_name}
               </Link>
-              <p className="text-sm text-muted-foreground">{details.join(' · ')}</p>
+              <p className="-mt-2 text-sm text-muted-foreground">{details.join(' · ')}</p>
             </div>
             <button
               type="button"

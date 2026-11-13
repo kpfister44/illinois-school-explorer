@@ -85,16 +85,18 @@ test('the district page plots each level and offers to compare a small level', a
   const elementary = page.getByRole('region', { name: 'Elementary schools' });
   await expect(elementary.getByText(/^District average [\d.]+% · Illinois elementary schools average [\d.]+%\.$/)).toBeVisible();
   await expect(elementary.getByText(/^Shaded band: where most Illinois elementary schools fall/)).toBeVisible();
-  await expect(elementary.getByRole('button', { name: /^Compare/ })).toHaveCount(0);
+  await expect(elementary.getByRole('link', { name: /^Compare/ })).toHaveCount(0);
 
   const middle = page.getByRole('region', { name: 'Middle schools' });
   await expect(middle.getByRole('list', { name: 'IAR proficiency by school' }).getByRole('link')).toHaveCount(3);
-  await middle.getByRole('button', { name: 'Compare all 3' }).click();
+  await middle.getByRole('link', { name: 'Compare all 3' }).click();
 
-  await expect(page).toHaveURL('/compare');
-  for (const name of ['Friendship Jr High School', 'Holmes Jr High School', 'Grove Jr High School']) {
-    await expect(page.getByRole('main').getByText(name).filter({ visible: true }).first()).toBeVisible();
-  }
+  await expect(page).toHaveURL(/\/compare\?schools=(05-016-0590-04-\d{4},?){3}$/);
+  await expect(page.getByRole('list', { name: 'Schools compared' }).getByRole('link')).toHaveText([
+    'Friendship Junior High School',
+    'Holmes Junior High School',
+    'Grove Junior High School',
+  ]);
 });
 
 test('the district page links to its schools as a list', async ({ page }) => {

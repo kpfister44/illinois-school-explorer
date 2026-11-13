@@ -2,6 +2,9 @@
 // ABOUTME: Tests full user journey from search to comparison
 
 import { test, expect, Page } from '@playwright/test';
+import { ELK_GROVE_HIGH, FIVE_HIGH_SCHOOLS, ROLLING_MEADOWS_HIGH, openPage } from './pages';
+
+const COMPARE_URL = /\/compare\?schools=/;
 
 async function searchAndOpenSchool(page: Page, searchTerm: string, schoolName: string) {
   await page.goto('/');
@@ -32,13 +35,12 @@ async function ensureSelectionCount(page: Page, count: number) {
 async function showSelection(page: Page, isMobile: boolean) {
   if (isMobile) {
     await compareDestination(page).click();
-    await expect(page).toHaveURL('/compare');
+    await expect(page).toHaveURL(COMPARE_URL);
   }
 }
 
-// The name as shown on the Compare page itself, not in the desktop bar that sits on every page
-function comparedSchool(page: Page, schoolName: string) {
-  return page.getByRole('main').getByText(schoolName).filter({ visible: true }).first();
+function schoolKey(page: Page) {
+  return page.getByRole('list', { name: 'Schools compared' });
 }
 
 function getCompareButton(page: Page) {
@@ -66,15 +68,19 @@ test.describe('School Comparison Flow', () => {
       await compareButton.click();
     }
 
-    await expect(page).toHaveURL('/compare');
-    await expect(comparedSchool(page, 'Elk Grove High School')).toBeVisible();
-    await expect(comparedSchool(page, 'Rolling Meadows High School')).toBeVisible();
+    await expect(page).toHaveURL(`/compare?schools=${ELK_GROVE_HIGH},${ROLLING_MEADOWS_HIGH}`);
+    await expect(schoolKey(page).getByRole('link')).toHaveText([
+      'Elk Grove High School',
+      'Rolling Meadows High School',
+    ]);
     if (isMobile) {
-      await expect(page.getByText('Enrollment', { exact: true }).filter({ visible: true })).toHaveCount(1);
-      await expect(page.getByText('ACT ELA Average').filter({ visible: true })).toHaveCount(1);
+      await expect(page.getByRole('list', { name: 'ACT average' }).getByRole('listitem')).toHaveCount(2);
+      await expect(page.getByRole('list', { name: 'Enrollment' })).toBeVisible();
+      await expect(page.getByRole('table')).toBeHidden();
     } else {
       await expect(page.getByRole('cell', { name: 'Enrollment', exact: true })).toBeVisible();
-      await expect(page.getByRole('cell', { name: 'ACT ELA Average' })).toBeVisible();
+      await expect(page.getByRole('cell', { name: 'ACT English language arts' })).toBeVisible();
+      await expect(page.getByRole('list', { name: 'ACT average' })).toBeHidden();
     }
   });
 
@@ -136,5 +142,48 @@ test.describe('School Comparison Flow', () => {
     await searchAndOpenSchool(page, 'fremd', 'Fremd High School');
     const addButton = page.getByRole('button', { name: /add to compare/i });
     await expect(addButton).toBeDisabled();
+  });
+
+  test('a copied URL reproduces the comparison and fits a phone without swiping', async ({ page, isMobile }) => {
+    await openPage(page, `/compare?schools=${FIVE_HIGH_SCHOOLS.join(',')}`);
+
+    await ensureSelectionCount(page, 5);
+    await expect(schoolKey(page).getByRole('link')).toHaveText([
+      'Elk Grove High School',
+      'Rolling Meadows High School',
+      'John Hersey High School',
+      'Prospect High School',
+      'Buffalo Grove High School',
+    ]);
+
+    if (isMobile) {
+      await expect(page.getByRole('heading', { level: 2 }).first()).toHaveText('State designation');
+      const designations = page.getByRole('list', { name: 'State designation' }).getByRole('listitem');
+      await expect(designations).toHaveCount(5);
+      await expect(designations.first()).toContainText('Approaching Exemplary');
+      for (const metric of ['ACT average', 'Low income', 'Enrollment']) {
+        const rows = page.getByRole('list', { name: metric }).getByRole('listitem');
+        await expect(rows).toHaveCount(5);
+        await expect(rows.locator('circle')).toHaveCount(5);
+      }
+    } else {
+      const firstRow = page.getByRole('table').getByRole('row').nth(1);
+      await expect(firstRow).toContainText('State designation');
+      await expect(page.getByRole('row', { name: /^ACT average/ }).locator('circle')).toHaveCount(5);
+    }
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth
+    );
+    expect(overflow).toBe(0);
+  });
+
+  test('removing a school on the Compare page updates its URL', async ({ page }) => {
+    await openPage(page, `/compare?schools=${FIVE_HIGH_SCHOOLS.join(',')}`);
+
+    await schoolKey(page).getByRole('button', { name: 'Remove Elk Grove High School' }).click();
+
+    await expect(page).toHaveURL(`/compare?schools=${FIVE_HIGH_SCHOOLS.slice(1).join(',')}`);
+    await ensureSelectionCount(page, 4);
   });
 });

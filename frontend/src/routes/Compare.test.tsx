@@ -34,7 +34,7 @@ vi.mock('@/hooks/use-toast', () => ({
 
 const ELK_GROVE = '05-016-2140-17-0002';
 const ROLLING_MEADOWS = '05-016-2140-17-0007';
-const HERSEY = '05-016-2140-17-0005';
+const HERSEY = '05-016-2140-17-0004';
 const STORAGE_KEY = 'school-comparison';
 
 function school(rcdts: string, name: string): SchoolDetail {
