@@ -44,16 +44,16 @@ export default function RankLookup({ onSelect }: RankLookupProps) {
 
   return (
     <div>
-      {/* The input carries this text as its label; cmdk sets the input's own id */}
+      {/* Screen readers hear the label cmdk gives the input from the same text */}
       <p aria-hidden="true" className="mb-1 text-sm font-medium">
         {LABEL}
       </p>
       <Command
+        label={LABEL}
         shouldFilter={false}
         className="relative overflow-visible rounded-md border [&_[cmdk-input-wrapper]]:border-b-0"
       >
         <CommandInput
-          aria-label={LABEL}
           placeholder="School name"
           value={query}
           onValueChange={setQuery}

@@ -70,7 +70,7 @@ test('search suggestions are large enough to tap', async ({ page }) => {
 test('top scores filter choices are large enough to tap', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'the filter is a dropdown on phones only');
   await openPage(page, '/top-scores');
-  await page.getByRole('combobox').click();
+  await page.getByRole('combobox', { name: 'Ranking' }).click();
   await expect(page.getByRole('option').first()).toBeVisible();
 
   expect(await undersizedControls(page)).toEqual([]);

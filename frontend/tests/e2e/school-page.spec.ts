@@ -8,6 +8,7 @@ import {
   AVON_ELEMENTARY,
   CLEARMONT_ELEMENTARY,
   ELK_GROVE_HIGH,
+  openFirstRankedSchool,
   openPage,
 } from './pages';
 
@@ -73,7 +74,7 @@ test('ACT chart draws the Illinois average as a second, dashed line', async ({ p
 
 test('similar schools open in a sheet and lead to each school', async ({ page }) => {
   await openPage(page, '/top-scores');
-  await page.getByRole('button', { name: /View details for/i }).first().click();
+  await openFirstRankedSchool(page);
   await expect(page).toHaveURL(/\/school\//);
   const firstSchool = page.url();
 
@@ -154,7 +155,7 @@ test('students section shows every race and ethnicity group with data', async ({
 
 test('section links jump down the page and keep Back pointing at the previous page', async ({ page }) => {
   await openPage(page, '/top-scores');
-  await page.getByRole('button', { name: /View details for/i }).first().click();
+  await openFirstRankedSchool(page);
   await expect(page).toHaveURL(/\/school\//);
 
   await page.getByRole('navigation', { name: 'Sections' }).getByRole('button', { name: 'Enrollment' }).click();

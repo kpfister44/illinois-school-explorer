@@ -37,3 +37,9 @@ test('calls hover handler on focus', () => {
   fireEvent.focus(tab);
   expect(hoverSpy).toHaveBeenCalledWith(OPTIONS[1]);
 });
+
+test('names the phone dropdown for the ranking it chooses', () => {
+  render(<TopScoresFilters value={OPTIONS[0].id} options={OPTIONS} onChange={() => {}} />);
+
+  expect(screen.getByRole('combobox', { name: 'Ranking' })).toBeInTheDocument();
+});
