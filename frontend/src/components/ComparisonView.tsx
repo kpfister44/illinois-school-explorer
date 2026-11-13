@@ -1,9 +1,11 @@
-// ABOUTME: Side-by-side comparison for schools
-// ABOUTME: Mobile: Swipeable cards; Desktop: Table; the highest test result in a row is highlighted
+// ABOUTME: Comparison of two to five schools, each school in one colour throughout
+// ABOUTME: A key of the schools, then designation first; phones get a dot plot per metric, desktop a table with a dot track per row
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { X } from 'lucide-react';
+import DotPlot from '@/components/DotPlot';
+import DotTrack from '@/components/DotTrack';
+import Section from '@/components/Section';
 import {
   Table,
   TableBody,
@@ -12,323 +14,250 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { SchoolDetail } from '@/lib/api/types';
+import { ASSESSMENT_SCALES } from '@/lib/benchmarks';
+import { formatGrades, formatMetric, type MetricKind } from '@/lib/format';
+import { seriesBackground } from '@/lib/series';
 import { cn } from '@/lib/utils';
 
 interface ComparisonViewProps {
   schools: SchoolDetail[];
+  onRemove: (rcdts: string) => void;
 }
 
-interface MetricRow {
+interface Metric {
   label: string;
-  getValue: (school: SchoolDetail) => number | null;
-  format: (value: number | null) => string;
-  isTestResult: boolean;
+  kind: MetricKind;
+  value: (school: SchoolDetail) => number | null | undefined;
+  isTestResult?: boolean;
 }
 
-const metrics: MetricRow[] = [
+interface MetricGroup {
+  id: string;
+  title: string;
+  metrics: Metric[];
+}
+
+const NOT_REPORTED = 'Not reported';
+const PERCENT_SCALE: [number, number] = [0, 100];
+// Enrollment scales run to the largest school, rounded up to a step of this size
+const ENROLLMENT_STEP = 500;
+
+const GROUPS: MetricGroup[] = [
   {
-    label: 'Enrollment',
-    getValue: (s) => s.metrics.enrollment,
-    format: (v) => (v == null ? 'N/A' : v.toLocaleString()),
-    isTestResult: false,
+    id: 'compare-scores',
+    title: 'Test scores',
+    metrics: [
+      { label: 'ACT average', kind: 'score', value: (s) => s.metrics.act?.overall_avg, isTestResult: true },
+      { label: 'ACT English language arts', kind: 'score', value: (s) => s.metrics.act?.ela_avg, isTestResult: true },
+      { label: 'ACT math', kind: 'score', value: (s) => s.metrics.act?.math_avg, isTestResult: true },
+      { label: 'ACT science', kind: 'score', value: (s) => s.metrics.act?.science_avg, isTestResult: true },
+      { label: 'IAR proficiency, overall', kind: 'percentage', value: (s) => s.metrics.iar_overall_proficiency_pct, isTestResult: true },
+      { label: 'IAR proficiency, English language arts', kind: 'percentage', value: (s) => s.metrics.iar_ela_proficiency_pct, isTestResult: true },
+      { label: 'IAR proficiency, math', kind: 'percentage', value: (s) => s.metrics.iar_math_proficiency_pct, isTestResult: true },
+    ],
   },
   {
-    label: 'ACT ELA Average',
-    getValue: (s) => s.metrics.act?.ela_avg ?? null,
-    format: (v) => (v == null ? 'N/A' : v.toFixed(1)),
-    isTestResult: true,
-  },
-  {
-    label: 'ACT Math Average',
-    getValue: (s) => s.metrics.act?.math_avg ?? null,
-    format: (v) => (v == null ? 'N/A' : v.toFixed(1)),
-    isTestResult: true,
-  },
-  {
-    label: 'ACT Science Average',
-    getValue: (s) => s.metrics.act?.science_avg ?? null,
-    format: (v) => (v == null ? 'N/A' : v.toFixed(1)),
-    isTestResult: true,
-  },
-  {
-    label: 'IAR Overall Proficiency %',
-    getValue: (s) => s.metrics.iar_overall_proficiency_pct,
-    format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    isTestResult: true,
-  },
-  {
-    label: 'IAR ELA Proficiency %',
-    getValue: (s) => s.metrics.iar_ela_proficiency_pct,
-    format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    isTestResult: true,
-  },
-  {
-    label: 'IAR Math Proficiency %',
-    getValue: (s) => s.metrics.iar_math_proficiency_pct,
-    format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    isTestResult: true,
-  },
-  {
-    label: 'English Learner %',
-    getValue: (s) => s.metrics.demographics.el_percentage,
-    format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    isTestResult: false,
-  },
-  {
-    label: 'Low Income %',
-    getValue: (s) => s.metrics.demographics.low_income_percentage,
-    format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    isTestResult: false,
-  },
-  {
-    label: 'White %',
-    getValue: (s) => s.metrics.diversity.white,
-    format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    isTestResult: false,
-  },
-  {
-    label: 'Black %',
-    getValue: (s) => s.metrics.diversity.black,
-    format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    isTestResult: false,
-  },
-  {
-    label: 'Hispanic %',
-    getValue: (s) => s.metrics.diversity.hispanic,
-    format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    isTestResult: false,
-  },
-  {
-    label: 'Asian %',
-    getValue: (s) => s.metrics.diversity.asian,
-    format: (v) => (v == null ? 'N/A' : `${v.toFixed(1)}%`),
-    isTestResult: false,
+    id: 'compare-students',
+    title: 'Students',
+    metrics: [
+      { label: 'Enrollment', kind: 'count', value: (s) => s.metrics.enrollment },
+      { label: 'Low income', kind: 'percentage', value: (s) => s.metrics.demographics.low_income_percentage },
+      { label: 'English learners', kind: 'percentage', value: (s) => s.metrics.demographics.el_percentage },
+      { label: 'White', kind: 'percentage', value: (s) => s.metrics.diversity.white },
+      { label: 'Black', kind: 'percentage', value: (s) => s.metrics.diversity.black },
+      { label: 'Hispanic', kind: 'percentage', value: (s) => s.metrics.diversity.hispanic },
+      { label: 'Asian', kind: 'percentage', value: (s) => s.metrics.diversity.asian },
+      { label: 'Pacific Islander', kind: 'percentage', value: (s) => s.metrics.diversity.pacific_islander },
+      { label: 'Native American', kind: 'percentage', value: (s) => s.metrics.diversity.native_american },
+      { label: 'Two or more races', kind: 'percentage', value: (s) => s.metrics.diversity.two_or_more },
+      { label: 'Middle Eastern or North African', kind: 'percentage', value: (s) => s.metrics.diversity.mena },
+    ],
   },
 ];
 
-function getColorClass(
-  value: number | null,
-  values: (number | null)[],
-  isTestResult: boolean
-): string {
-  if (!isTestResult || value === null) return '';
-
-  const validValues = values.filter((v): v is number => v !== null);
-  if (validValues.length < 2) return '';
-
-  return value === Math.max(...validValues) ? 'bg-green-100 dark:bg-green-900' : '';
+function valueOf(metric: Metric, school: SchoolDetail): number | null {
+  return metric.value(school) ?? null;
 }
 
-export default function ComparisonView({ schools }: ComparisonViewProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState(0);
-
-  if (schools.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">No schools to compare</p>
-      </div>
-    );
+function scaleFor(metric: Metric, schools: SchoolDetail[]): [number, number] {
+  if (metric.kind === 'count') {
+    const largest = Math.max(...schools.map((school) => valueOf(metric, school) ?? 0));
+    return [0, Math.max(Math.ceil(largest / ENROLLMENT_STEP), 1) * ENROLLMENT_STEP];
   }
+  return metric.kind === 'score' ? ASSESSMENT_SCALES.act : PERCENT_SCALE;
+}
 
-  // Filter metrics to only show those where at least one school has data
-  const visibleMetrics = metrics.filter((metric) =>
-    schools.some((school) => metric.getValue(school) !== null)
+function designationOf(school: SchoolDetail): string {
+  return school.designation ?? 'Not designated';
+}
+
+function Swatch({ series }: { series: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn('h-3 w-3 flex-none rounded-full', seriesBackground(series))}
+    />
   );
+}
 
-  const currentSchool = schools[currentIndex];
-  const allValues = visibleMetrics.map((metric) => schools.map((s) => metric.getValue(s)));
+function SchoolKey({ schools, onRemove }: ComparisonViewProps) {
+  return (
+    <ul role="list" aria-label="Schools compared" className="space-y-1">
+      {schools.map((school, index) => {
+        const details = [
+          school.city,
+          school.grades_served && `Grades ${formatGrades(school.grades_served)}`,
+        ].filter(Boolean);
 
-  const navigate = (newDirection: number) => {
-    setDirection(newDirection);
-    setCurrentIndex((prev) => {
-      const next = prev + newDirection;
-      if (next < 0) return schools.length - 1;
-      if (next >= schools.length) return 0;
-      return next;
-    });
-  };
+        return (
+          <li key={school.rcdts} className="flex items-center gap-3">
+            <Swatch series={index + 1} />
+            <div className="min-w-0 flex-1">
+              <Link
+                to={`/school/${school.rcdts}`}
+                className="font-medium text-link underline underline-offset-4"
+              >
+                {school.display_name}
+              </Link>
+              <p className="text-sm text-muted-foreground">{details.join(' · ')}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onRemove(school.rcdts)}
+              className="flex h-11 w-11 flex-none items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={`Remove ${school.display_name}`}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
-  const swipeConfidenceThreshold = 10000;
-  const swipePower = (offset: number, velocity: number) => {
-    return Math.abs(offset) * velocity;
-  };
+function PlotsByMetric({ schools, groups }: { schools: SchoolDetail[]; groups: MetricGroup[] }) {
+  return (
+    <div className="space-y-8 lg:hidden">
+      <Section id="compare-designation" title="State designation">
+        <ul role="list" aria-label="State designation" className="space-y-1 text-sm">
+          {schools.map((school, index) => (
+            <li key={school.rcdts} className="flex items-center gap-2">
+              <Swatch series={index + 1} />
+              <span className="min-w-0 flex-1">{school.display_name}</span>
+              <span className="font-semibold">{designationOf(school)}</span>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      {groups.map((group) => (
+        <Section key={group.id} id={group.id} title={group.title}>
+          {group.metrics.map((metric) => (
+            <div key={metric.label} className="space-y-1">
+              <p className="text-sm font-medium">{metric.label}</p>
+              <DotPlot
+                label={metric.label}
+                rows={schools.map((school, index) => ({
+                  label: school.display_name,
+                  value: valueOf(metric, school),
+                  series: index + 1,
+                }))}
+                kind={metric.kind}
+                scale={scaleFor(metric, schools)}
+                wideLabels
+              />
+            </div>
+          ))}
+        </Section>
+      ))}
+    </div>
+  );
+}
+
+function ComparisonTable({ schools, groups }: { schools: SchoolDetail[]; groups: MetricGroup[] }) {
+  const metrics = groups.flatMap((group) => group.metrics);
 
   return (
-    <>
-      {/* Mobile: Swipeable Card Carousel */}
-      <div className="md:hidden w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-        <div className="relative">
-          {/* Navigation Header */}
-          <div className="flex items-center justify-between mb-4 px-6">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigate(-1)}
-              disabled={schools.length === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">
-                School {currentIndex + 1} of {schools.length}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigate(1)}
-              disabled={schools.length === 1}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+    <div className="hidden overflow-x-auto lg:block">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-52">
+              <span className="sr-only">Measure</span>
+            </TableHead>
+            {schools.map((school, index) => (
+              <TableHead key={school.rcdts} className="min-w-28 text-right align-bottom">
+                <span className="inline-flex items-center gap-2 text-foreground">
+                  <Swatch series={index + 1} />
+                  {school.display_name}
+                </span>
+              </TableHead>
+            ))}
+            <TableHead className="min-w-52 align-bottom">On one scale</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell className="font-medium">State designation</TableCell>
+            {schools.map((school) => (
+              <TableCell key={school.rcdts} className="text-right">
+                {designationOf(school)}
+              </TableCell>
+            ))}
+            <TableCell />
+          </TableRow>
+          {metrics.map((metric) => {
+            const values = schools.map((school) => valueOf(metric, school));
+            const reported = values.filter((value): value is number => value !== null);
+            const highest = metric.isTestResult && reported.length >= 2 ? Math.max(...reported) : null;
 
-          {/* Swipeable Card */}
-          <div className="relative" style={{ minHeight: '500px' }}>
-            <AnimatePresence initial={false} custom={direction} mode="wait">
-              <motion.div
-                key={currentIndex}
-                custom={direction}
-                variants={{
-                  enter: (dir: number) => ({
-                    x: dir > 0 ? 300 : -300,
-                    opacity: 0,
-                  }),
-                  center: {
-                    zIndex: 1,
-                    x: 0,
-                    opacity: 1,
-                  },
-                  exit: (dir: number) => ({
-                    zIndex: 0,
-                    x: dir < 0 ? 300 : -300,
-                    opacity: 0,
-                  }),
-                }}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{
-                  x: { type: 'spring', stiffness: 300, damping: 30 },
-                  opacity: { duration: 0.2 },
-                }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={1}
-                onDragEnd={(e, { offset, velocity }) => {
-                  const swipe = swipePower(offset.x, velocity.x);
-                  if (swipe < -swipeConfidenceThreshold) {
-                    navigate(1);
-                  } else if (swipe > swipeConfidenceThreshold) {
-                    navigate(-1);
-                  }
-                }}
-                className="absolute inset-x-0 w-full"
-              >
-                <Card className="w-full">
-                  <CardHeader>
-                    <CardTitle>{currentSchool.school_name}</CardTitle>
-                    <CardDescription>
-                      {currentSchool.city}
-                      {currentSchool.district && ` • ${currentSchool.district}`}
-                    </CardDescription>
-                    {currentSchool.school_type && (
-                      <Badge variant="secondary" className="mt-2 w-fit">
-                        {currentSchool.school_type}
-                      </Badge>
+            return (
+              <TableRow key={metric.label}>
+                <TableCell className="font-medium">{metric.label}</TableCell>
+                {values.map((value, index) => (
+                  <TableCell key={schools[index].rcdts} className="text-right tabular-nums">
+                    {value === null ? (
+                      <span className="text-xs text-muted-foreground">{NOT_REPORTED}</span>
+                    ) : (
+                      <span className={cn(value === highest && 'font-bold')}>
+                        {formatMetric(value, metric.kind)}
+                      </span>
                     )}
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {visibleMetrics.map((metric, idx) => {
-                        const value = metric.getValue(currentSchool);
-                        const values = allValues[idx];
-                        const colorClass = getColorClass(value, values, metric.isTestResult);
-                        const isHighlight = colorClass !== '';
-
-                        return (
-                          <div
-                            key={metric.label}
-                            className={cn(
-                              'flex items-center justify-between py-3 px-4 rounded-lg border',
-                              colorClass
-                            )}
-                          >
-                            <span className="text-sm font-medium">{metric.label}</span>
-                            <span className={cn('text-lg font-bold', isHighlight && 'text-foreground')}>
-                              {metric.format(value)}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="justify-center">
-                    <p className="text-xs text-center text-muted-foreground">
-                      Swipe or use arrows to compare schools
-                    </p>
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop: Existing Table View */}
-      <div className="hidden md:block overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-48 font-bold">Metric</TableHead>
-              {schools.map((school) => (
-                <TableHead key={school.rcdts} className="min-w-[200px]">
-                  <div>
-                    <div className="font-bold">{school.school_name}</div>
-                    <div className="text-xs text-muted-foreground font-normal">
-                      {school.city}
-                    </div>
-                    {school.school_type && (
-                      <Badge variant="secondary" className="mt-1 text-xs">
-                        {school.school_type}
-                      </Badge>
+                  </TableCell>
+                ))}
+                <TableCell>
+                  <DotTrack
+                    dots={values.flatMap((value, index) =>
+                      value === null ? [] : [{ value, series: index + 1 }]
                     )}
-                  </div>
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visibleMetrics.map((metric) => {
-              const values = schools.map((s) => metric.getValue(s));
+                    scale={scaleFor(metric, schools)}
+                  />
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
 
-              return (
-                <TableRow key={metric.label}>
-                  <TableCell className="font-medium">{metric.label}</TableCell>
-                  {schools.map((school) => {
-                    const value = metric.getValue(school);
-                    const colorClass = getColorClass(value, values, metric.isTestResult);
+export default function ComparisonView({ schools, onRemove }: ComparisonViewProps) {
+  // Only metrics that at least one school reports
+  const groups = GROUPS.map((group) => ({
+    ...group,
+    metrics: group.metrics.filter((metric) =>
+      schools.some((school) => valueOf(metric, school) !== null)
+    ),
+  })).filter((group) => group.metrics.length > 0);
 
-                    return (
-                      <TableCell
-                        key={school.rcdts}
-                        className={cn('text-center', colorClass)}
-                      >
-                        {metric.format(value)}
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-    </>
+  return (
+    <div className="space-y-8">
+      <SchoolKey schools={schools} onRemove={onRemove} />
+      <PlotsByMetric schools={schools} groups={groups} />
+      <ComparisonTable schools={schools} groups={groups} />
+    </div>
   );
 }

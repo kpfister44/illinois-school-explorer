@@ -5,10 +5,10 @@ import { render, screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { ComparisonProvider, useComparison } from '@/contexts/ComparisonContext';
+import { ComparisonProvider } from '@/contexts/ComparisonContext';
 import District from './District';
 import { listItem } from '@/test/schoolList';
 import type { DistrictDetail } from '@/lib/api/types';
@@ -99,7 +99,7 @@ afterEach(() => {
 afterAll(() => server.close());
 
 function ComparePage() {
-  return <p>Comparing {useComparison().comparisonList.join(' ')}</p>;
+  return <p>Comparing {useSearchParams()[0].get('schools')}</p>;
 }
 
 function renderAt(id: string) {
@@ -204,16 +204,15 @@ describe('District', () => {
 
   it('offers to compare a level with two to five schools', async () => {
     const user = userEvent.setup();
-    localStorage.setItem('school-comparison', JSON.stringify(['another-school']));
     renderAt(UNIT_DISTRICT);
     await screen.findByRole('heading', { level: 1 });
 
-    expect(level('Elementary schools').queryByRole('button', { name: /Compare/ })).not.toBeInTheDocument();
-    expect(level('High schools').queryByRole('button', { name: /Compare/ })).not.toBeInTheDocument();
-    await user.click(level('Middle schools').getByRole('button', { name: 'Compare both' }));
+    expect(level('Elementary schools').queryByRole('link', { name: /^Compare/ })).not.toBeInTheDocument();
+    expect(level('High schools').queryByRole('link', { name: /^Compare/ })).not.toBeInTheDocument();
+    await user.click(level('Middle schools').getByRole('link', { name: 'Compare both' }));
 
     expect(
-      screen.getByText(`Comparing ${UNIT_DISTRICT}-1001 ${UNIT_DISTRICT}-1002`)
+      screen.getByText(`Comparing ${UNIT_DISTRICT}-1001,${UNIT_DISTRICT}-1002`)
     ).toBeInTheDocument();
   });
 

@@ -6,10 +6,8 @@ export const MOST_COMPARED = 5;
 
 const PARAM = 'schools';
 
+// An empty list is written out, so the page shows no schools rather than the remembered ones
 export function comparePath(rcdtsList: string[]): string {
-  if (rcdtsList.length === 0) {
-    return COMPARE_PATH;
-  }
   return `${COMPARE_PATH}?${PARAM}=${rcdtsList.map(encodeURIComponent).join(',')}`;
 }
 

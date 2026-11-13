@@ -1,26 +1,19 @@
 // ABOUTME: The schools selected for comparison, each with a button to remove it
-// ABOUTME: Shown in the desktop comparison bar and on the phone Compare page
+// ABOUTME: Shown in the desktop comparison bar and on the Compare page while one school is selected
 
 import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useComparison } from '@/contexts/ComparisonContext';
 import type { School } from '@/lib/api/types';
 
 interface SelectedSchoolListProps {
   schools: School[];
+  onRemove: (rcdts: string) => void;
 }
 
-export default function SelectedSchoolList({ schools }: SelectedSchoolListProps) {
-  const { comparisonList, removeFromComparison } = useComparison();
-
-  const schoolMap = new Map(schools.map((school) => [school.rcdts, school]));
-  const orderedSchools = comparisonList
-    .map((rcdts) => schoolMap.get(rcdts))
-    .filter((school): school is School => Boolean(school));
-
+export default function SelectedSchoolList({ schools, onRemove }: SelectedSchoolListProps) {
   return (
     <div className="flex flex-wrap gap-2">
-      {orderedSchools.map((school) => {
+      {schools.map((school) => {
         const isPlaceholder = school.id < 0;
         const displayName = isPlaceholder
           ? `${school.school_name} (${school.rcdts})`
@@ -33,7 +26,7 @@ export default function SelectedSchoolList({ schools }: SelectedSchoolListProps)
             </span>
             <button
               type="button"
-              onClick={() => removeFromComparison(school.rcdts)}
+              onClick={() => onRemove(school.rcdts)}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={`Remove ${displayName}`}
             >

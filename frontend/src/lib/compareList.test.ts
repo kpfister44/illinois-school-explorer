@@ -14,8 +14,9 @@ describe('comparePath', () => {
     );
   });
 
-  it('is the bare Compare path when nothing is selected', () => {
-    expect(comparePath([])).toBe('/compare');
+  it('writes out an empty list, which is not the same as naming none', () => {
+    expect(comparePath([])).toBe('/compare?schools=');
+    expect(readCompareList(new URLSearchParams('schools='))).toEqual([]);
   });
 });
 
