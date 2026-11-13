@@ -2,6 +2,7 @@
 // ABOUTME: Lists every group that has data, largest first, plus any share that is not reported
 
 import { formatMetric } from '@/lib/format';
+import { SERIES_COUNT, seriesBackground } from '@/lib/series';
 import { cn } from '@/lib/utils';
 
 interface Group {
@@ -20,14 +21,6 @@ interface Segment {
   colour: string;
 }
 
-const SERIES_COLOURS = [
-  'bg-series-1',
-  'bg-series-2',
-  'bg-series-3',
-  'bg-series-4',
-  'bg-series-5',
-  'bg-series-6',
-];
 const NOT_REPORTED_COLOUR = 'bg-muted';
 
 // Published shares are rounded, so a whole can fall a little short of 100
@@ -39,7 +32,7 @@ export default function CompositionBar({ label, groups }: CompositionBarProps) {
     .sort((a, b) => b.value - a.value)
     .map((group, index) => ({
       ...group,
-      colour: SERIES_COLOURS[Math.min(index, SERIES_COLOURS.length - 1)],
+      colour: seriesBackground(Math.min(index + 1, SERIES_COUNT)),
     }));
 
   if (segments.length === 0) {
