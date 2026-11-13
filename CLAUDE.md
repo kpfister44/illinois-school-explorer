@@ -248,6 +248,7 @@ Playwright starts the frontend dev server itself but not the backend: start the 
 - `frontend/src/components/HistoryChart.tsx` (Recharts line chart), `Sparkline.tsx`, `HistorySheet.tsx`, `HistorySparkline.tsx` — a metric's history; `frontend/src/lib/history.ts` builds the year series
 - `frontend/src/components/DotPlot.tsx` — a figure beside its yardsticks on one scale, with the band where most schools fall; rows can link to a page (the district page) or take a series colour (Compare); `DotTrack.tsx` is the track itself, several dots on one scale; `frontend/src/lib/series.ts` names the series colour classes; `SimilarSchoolsSheet.tsx` lists the 25 similar schools; `frontend/src/lib/benchmarks.ts` holds the wording and scales
 - `frontend/src/routes/Compare.tsx`, `frontend/src/components/ComparisonView.tsx`, `frontend/src/lib/compareList.ts` — the comparison: its list in the URL, a dot plot per metric on phones and a table on desktop
+- `frontend/src/routes/TopScores.tsx`, `frontend/src/lib/topScores.ts`, `TopScoresTable.tsx`, `TopScoreRow.tsx`, `RankLookup.tsx` — the ranking: level, region and looked-up school in the URL, a list on phones and a table on desktop; `RegionFields.tsx` is the county and district pair it shares with `SchoolFilterForm`
 - `frontend/src/components/CompositionBar.tsx`, `DesignationScale.tsx`, `SectionLinks.tsx`, `Facts.tsx` — other school page parts
 - `frontend/src/routes/HowThisWorks.tsx` — plain-language explanation of every yardstick; keep it in step with `benchmarks.py`
 - `frontend/src/components/` — reusable components
@@ -317,6 +318,12 @@ Tokens are defined in `frontend/src/index.css` and documented in `docs/plans/202
 - Removing and clearing on the Compare page change the URL, never the context directly. The desktop comparison bar is hidden there for that reason.
 - Each school keeps one series colour down the page. Designation comes first. Below `lg` each metric is a short dot plot with every school; from `lg` it is a table with a dot track per row, and the highest test result in a row is bold. Metrics no school reports are left out.
 
+### Top Scores
+- `/top-scores` ranks one level on its headline test: high schools on the ACT (the mean of ELA and math), middle and elementary schools on IAR proficiency. `?level=`, `county`, `district` and `school` hold the view (`topScoresPath` and `readTopScoresView` in `frontend/src/lib/topScores.ts`); `/top-scores` alone is the statewide high school ranking.
+- A county or district ranks only its schools, from 1. Schools with the same score share a rank (1, 2, 2, 4) and are listed by display name.
+- `school` looks up one school's rank, beyond the top 100 if need be. Finding a school switches to its level and keeps the region only if the school is in it. Schools of level `other` or without a score are not ranked.
+- Every row shows enrollment, low-income share and designation beside the score.
+
 ### Display Names
 `display_name` is the official `school_name` with abbreviations spelled out (`display_name` in `sync_from_api.py`):
 - Elem, Sch, Hs/HS and JHS are always expanded
@@ -347,7 +354,8 @@ GET /api/schools/compare?rcdts={rcdts1},{rcdts2},...         — compare 2-5 sch
 GET /api/schools/{rcdts}/similar?assessment={act|iar}        — the 25 similar schools
 GET /api/benchmarks/state?metric={act|iar|el|low_income}&level={elementary|middle|high|other}
                                                              — state average by year and the 10th-90th percentile band
-GET /api/top-scores?assessment={act|iar}&level={high|middle|elementary}&limit={1-100}
+GET /api/top-scores?assessment={act|iar}&level={high|middle|elementary}&limit={1-100}&county=&district=&school=
+                                                             — ranking with total; region ranks restart at 1; school= looks up one rank
 GET /api/stats                                               — school, district and city counts
 GET /api/schools?q=&level=&county=&district=&city=&designation=&enrollment_min=&enrollment_max=
     &low_income_min=&low_income_max=&sort={name|score|enrollment}&order={asc|desc}&limit=&offset=
@@ -369,7 +377,7 @@ Swagger UI: `http://localhost:8000/docs` (local) or Railway URL + `/docs`
 - `useSimilarSchools(rcdts, assessment, enabled)`
 - `useSchoolList(filters)` — infinite query, 25 schools a page
 - `useDistrict(id)`, `useDistricts()`, `useCities()`
-- `getTopScores(params)` + `topScoresQueryKey(...)` — used directly with `useQuery` (no `useTopScores` hook)
+- `getTopScores(params)` + `topScoresQueryKey(view)` — used directly with `useQuery` (no `useTopScores` hook)
 
 ---
 

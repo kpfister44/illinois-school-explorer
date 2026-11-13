@@ -306,20 +306,27 @@ class TopScoreEntry(BaseModel):
     rank: int
     rcdts: str
     school_name: str
+    display_name: str
     city: str
+    county: Optional[str] = None
     district: Optional[str] = None
+    district_id: str
     school_type: Optional[str] = None
     level: str
     enrollment: Optional[int] = None
+    low_income_percentage: Optional[float] = None
+    designation: Optional[str] = None
     score: float
     act_ela_avg: Optional[float] = None
     act_math_avg: Optional[float] = None
 
 
 class TopScoresResponse(BaseModel):
-    """Response wrapper for top scores endpoint."""
+    """The top of a ranking, how many schools it ranks, and the school looked up in it."""
 
     results: List[TopScoreEntry]
+    total: int
+    school: Optional[TopScoreEntry] = None
 
 
 class StatsResponse(BaseModel):

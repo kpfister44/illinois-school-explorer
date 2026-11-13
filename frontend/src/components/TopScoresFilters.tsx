@@ -52,7 +52,7 @@ export default function TopScoresFilters({
       {/* Mobile: Dropdown Select */}
       <div className="md:hidden">
         <Select value={value} onValueChange={notifyChange}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger aria-label="Ranking" className="w-full">
             <SelectValue>
               {selectedOption?.label ?? 'Select assessment'}
             </SelectValue>

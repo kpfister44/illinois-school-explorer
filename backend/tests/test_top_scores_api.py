@@ -42,3 +42,59 @@ def test_top_scores_validates_query_params(client):
 
     response = client.get("/api/top-scores?assessment=sat&level=high")
     assert response.status_code == 422
+
+
+def test_top_scores_counts_ranked_schools_and_carries_context(client, test_db):
+    test_db.add_all(
+        [
+            create_school(1, low_income_percentage=40.0, designation="Commendable"),
+            create_school(2),
+            create_school(3),
+        ]
+    )
+    test_db.commit()
+
+    payload = client.get("/api/top-scores?assessment=act&level=high&limit=1").json()
+
+    assert payload["total"] == 3
+    assert payload["school"] is None
+    last = client.get("/api/top-scores?assessment=act&level=high").json()["results"][-1]
+    assert last["display_name"] == "School 1"
+    assert last["low_income_percentage"] == 40.0
+    assert last["designation"] == "Commendable"
+    assert last["district_id"] == "11-111-1111-11"
+
+
+def test_top_scores_narrows_to_a_county_or_district(client, test_db):
+    test_db.add_all(
+        [
+            create_school(1, county="Cook"),
+            create_school(2, county="Lake"),
+            create_school(3, rcdts="22-222-2222-22-0003", county="Lake"),
+        ]
+    )
+    test_db.commit()
+
+    by_county = client.get("/api/top-scores?assessment=act&level=high&county=Lake").json()
+    by_district = client.get(
+        "/api/top-scores?assessment=act&level=high&district=11-111-1111-11"
+    ).json()
+
+    assert [row["rcdts"] for row in by_county["results"]] == [
+        "22-222-2222-22-0003",
+        "11-111-1111-11-0002",
+    ]
+    assert [row["rank"] for row in by_county["results"]] == [1, 2]
+    assert by_district["total"] == 2
+
+
+def test_top_scores_looks_up_one_school(client, test_db):
+    test_db.add_all([create_school(1), create_school(2), create_school(3)])
+    test_db.commit()
+
+    payload = client.get(
+        "/api/top-scores?assessment=act&level=high&limit=1&school=11-111-1111-11-0001"
+    ).json()
+
+    assert payload["school"]["rcdts"] == "11-111-1111-11-0001"
+    assert payload["school"]["rank"] == 3

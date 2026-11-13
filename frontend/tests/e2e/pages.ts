@@ -37,6 +37,10 @@ export const PAGES = [
   { name: 'compare', path: '/compare' },
   { name: 'comparison of five schools', path: `/compare?schools=${FIVE_HIGH_SCHOOLS.join(',')}` },
   { name: 'top scores', path: '/top-scores' },
+  {
+    name: 'top scores in a county with a looked-up school',
+    path: `/top-scores?county=Cook&school=${ELK_GROVE_HIGH}`,
+  },
   { name: 'how this works', path: '/how-this-works' },
   { name: 'not found', path: '/no-such-page' },
 ];
@@ -50,4 +54,12 @@ export async function seedComparison(page: Page, rcdtsList: string[]) {
 export async function openPage(page: Page, path: string) {
   await page.goto(path);
   await page.waitForLoadState('networkidle');
+}
+
+// Opens the top-ranked school by clicking, so the visit is in-app: a list link on phones, a table row on desktop
+export async function openFirstRankedSchool(page: Page) {
+  await page
+    .locator('main ul a[href^="/school/"]:visible, main [aria-label^="View details for"]:visible')
+    .first()
+    .click();
 }

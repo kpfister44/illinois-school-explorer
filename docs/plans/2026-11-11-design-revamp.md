@@ -301,6 +301,17 @@ Each phase ships on its own. All work follows the TDD and testing rules in the r
 - Context columns, designation label, region filter, rank lookup, URL state, accurate explainer.
 - **Done when:** enrollment and low-income share are visible on phones for every row.
 
+**Notes from phase 7:**
+- Kyle chose: a county or district ranks only its schools, from 1; the region offers both county and district; tied scores share a rank (1, 2, 2, 4); the rank lookup lives on Top scores only.
+- `GET /api/top-scores` takes `county`, `district` and `school` and returns `total` and the looked-up `school`. It still reads the database, not the in-memory `Benchmarks`.
+- The view is `/top-scores?level=&county=&district=&school=` (`frontend/src/lib/topScores.ts`). Finding a school switches to its level and keeps the region only if the school is in it. The lookup searches `GET /api/schools?q=` and shows schools of level `other` or without a score as "Not ranked".
+- Phones get a list of `TopScoreRow`s, desktop a table with Students, Low income and Designation columns. The rank badges are gone.
+- `RegionFields` is the county and district pair shared with `SchoolFilterForm`. It offers every county, so a county with no schools of the chosen level ranks 0.
+- The level choice is still `TopScoresFilters`: a dropdown on phones, tabs on desktop, not the mockup's chips.
+- The explainer says in words that scores follow family income. The mockup's figures (high schools under 25% low income average 21.0, over 75% average 14.5) are not shown; they would need an endpoint to stay current.
+- `npm run lint` now reports 6 errors, all in files that predate phase 3.
+- `docs/screenshots/leaderboard.png` shows the old leaderboard.
+
 ---
 
 ## Known doc drift to fix along the way
