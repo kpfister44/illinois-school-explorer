@@ -1,5 +1,5 @@
 // ABOUTME: Tests for the DotPlot component
-// ABOUTME: Verifies rows, dot positions on a shared scale, the highlighted row and the band
+// ABOUTME: Verifies rows, dot positions on a shared scale, the highlighted row, series colours, missing values and the band
 
 import { render, screen, within } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
@@ -96,5 +96,33 @@ describe('DotPlot', () => {
     );
     expect(screen.getAllByRole('link')).toHaveLength(1);
     expect(screen.getByText('District average')).toBeInTheDocument();
+  });
+
+  it('colours each row\'s dot by its series', () => {
+    const { container } = renderPlot({
+      rows: [
+        { label: 'Elk Grove High School', value: 18.1, series: 1 },
+        { label: 'Rolling Meadows High School', value: 19.4, series: 2 },
+      ],
+    });
+
+    const dots = [...container.querySelectorAll('circle')];
+    expect(dots[0]).toHaveClass('fill-series-1');
+    expect(dots[1]).toHaveClass('fill-series-2');
+  });
+
+  it('keeps a row with no value, saying it is not reported and drawing no dot', () => {
+    const { container } = renderPlot({
+      rows: [
+        { label: 'Elk Grove High School', value: 18.1, series: 1 },
+        { label: 'Clearmont Elementary School', value: null, series: 2 },
+      ],
+    });
+
+    const rows = within(screen.getByRole('list')).getAllByRole('listitem');
+    expect(rows).toHaveLength(2);
+    expect(rows[1]).toHaveTextContent('Clearmont Elementary School');
+    expect(rows[1]).toHaveTextContent('Not reported');
+    expect(container.querySelectorAll('circle')).toHaveLength(1);
   });
 });
