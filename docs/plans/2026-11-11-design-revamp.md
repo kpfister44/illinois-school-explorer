@@ -286,7 +286,6 @@ Each phase ships on its own. All work follows the TDD and testing rules in the r
 - Compare still shows the official `school_name` ("Friendship Jr High School"), while the district page and lists show `display_name` ("Friendship Junior High School"). `tests/e2e/browse-flow.spec.ts` asserts the official names on Compare for now.
 - List rows (`SchoolListItem`) carry `level`, `assessment`, `score`, `low_income_percentage` and `designation`; Top scores can reuse them for its context columns.
 - `GET /api/schools` sorts by score only within a level and answers 422 otherwise; the list drops the sort when no level is chosen.
-- `SchoolCard` is no longer used by any page.
 - `display_name` leaves "Schl" unexpanded ("Devry Advantage Academy High Schl").
 - `npm run lint` now reports 7 errors, all in files that predate phase 3.
 
