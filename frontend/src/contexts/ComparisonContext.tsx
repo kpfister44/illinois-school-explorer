@@ -2,6 +2,7 @@
 // ABOUTME: Handles add, remove and replace operations and localStorage persistence
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { MOST_COMPARED } from '@/lib/compareList';
 
 interface ComparisonContextType {
   comparisonList: string[];
@@ -16,7 +17,6 @@ interface ComparisonContextType {
 const ComparisonContext = createContext<ComparisonContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'school-comparison';
-const MAX_SCHOOLS = 5;
 
 export function ComparisonProvider({ children }: { children: ReactNode }) {
   const [comparisonList, setComparisonList] = useState<string[]>(() => {
@@ -34,7 +34,7 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
 
   const addToComparison = (rcdts: string) => {
     setComparisonList((prev) => {
-      if (prev.includes(rcdts) || prev.length >= MAX_SCHOOLS) {
+      if (prev.includes(rcdts) || prev.length >= MOST_COMPARED) {
         return prev;
       }
       return [...prev, rcdts];
@@ -46,7 +46,7 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
   };
 
   const replaceComparison = (rcdtsList: string[]) => {
-    setComparisonList(rcdtsList.slice(0, MAX_SCHOOLS));
+    setComparisonList(rcdtsList.slice(0, MOST_COMPARED));
   };
 
   const clearComparison = () => {
@@ -57,7 +57,7 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
     return comparisonList.includes(rcdts);
   };
 
-  const canAddMore = comparisonList.length < MAX_SCHOOLS;
+  const canAddMore = comparisonList.length < MOST_COMPARED;
 
   return (
     <ComparisonContext.Provider

@@ -3,7 +3,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 import { ComparisonProvider } from '@/contexts/ComparisonContext';
 import type { School } from '@/lib/api/types';
 import ComparisonBasket from './ComparisonBasket';
@@ -90,7 +90,6 @@ describe('ComparisonBasket', () => {
 
     const compareButton = screen.getByRole('button', { name: 'Compare' });
     expect(compareButton).toHaveAttribute('aria-disabled', 'false');
-    expect(compareButton).toHaveAttribute('href', '/compare');
   });
 
   it('clears all schools when Clear All clicked', () => {
@@ -104,13 +103,30 @@ describe('ComparisonBasket', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('navigates to compare page when Compare button clicked', () => {
+  it('opens the comparison of the selected schools at its own URL', () => {
     localStorage.setItem('school-comparison', JSON.stringify(mockSchools.map((s) => s.rcdts)));
 
     renderWithProviders(<ComparisonBasket schools={mockSchools} />);
 
     const compareButton = screen.getByRole('button', { name: 'Compare' });
-    expect(compareButton).toHaveAttribute('href', '/compare');
+    expect(compareButton).toHaveAttribute(
+      'href',
+      '/compare?schools=12-345-6789-01-0001,12-345-6789-01-0002'
+    );
+  });
+
+  it('stays off the Compare page, which manages its own list', () => {
+    localStorage.setItem('school-comparison', JSON.stringify(mockSchools.map((s) => s.rcdts)));
+
+    const { container } = render(
+      <MemoryRouter initialEntries={['/compare']}>
+        <ComparisonProvider>
+          <ComparisonBasket schools={mockSchools} />
+        </ComparisonProvider>
+      </MemoryRouter>
+    );
+
+    expect(container.firstChild).toBeNull();
   });
 
   it('leaves phone access to the comparison to the tab bar', () => {

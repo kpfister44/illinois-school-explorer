@@ -1,14 +1,16 @@
 // ABOUTME: Rows of label, dot on a shared scale, and value, for comparing a figure with its yardsticks
-// ABOUTME: Can shade the band where most schools fall, highlights this school's row and links a row to its page
+// ABOUTME: Can shade the band where most schools fall, highlights this school's row, colours rows by series and links a row to its page
 
 import { Link } from 'react-router-dom';
+import DotTrack from '@/components/DotTrack';
 import { formatMetric, type MetricKind } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 export interface DotPlotRow {
   label: string;
-  value: number;
+  value: number | null;
   highlighted?: boolean;
+  series?: number;
   to?: string;
 }
 
@@ -22,11 +24,6 @@ interface DotPlotProps {
 }
 
 export default function DotPlot({ label, rows, kind, scale, band, wideLabels }: DotPlotProps) {
-  const [lowest, highest] = scale;
-  const position = (value: number) =>
-    Math.min(Math.max(((value - lowest) / (highest - lowest)) * 100, 0), 100);
-  const percent = (amount: number) => `${amount.toFixed(1)}%`;
-
   return (
     <ul role="list" aria-label={label} className="space-y-1">
       {rows.map((row) => (
@@ -57,32 +54,22 @@ export default function DotPlot({ label, rows, kind, scale, band, wideLabels }: 
               {row.label}
             </span>
           )}
-          <svg aria-hidden="true" className="h-5 w-full overflow-visible">
-            {band && (
-              <rect
-                x={percent(position(band.low))}
-                width={percent(position(band.high) - position(band.low))}
-                y={0}
-                height="100%"
-                className="fill-muted"
-              />
-            )}
-            <line x1="0" x2="100%" y1="50%" y2="50%" strokeWidth={1} className="stroke-border" />
-            {row.highlighted ? (
-              <circle
-                cx={percent(position(row.value))}
-                cy="50%"
-                r={6.5}
-                strokeWidth={1.5}
-                className="fill-highlighter stroke-foreground"
-              />
-            ) : (
-              <circle cx={percent(position(row.value))} cy="50%" r={5} className="fill-benchmark" />
-            )}
-          </svg>
-          <span className="text-right font-semibold tabular-nums">
-            {formatMetric(row.value, kind)}
-          </span>
+          <DotTrack
+            dots={
+              row.value === null
+                ? []
+                : [{ value: row.value, highlighted: row.highlighted, series: row.series }]
+            }
+            scale={scale}
+            band={band}
+          />
+          {row.value === null ? (
+            <span className="text-right text-xs text-muted-foreground">Not reported</span>
+          ) : (
+            <span className="text-right font-semibold tabular-nums">
+              {formatMetric(row.value, kind)}
+            </span>
+          )}
         </li>
       ))}
     </ul>

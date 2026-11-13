@@ -86,14 +86,14 @@ One scrolling page per school: key facts, the state designation, test scores, hi
 
 ### 3. Side-by-Side School Comparison
 
-Compare 2-5 schools simultaneously with persistent comparison basket across page navigation.
+Compare 2-5 schools. On phones each metric is a short dot plot with every school in it; on desktop a table with a dot track per row. The list lives in the URL, so a copied link reproduces the comparison.
 
 ![School Comparison](./docs/screenshots/comparison-view.png)
-*Screenshot: Multi-school comparison table with side-by-side metrics*
+*Screenshot: five schools compared on desktop, each in its own colour, with a dot track per row*
 
 **Technical highlights:**
-- React Context for global comparison state
-- LocalStorage persistence
+- The URL names the schools; React Context and localStorage remember the last list
+- Each school keeps one colour down the page; designation comes first
 - Multi-select UI with add/remove controls
 - Handles missing data gracefully (schools without certain metrics)
 

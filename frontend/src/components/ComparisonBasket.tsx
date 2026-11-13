@@ -1,11 +1,12 @@
 // ABOUTME: Desktop bar fixed to the bottom of the screen showing schools selected for comparison
-// ABOUTME: Phones reach the comparison through the Compare tab instead
+// ABOUTME: Hidden on the Compare page; phones reach the comparison through the Compare tab instead
 
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import SelectedSchoolList from '@/components/SelectedSchoolList';
 import { useComparison } from '@/contexts/ComparisonContext';
+import { COMPARE_PATH, comparePath } from '@/lib/compareList';
 import type { School } from '@/lib/api/types';
 
 interface ComparisonBasketProps {
@@ -13,9 +14,11 @@ interface ComparisonBasketProps {
 }
 
 export default function ComparisonBasket({ schools }: ComparisonBasketProps) {
-  const { comparisonList, clearComparison } = useComparison();
+  const { comparisonList, removeFromComparison, clearComparison } = useComparison();
+  const { pathname } = useLocation();
 
-  if (comparisonList.length === 0) {
+  // The Compare page manages its own list
+  if (comparisonList.length === 0 || pathname === COMPARE_PATH) {
     return null;
   }
 
@@ -30,7 +33,10 @@ export default function ComparisonBasket({ schools }: ComparisonBasketProps) {
               <span className="font-semibold">Compare Schools</span>
               <Badge variant="secondary">{comparisonList.length} schools selected</Badge>
             </div>
-            <SelectedSchoolList schools={schools} />
+            <SelectedSchoolList
+              schools={schools.filter((school) => comparisonList.includes(school.rcdts))}
+              onRemove={removeFromComparison}
+            />
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={clearComparison}>
@@ -38,7 +44,7 @@ export default function ComparisonBasket({ schools }: ComparisonBasketProps) {
             </Button>
             <Button asChild disabled={!canCompare}>
               <Link
-                to="/compare"
+                to={comparePath(comparisonList)}
                 role="button"
                 aria-disabled={!canCompare}
                 tabIndex={canCompare ? undefined : -1}

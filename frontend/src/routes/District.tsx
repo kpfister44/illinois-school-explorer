@@ -2,16 +2,16 @@
 // ABOUTME: Shows a district's summary and, for each school level, every school's headline score on one scale
 
 import { isAxiosError } from 'axios';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import BackButton from '@/components/BackButton';
 import DotPlot from '@/components/DotPlot';
 import Section from '@/components/Section';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useComparison } from '@/contexts/ComparisonContext';
 import { useDistrict, useStateBenchmark } from '@/lib/api/queries';
 import type { BenchmarkLevel, DistrictLevel } from '@/lib/api/types';
 import { ASSESSMENT_SCALES, ASSESSMENT_SCORES, describeLevel } from '@/lib/benchmarks';
+import { comparePath, MOST_COMPARED } from '@/lib/compareList';
 import { formatMetric } from '@/lib/format';
 import { listPath } from '@/lib/schoolList';
 import { CURRENT_YEAR } from '@/lib/trendUtils';
@@ -29,12 +29,9 @@ const PLOT_NAMES = {
 } as const;
 
 const FEWEST_COMPARED = 2;
-const MOST_COMPARED = 5;
 const LINK_CLASS = 'font-medium text-link underline underline-offset-4';
 
 function LevelSection({ level }: { level: DistrictLevel }) {
-  const navigate = useNavigate();
-  const { replaceComparison } = useComparison();
   const { data: state } = useStateBenchmark(level.assessment, level.level);
   const { kind } = ASSESSMENT_SCORES[level.assessment];
   const plotName = PLOT_NAMES[level.assessment];
@@ -54,11 +51,6 @@ function LevelSection({ level }: { level: DistrictLevel }) {
     level.state_average !== null &&
       `${comparedWith} average ${formatMetric(level.state_average, kind)}`,
   ].filter(Boolean);
-
-  const compareAll = () => {
-    replaceComparison(level.schools.map((school) => school.rcdts));
-    navigate('/compare');
-  };
 
   return (
     <Section id={`level-${level.level}`} title={LEVEL_TITLES[level.level]}>
@@ -108,10 +100,12 @@ function LevelSection({ level }: { level: DistrictLevel }) {
       )}
 
       {canCompare && (
-        <Button variant="outline" onClick={compareAll} className="w-full sm:w-auto">
-          {level.schools.length === FEWEST_COMPARED
-            ? 'Compare both'
-            : `Compare all ${level.schools.length}`}
+        <Button asChild variant="outline" className="w-full sm:w-auto">
+          <Link to={comparePath(level.schools.map((school) => school.rcdts))}>
+            {level.schools.length === FEWEST_COMPARED
+              ? 'Compare both'
+              : `Compare all ${level.schools.length}`}
+          </Link>
         </Button>
       )}
     </Section>

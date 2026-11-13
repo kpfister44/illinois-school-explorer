@@ -5,11 +5,22 @@ import type { Page } from '@playwright/test';
 
 export const ELK_GROVE_HIGH = '05-016-2140-17-0002';
 export const ROLLING_MEADOWS_HIGH = '05-016-2140-17-0007';
+export const HERSEY_HIGH = '05-016-2140-17-0004';
+export const PROSPECT_HIGH = '05-016-2140-17-0005';
+export const BUFFALO_GROVE_HIGH = '05-016-2140-17-0008';
 export const CLEARMONT_ELEMENTARY = '05-016-0590-04-2003';
 export const AC_CENTRAL_MIDDLE = '01-009-2620-26-1002';
 export const ALWOOD_MIDDLE_HIGH = '28-037-2250-26-0001';
 export const AVON_ELEMENTARY = '33-048-2760-26-2002';
 export const DISTRICT_59 = '05-016-0590-04';
+
+export const FIVE_HIGH_SCHOOLS = [
+  ELK_GROVE_HIGH,
+  ROLLING_MEADOWS_HIGH,
+  HERSEY_HIGH,
+  PROSPECT_HIGH,
+  BUFFALO_GROVE_HIGH,
+];
 
 export const PAGES = [
   { name: 'home', path: '/' },
@@ -24,6 +35,7 @@ export const PAGES = [
   { name: 'dually designated school', path: `/school/${ALWOOD_MIDDLE_HIGH}` },
   { name: 'school without test scores', path: `/school/${AVON_ELEMENTARY}` },
   { name: 'compare', path: '/compare' },
+  { name: 'comparison of five schools', path: `/compare?schools=${FIVE_HIGH_SCHOOLS.join(',')}` },
   { name: 'top scores', path: '/top-scores' },
   { name: 'how this works', path: '/how-this-works' },
   { name: 'not found', path: '/no-such-page' },
