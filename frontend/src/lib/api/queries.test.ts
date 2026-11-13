@@ -11,6 +11,11 @@ import {
   stateBenchmarkQueryKey,
   similarSchoolsQueryKey,
   getTopScores,
+  getSchools,
+  schoolListQueryKey,
+  districtQueryKey,
+  districtsQueryKey,
+  citiesQueryKey,
 } from './queries';
 
 vi.mock('./client', () => ({
@@ -55,6 +60,41 @@ describe('Query Keys', () => {
       '05-016-2140-17-0002',
       'act',
     ]);
+  });
+});
+
+describe('browse query keys', () => {
+  it('keys a school list by its filters', () => {
+    expect(schoolListQueryKey({ level: 'high', county: 'Cook' })).toEqual([
+      'schools',
+      { level: 'high', county: 'Cook' },
+    ]);
+  });
+
+  it('keys a district by its id and the place lists by name', () => {
+    expect(districtQueryKey('05-016-2140-17')).toEqual(['district', '05-016-2140-17']);
+    expect(districtsQueryKey()).toEqual(['districts']);
+    expect(citiesQueryKey()).toEqual(['cities']);
+  });
+});
+
+describe('getSchools', () => {
+  it('requests one page of the filtered list with its sort order', async () => {
+    mockedGet.mockResolvedValue({ data: { results: [], total: 0 } });
+
+    const payload = await getSchools({ level: 'high', city: 'Elk Grove Village', sort: 'score' }, 25);
+
+    expect(mockedGet).toHaveBeenCalledWith('/api/schools', {
+      params: {
+        level: 'high',
+        city: 'Elk Grove Village',
+        sort: 'score',
+        order: 'desc',
+        limit: 25,
+        offset: 25,
+      },
+    });
+    expect(payload.total).toBe(0);
   });
 });
 

@@ -18,15 +18,21 @@ function renderAt(path: string) {
   return within(screen.getByRole('navigation', { name: 'Primary' }));
 }
 
+function renderedCurrent(nav: ReturnType<typeof within>) {
+  return nav.getAllByRole('link').filter((link) => link.hasAttribute('aria-current'));
+}
+
 describe('BottomTabBar', () => {
   beforeEach(() => {
     localStorage.clear();
   });
 
-  it('links to Search, Compare and Top scores', () => {
+  it('links to Search, Browse, Compare and Top scores', () => {
     const nav = renderAt('/');
 
+    expect(nav.getAllByRole('link')).toHaveLength(4);
     expect(nav.getByRole('link', { name: 'Search' })).toHaveAttribute('href', '/');
+    expect(nav.getByRole('link', { name: 'Browse' })).toHaveAttribute('href', '/browse');
     expect(nav.getByRole('link', { name: 'Compare' })).toHaveAttribute('href', '/compare');
     expect(nav.getByRole('link', { name: 'Top scores' })).toHaveAttribute('href', '/top-scores');
   });
@@ -51,6 +57,13 @@ describe('BottomTabBar', () => {
     const nav = renderAt('/search?q=elk');
 
     expect(nav.getByRole('link', { name: 'Search' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('keeps Browse current on a district page', () => {
+    const nav = renderAt('/district/05-016-2140-17');
+
+    expect(nav.getByRole('link', { name: 'Browse' })).toHaveAttribute('aria-current', 'page');
+    expect(renderedCurrent(nav)).toHaveLength(1);
   });
 
   it('marks no tab on a school page', () => {

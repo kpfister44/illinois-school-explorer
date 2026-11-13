@@ -1,7 +1,8 @@
 // ABOUTME: Helpers for showing a school's benchmarks
-// ABOUTME: Names the schools compared with, words a district comparison and builds the state average series
+// ABOUTME: Names the schools compared with and each test's score, words a district comparison and builds the state average series
 
 import type { Assessment, BenchmarkLevel, StateBenchmark } from '@/lib/api/types';
+import type { MetricKind } from '@/lib/format';
 import { yearSeries, type YearValue } from '@/lib/history';
 
 const LEVEL_SCHOOLS: Record<BenchmarkLevel, string> = {
@@ -15,6 +16,12 @@ const LEVEL_SCHOOLS: Record<BenchmarkLevel, string> = {
 export const ASSESSMENT_SCALES: Record<Assessment, [number, number]> = {
   act: [10, 32],
   iar: [0, 100],
+};
+
+// How each test's score is formatted and named in a list of schools
+export const ASSESSMENT_SCORES: Record<Assessment, { kind: MetricKind; name: string; caption: string }> = {
+  act: { kind: 'score', name: 'ACT', caption: 'ACT average' },
+  iar: { kind: 'percentage', name: 'IAR proficiency', caption: 'IAR proficient' },
 };
 
 export type DistrictStanding = 'above' | 'below' | 'the same as';

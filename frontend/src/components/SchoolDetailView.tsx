@@ -1,7 +1,7 @@
 // ABOUTME: SchoolDetailView component for detailed school display
 // ABOUTME: One scroll: facts, state designation, test scores with their yardsticks, history, students and enrollment
 
-import type { ReactNode } from 'react';
+import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus, Minus } from 'lucide-react';
@@ -14,6 +14,7 @@ import Facts from '@/components/Facts';
 import HistoryChart from '@/components/HistoryChart';
 import HistorySheet from '@/components/HistorySheet';
 import HistorySparkline from '@/components/HistorySparkline';
+import Section from '@/components/Section';
 import SectionLinks from '@/components/SectionLinks';
 import SimilarSchoolsSheet from '@/components/SimilarSchoolsSheet';
 import { useStateBenchmark } from '@/lib/api/queries';
@@ -32,6 +33,7 @@ import {
   yearSeries,
   type YearValue,
 } from '@/lib/history';
+import { districtId, listPath } from '@/lib/schoolList';
 import { CURRENT_YEAR, formatTrendValue } from '@/lib/trendUtils';
 import type {
   Assessment,
@@ -63,20 +65,6 @@ const IAR_SUBJECTS = [
 
 function formatOrNotReported(value: number | null | undefined, kind: MetricKind): string {
   return value == null ? NOT_REPORTED : formatMetric(value, kind);
-}
-
-function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
-  return (
-    <section id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-16 space-y-4">
-      <h2
-        id={`${id}-heading`}
-        className="border-t-2 border-foreground pt-2 font-sans text-xs font-bold uppercase tracking-widest text-muted-foreground"
-      >
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
 }
 
 function Headline({ value, caption }: { value: string; caption: string }) {
@@ -429,9 +417,18 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
     }
   };
 
-  const location = [school.city, school.district, school.county && `${school.county} County`]
-    .filter(Boolean)
-    .join(' · ');
+  const placeLinkClass = 'text-link underline underline-offset-4';
+  const location = [
+    <Link key="city" to={listPath({ city: school.city })} className={placeLinkClass}>
+      {school.city}
+    </Link>,
+    school.district && (
+      <Link key="district" to={`/district/${districtId(school.rcdts)}`} className={placeLinkClass}>
+        {school.district}
+      </Link>
+    ),
+    school.county && `${school.county} County`,
+  ].filter(Boolean);
 
   return (
     <div className="space-y-6">
@@ -442,7 +439,14 @@ export default function SchoolDetailView({ school }: SchoolDetailViewProps) {
         <div className="space-y-6">
           <header className="space-y-1">
             <h1 className="text-3xl font-medium leading-tight lg:text-4xl">{school.display_name}</h1>
-            <p className="text-muted-foreground">{location}</p>
+            <p data-testid="school-location" className="text-muted-foreground">
+              {location.map((part, index) => (
+                <Fragment key={index}>
+                  {index > 0 && ' · '}
+                  {part}
+                </Fragment>
+              ))}
+            </p>
             {school.display_name !== school.school_name && (
               <p className="text-sm text-muted-foreground">Official name: {school.school_name}</p>
             )}

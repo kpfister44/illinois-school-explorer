@@ -1,7 +1,8 @@
 // ABOUTME: TanStack Query hooks for backend API
-// ABOUTME: Provides hooks for search, school detail, comparison, stats and benchmarks
+// ABOUTME: Provides hooks for search, school lists, school detail, districts, comparison, stats and benchmarks
 
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { apiParams, type SchoolListFilters } from '@/lib/schoolList';
 import { apiClient } from './client';
 import type {
   SearchResponse,
@@ -10,7 +11,11 @@ import type {
   Assessment,
   BenchmarkedMetric,
   BenchmarkLevel,
+  CityListResponse,
+  DistrictDetail,
+  DistrictListResponse,
   SchoolLevel,
+  SchoolListResponse,
   SimilarSchoolsResponse,
   StateBenchmark,
   StatsResponse,
@@ -50,6 +55,23 @@ export const topScoresQueryKey = (assessment: Assessment, level: SchoolLevel, li
   level,
   limit,
 ];
+
+export const schoolListQueryKey = (filters: SchoolListFilters) => ['schools', filters];
+export const districtQueryKey = (id: string) => ['district', id];
+export const districtsQueryKey = () => ['districts'];
+export const citiesQueryKey = () => ['cities'];
+
+export const SCHOOL_LIST_PAGE_SIZE = 25;
+
+export async function getSchools(
+  filters: SchoolListFilters,
+  offset: number
+): Promise<SchoolListResponse> {
+  const { data } = await apiClient.get<SchoolListResponse>('/api/schools', {
+    params: { ...apiParams(filters), limit: SCHOOL_LIST_PAGE_SIZE, offset },
+  });
+  return data;
+}
 
 export async function getTopScores(params: {
   assessment: Assessment;
@@ -144,6 +166,57 @@ export const useSimilarSchools = (rcdts: string, assessment: Assessment, enabled
       return data;
     },
     enabled,
+    staleTime: 60 * 60 * 1000, // 1 hour
+  });
+};
+
+// A filtered list of schools, loaded a page at a time
+export const useSchoolList = (filters: SchoolListFilters) => {
+  return useInfiniteQuery({
+    queryKey: schoolListQueryKey(filters),
+    queryFn: ({ pageParam }) => getSchools(filters, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) => {
+      const loaded = pages.reduce((count, page) => count + page.results.length, 0);
+      return loaded < lastPage.total ? loaded : undefined;
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+// A district's summary and its schools by level
+export const useDistrict = (id: string) => {
+  return useQuery({
+    queryKey: districtQueryKey(id),
+    queryFn: async () => {
+      const { data } = await apiClient.get<DistrictDetail>(`/api/districts/${id}`);
+      return data;
+    },
+    enabled: !!id,
+    staleTime: 60 * 60 * 1000, // 1 hour
+  });
+};
+
+// Every district with its county and number of schools
+export const useDistricts = () => {
+  return useQuery({
+    queryKey: districtsQueryKey(),
+    queryFn: async () => {
+      const { data } = await apiClient.get<DistrictListResponse>('/api/districts');
+      return data.districts;
+    },
+    staleTime: 60 * 60 * 1000, // 1 hour
+  });
+};
+
+// Every city and town with its number of schools
+export const useCities = () => {
+  return useQuery({
+    queryKey: citiesQueryKey(),
+    queryFn: async () => {
+      const { data } = await apiClient.get<CityListResponse>('/api/cities');
+      return data.cities;
+    },
     staleTime: 60 * 60 * 1000, // 1 hour
   });
 };

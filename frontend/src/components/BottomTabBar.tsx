@@ -1,12 +1,12 @@
 // ABOUTME: Phone navigation fixed to the bottom of the screen
-// ABOUTME: Tabs for Search, Compare (with the selected-school count) and Top scores
+// ABOUTME: Tabs for Search, Browse, Compare (with the selected-school count) and Top scores
 
 import { Link, useLocation } from 'react-router-dom';
 import CompareCount from '@/components/CompareCount';
-import { COMPARE, SEARCH, TOP_SCORES } from '@/lib/destinations';
+import { BROWSE, COMPARE, SEARCH, TOP_SCORES } from '@/lib/destinations';
 import { cn } from '@/lib/utils';
 
-const TABS = [SEARCH, COMPARE, TOP_SCORES];
+const TABS = [SEARCH, BROWSE, COMPARE, TOP_SCORES];
 
 export default function BottomTabBar() {
   const { pathname } = useLocation();
@@ -16,7 +16,7 @@ export default function BottomTabBar() {
       aria-label="Primary"
       className="fixed inset-x-0 bottom-0 z-40 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <ul className="grid grid-cols-3">
+      <ul className="grid grid-cols-4">
         {TABS.map((tab) => {
           const isCurrent = tab.isCurrent(pathname);
           const Icon = tab.icon;

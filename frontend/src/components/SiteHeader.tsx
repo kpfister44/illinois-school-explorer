@@ -4,14 +4,15 @@
 import { Link, useLocation } from 'react-router-dom';
 import CompareCount from '@/components/CompareCount';
 import SearchBar from '@/components/SearchBar';
-import { COMPARE, TOP_SCORES } from '@/lib/destinations';
+import { BROWSE, COMPARE, TOP_SCORES } from '@/lib/destinations';
+import { LIST_PATH } from '@/lib/schoolList';
 import { cn } from '@/lib/utils';
 
-const NAV_LINKS = [COMPARE, TOP_SCORES];
+const NAV_LINKS = [BROWSE, COMPARE, TOP_SCORES];
 
 export default function SiteHeader() {
   const { pathname } = useLocation();
-  const pageHasOwnSearchField = pathname === '/';
+  const pageHasOwnSearchField = pathname === '/' || pathname === LIST_PATH;
 
   return (
     <header className="border-b bg-card">

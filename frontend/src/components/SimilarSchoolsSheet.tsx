@@ -13,8 +13,8 @@ import {
 } from '@/components/ui/sheet';
 import { useSimilarSchools } from '@/lib/api/queries';
 import type { Assessment, BenchmarkLevel } from '@/lib/api/types';
-import { describeLevel } from '@/lib/benchmarks';
-import { formatMetric, type MetricKind } from '@/lib/format';
+import { ASSESSMENT_SCORES, describeLevel } from '@/lib/benchmarks';
+import { formatMetric } from '@/lib/format';
 
 interface SimilarSchoolsSheetProps {
   rcdts: string;
@@ -22,11 +22,6 @@ interface SimilarSchoolsSheetProps {
   level: BenchmarkLevel;
   children: ReactNode;
 }
-
-const SCORES: Record<Assessment, { kind: MetricKind; name: string; caption: string }> = {
-  act: { kind: 'score', name: 'ACT', caption: 'ACT average' },
-  iar: { kind: 'percentage', name: 'IAR proficiency', caption: 'IAR proficient' },
-};
 
 export default function SimilarSchoolsSheet({
   rcdts,
@@ -36,7 +31,7 @@ export default function SimilarSchoolsSheet({
 }: SimilarSchoolsSheetProps) {
   const [open, setOpen] = useState(false);
   const { data, isLoading, isError } = useSimilarSchools(rcdts, assessment, open);
-  const score = SCORES[assessment];
+  const score = ASSESSMENT_SCORES[assessment];
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

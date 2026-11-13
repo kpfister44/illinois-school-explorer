@@ -1,5 +1,5 @@
 // ABOUTME: Context for managing school comparison state
-// ABOUTME: Handles add/remove operations and localStorage persistence
+// ABOUTME: Handles add, remove and replace operations and localStorage persistence
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
@@ -7,6 +7,7 @@ interface ComparisonContextType {
   comparisonList: string[];
   addToComparison: (rcdts: string) => void;
   removeFromComparison: (rcdts: string) => void;
+  replaceComparison: (rcdtsList: string[]) => void;
   clearComparison: () => void;
   isInComparison: (rcdts: string) => boolean;
   canAddMore: boolean;
@@ -44,6 +45,10 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
     setComparisonList((prev) => prev.filter((id) => id !== rcdts));
   };
 
+  const replaceComparison = (rcdtsList: string[]) => {
+    setComparisonList(rcdtsList.slice(0, MAX_SCHOOLS));
+  };
+
   const clearComparison = () => {
     setComparisonList([]);
   };
@@ -60,6 +65,7 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
         comparisonList,
         addToComparison,
         removeFromComparison,
+        replaceComparison,
         clearComparison,
         isInComparison,
         canAddMore,

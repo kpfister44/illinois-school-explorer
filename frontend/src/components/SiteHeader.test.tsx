@@ -2,7 +2,7 @@
 // ABOUTME: Verifies the site title, desktop navigation, and the header search field
 
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { ComparisonProvider } from '@/contexts/ComparisonContext';
@@ -39,10 +39,11 @@ describe('SiteHeader', () => {
     expect(screen.getByRole('link', { name: 'Illinois School Explorer' })).toHaveAttribute('href', '/');
   });
 
-  it('links to Compare and Top scores, without a Search link', () => {
+  it('links to Browse, Compare and Top scores, without a Search link', () => {
     renderAt('/top-scores');
     const nav = within(screen.getByRole('navigation', { name: 'Primary' }));
 
+    expect(nav.getByRole('link', { name: 'Browse' })).toHaveAttribute('href', '/browse');
     expect(nav.getByRole('link', { name: 'Compare' })).toHaveAttribute('href', '/compare');
     expect(nav.getByRole('link', { name: 'Top scores' })).toHaveAttribute('aria-current', 'page');
     expect(nav.queryByRole('link', { name: 'Search' })).not.toBeInTheDocument();
@@ -59,12 +60,15 @@ describe('SiteHeader', () => {
   it('has a search field on pages other than Home', () => {
     renderAt('/school/05-016-2140-17-0002');
 
-    expect(screen.getByPlaceholderText(/search for schools/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('School, city or district')).toBeInTheDocument();
   });
 
-  it('leaves the search field to the Home page itself', () => {
-    renderAt('/');
+  it('leaves the search field to the Home and results pages themselves', () => {
+    for (const path of ['/', '/search?q=elk']) {
+      renderAt(path);
 
-    expect(screen.queryByPlaceholderText(/search for schools/i)).not.toBeInTheDocument();
+      expect(screen.queryByPlaceholderText('School, city or district')).not.toBeInTheDocument();
+      cleanup();
+    }
   });
 });

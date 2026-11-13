@@ -212,3 +212,62 @@ export interface TopScoreEntry {
 export interface TopScoresResponse {
   results: TopScoreEntry[];
 }
+
+export interface SchoolListItem {
+  rcdts: string;
+  school_name: string;
+  display_name: string;
+  city: string;
+  county: string | null;
+  district: string | null;
+  district_id: string;
+  level: BenchmarkLevel;
+  grades_served: string | null;
+  enrollment: number | null;
+  low_income_percentage: number | null;
+  designation: Designation | null;
+  assessment: Assessment;
+  score: number | null;
+}
+
+export interface SchoolListResponse {
+  results: SchoolListItem[];
+  total: number;
+}
+
+export interface DistrictLevel {
+  level: BenchmarkLevel;
+  assessment: Assessment;
+  state_average: number | null;
+  district_average: number | null;
+  schools: SchoolListItem[];
+}
+
+export interface DistrictDetail {
+  id: string;
+  name: string | null;
+  county: string | null;
+  school_count: number;
+  enrollment: number;
+  levels: DistrictLevel[];
+}
+
+export interface DistrictSummary {
+  id: string;
+  name: string | null;
+  county: string | null;
+  school_count: number;
+}
+
+export interface DistrictListResponse {
+  districts: DistrictSummary[];
+}
+
+export interface CitySummary {
+  name: string;
+  school_count: number;
+}
+
+export interface CityListResponse {
+  cities: CitySummary[];
+}

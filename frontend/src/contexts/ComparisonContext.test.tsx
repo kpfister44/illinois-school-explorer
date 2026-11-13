@@ -31,6 +31,22 @@ describe('ComparisonContext', () => {
     expect(result.current.comparisonList).toEqual(['12-345-6789-01-0001']);
   });
 
+  it('replaces the list with a set of schools, keeping at most five', () => {
+    const { result } = renderHook(() => useComparison(), {
+      wrapper: ComparisonProvider,
+    });
+
+    act(() => {
+      result.current.addToComparison('old-school');
+    });
+    act(() => {
+      result.current.replaceComparison(['a', 'b', 'c', 'd', 'e', 'f']);
+    });
+
+    expect(result.current.comparisonList).toEqual(['a', 'b', 'c', 'd', 'e']);
+    expect(JSON.parse(localStorage.getItem('school-comparison')!)).toEqual(['a', 'b', 'c', 'd', 'e']);
+  });
+
   it('removes school from comparison list', () => {
     const { result } = renderHook(() => useComparison(), {
       wrapper: ComparisonProvider,

@@ -5,7 +5,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { act } from 'react';
@@ -64,7 +64,7 @@ describe('SearchBar', () => {
   it('renders search input with placeholder', () => {
     render(<SearchBar />, { wrapper: createWrapper() });
 
-    const input = screen.getByPlaceholderText(/search for schools/i);
+    const input = screen.getByPlaceholderText('School, city or district');
     expect(input).toBeInTheDocument();
   });
 
@@ -72,7 +72,7 @@ describe('SearchBar', () => {
     const user = userEvent.setup();
     render(<SearchBar />, { wrapper: createWrapper() });
 
-    const input = screen.getByPlaceholderText(/search for schools/i);
+    const input = screen.getByPlaceholderText('School, city or district');
     await user.type(input, 'elk grove');
 
     expect(input).toHaveValue('elk grove');
@@ -82,7 +82,7 @@ describe('SearchBar', () => {
     const user = userEvent.setup();
     render(<SearchBar />, { wrapper: createWrapper() });
 
-    const input = screen.getByPlaceholderText(/search for schools/i);
+    const input = screen.getByPlaceholderText('School, city or district');
     await user.type(input, 'elk');
 
     await waitFor(
@@ -99,7 +99,7 @@ describe('SearchBar', () => {
     const user = userEvent.setup();
     render(<SearchBar />, { wrapper: createWrapper() });
 
-    const input = screen.getByPlaceholderText(/search for schools/i);
+    const input = screen.getByPlaceholderText('School, city or district');
     await user.type(input, 'e');
 
     await act(async () => {
@@ -113,7 +113,7 @@ describe('SearchBar', () => {
     const user = userEvent.setup();
     render(<SearchBar />, { wrapper: createWrapper() });
 
-    const input = screen.getByPlaceholderText(/search for schools/i);
+    const input = screen.getByPlaceholderText('School, city or district');
     await user.type(input, 'elk');
     await screen.findByText('Elk Grove High School');
 
@@ -137,9 +137,83 @@ describe('SearchBar', () => {
       { wrapper: createWrapper() }
     );
 
-    await user.type(screen.getByPlaceholderText(/search for schools/i), 'elk');
+    await user.type(screen.getByPlaceholderText('School, city or district'), 'elk');
     await user.click(await screen.findByText('Elk Grove High School'));
 
     expect(screen.getByText('School page')).toBeInTheDocument();
   });
+
+  it('opens the results list for the typed words when Enter is pressed', async () => {
+    const user = userEvent.setup();
+    render(<SearchBarWithResultsPage />, { wrapper: createWrapper() });
+
+    await user.type(screen.getByPlaceholderText('School, city or district'), 'elk grove{Enter}');
+
+    expect(screen.getByText('Results page ?q=elk+grove')).toBeInTheDocument();
+  });
+
+  it('opens the results list when the suggestions have loaded and Enter is pressed', async () => {
+    const user = userEvent.setup();
+    render(<SearchBarWithResultsPage />, { wrapper: createWrapper() });
+
+    await user.type(screen.getByPlaceholderText('School, city or district'), 'elk');
+    await screen.findByText('Elk Grove High School');
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByText('Results page ?q=elk')).toBeInTheDocument();
+  });
+
+  it('offers every result above the suggested schools', async () => {
+    const user = userEvent.setup();
+    render(<SearchBarWithResultsPage />, { wrapper: createWrapper() });
+
+    await user.type(screen.getByPlaceholderText('School, city or district'), 'elk');
+    await screen.findByText('Elk Grove High School');
+
+    const options = screen.getAllByRole('option');
+    expect(options[0]).toHaveTextContent('See all results for “elk”');
+    await user.click(options[0]);
+
+    expect(screen.getByText('Results page ?q=elk')).toBeInTheDocument();
+  });
+
+  it('does not open the results list for a single character', async () => {
+    const user = userEvent.setup();
+    render(<SearchBarWithResultsPage />, { wrapper: createWrapper() });
+
+    await user.type(screen.getByPlaceholderText('School, city or district'), 'e{Enter}');
+
+    expect(screen.queryByText(/Results page/)).not.toBeInTheDocument();
+  });
+
+  it('says when no school matches', async () => {
+    const user = userEvent.setup();
+    render(<SearchBar />, { wrapper: createWrapper() });
+
+    await user.type(screen.getByPlaceholderText('School, city or district'), 'zzz');
+
+    expect(await screen.findByText('No schools found.')).toBeInTheDocument();
+  });
+
+  it('starts with the words it is given', () => {
+    render(<SearchBar defaultQuery="elk grove" />, { wrapper: createWrapper() });
+
+    expect(screen.getByPlaceholderText('School, city or district')).toHaveValue('elk grove');
+  });
 });
+
+function ResultsPage() {
+  return <div>Results page {useLocation().search}</div>;
+}
+
+function SearchBarWithResultsPage() {
+  return (
+    <>
+      <SearchBar />
+      <Routes>
+        <Route path="/search" element={<ResultsPage />} />
+        <Route path="*" element={null} />
+      </Routes>
+    </>
+  );
+}

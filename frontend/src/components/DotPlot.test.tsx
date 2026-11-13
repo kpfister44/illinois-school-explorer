@@ -3,6 +3,7 @@
 
 import { render, screen, within } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import DotPlot from './DotPlot';
 
 const ROWS = [
@@ -72,5 +73,28 @@ describe('DotPlot', () => {
 
     const dots = [...container.querySelectorAll('circle')].map((dot) => dot.getAttribute('cx'));
     expect(dots).toEqual(['0.0%', '100.0%']);
+  });
+
+  it('links a row to its page when given one', () => {
+    render(
+      <MemoryRouter>
+        <DotPlot
+          label="ACT average by school"
+          rows={[
+            { label: 'John Hersey High School', value: 23.9, to: '/school/05-016-2140-17-0005' },
+            { label: 'District average', value: 20.5 },
+          ]}
+          kind="score"
+          scale={[10, 30]}
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('link', { name: 'John Hersey High School' })).toHaveAttribute(
+      'href',
+      '/school/05-016-2140-17-0005'
+    );
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    expect(screen.getByText('District average')).toBeInTheDocument();
   });
 });

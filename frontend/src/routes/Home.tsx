@@ -1,47 +1,83 @@
 // ABOUTME: Home page component
-// ABOUTME: Landing page with search functionality
+// ABOUTME: Landing page with the search field, level chips and links for browsing by district, town or top scores
 
 import { Link } from 'react-router-dom';
-import { ArrowUpRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
+import ChipLink from '@/components/ChipLink';
 import SearchBar from '@/components/SearchBar';
 import SchoolCount from '@/components/SchoolCount';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useStats } from '@/lib/api/queries';
+import { formatMetric } from '@/lib/format';
+import { listPath } from '@/lib/schoolList';
+
+const LEVELS = [
+  { label: 'High schools', level: 'high' },
+  { label: 'Middle schools', level: 'middle' },
+  { label: 'Elementary schools', level: 'elementary' },
+] as const;
 
 export default function Home() {
+  const { data: stats } = useStats();
+
+  const browseLinks = [
+    {
+      to: '/browse?by=district',
+      label: 'By district',
+      detail: stats && `${formatMetric(stats.districts, 'count')} districts`,
+    },
+    {
+      to: '/browse?by=city',
+      label: 'By city or town',
+      detail: stats && `${formatMetric(stats.cities, 'count')} places`,
+    },
+    { to: '/top-scores', label: 'Top scores', detail: 'ACT and IAR rankings' },
+  ];
+
   return (
-    <div className="flex flex-col items-center justify-center py-6 min-h-screen">
-      <div className="max-w-2xl text-center">
-        <h2 className="text-4xl font-medium tracking-tight mb-4">
-          Search for Illinois Schools
+    <div className="mx-auto max-w-xl space-y-6 py-6">
+      <h1 className="text-4xl font-medium leading-tight tracking-tight">
+        Look up any Illinois public school
+      </h1>
+      <SearchBar />
+
+      <nav aria-label="School level">
+        <ul role="list" className="flex flex-wrap gap-2">
+          {LEVELS.map(({ label, level }) => (
+            <li key={level}>
+              <ChipLink to={listPath({ level })}>{label}</ChipLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <section aria-labelledby="browse-heading">
+        <h2
+          id="browse-heading"
+          className="border-t-2 border-foreground pt-2 font-sans text-xs font-bold uppercase tracking-widest text-muted-foreground"
+        >
+          Browse
         </h2>
-        <p className="text-lg text-muted-foreground mb-4">
-          Enter a school name or city to view enrollment, test scores, and demographics.
-          Compare multiple schools side-by-side.
-        </p>
-        <div className="mb-8">
-          <SchoolCount />
-        </div>
-        <div className="w-full max-w-xl mx-auto">
-          <SearchBar />
-        </div>
-        <Card className="mt-8 w-full max-w-xl mx-auto text-left">
-          <CardHeader>
-            <CardTitle className="text-2xl">Explore Top 100 School Scores</CardTitle>
-            <p className="text-muted-foreground">
-              See the highest-performing Illinois schools ranked by ACT and IAR results.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <Button asChild size="lg" className="gap-2">
-              <Link to="/top-scores">
-                Explore Top 100 Scores
-                <ArrowUpRight className="h-4 w-4" />
+        <ul role="list">
+          {browseLinks.map((link) => (
+            <li key={link.to} className="border-b border-border">
+              <Link
+                to={link.to}
+                className="flex min-h-14 items-center justify-between gap-3 py-2 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <span>
+                  <span className="block font-semibold">{link.label}</span>{' '}
+                  {link.detail && (
+                    <span className="block text-sm text-muted-foreground">{link.detail}</span>
+                  )}
+                </span>
+                <ChevronRight className="h-5 w-5 flex-none text-muted-foreground" aria-hidden="true" />
               </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <SchoolCount />
     </div>
   );
 }

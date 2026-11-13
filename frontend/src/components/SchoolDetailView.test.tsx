@@ -255,7 +255,30 @@ describe('SchoolDetailView header', () => {
     renderWithProviders(<SchoolDetailView school={highSchool} />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'Elk Grove High School' })).toBeInTheDocument();
-    expect(screen.getByText('Elk Grove Village · Township HSD 214 · Cook County')).toBeInTheDocument();
+    expect(screen.getByTestId('school-location')).toHaveTextContent(
+      'Elk Grove Village · Township HSD 214 · Cook County'
+    );
+  });
+
+  it('links the city to its schools and the district to its page', () => {
+    renderWithProviders(<SchoolDetailView school={highSchool} />);
+
+    expect(screen.getByRole('link', { name: 'Elk Grove Village' })).toHaveAttribute(
+      'href',
+      '/search?city=Elk+Grove+Village'
+    );
+    expect(screen.getByRole('link', { name: 'Township HSD 214' })).toHaveAttribute(
+      'href',
+      '/district/05-016-2140-17'
+    );
+  });
+
+  it('leaves out a district or county that is not published', () => {
+    renderWithProviders(
+      <SchoolDetailView school={{ ...highSchool, district: null, county: null }} />
+    );
+
+    expect(screen.getByTestId('school-location')).toHaveTextContent(/^Elk Grove Village$/);
   });
 
   it('shows the official name when it differs from the display name', () => {

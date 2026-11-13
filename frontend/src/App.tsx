@@ -13,6 +13,8 @@ import { useComparisonSchools } from '@/hooks/useComparisonSchools';
 import Home from './routes/Home';
 import SearchResults from './routes/SearchResults';
 import SchoolDetail from './routes/SchoolDetail';
+import District from './routes/District';
+import Browse from './routes/Browse';
 import Compare from './routes/Compare';
 import TopScores from './routes/TopScores';
 import HowThisWorks from './routes/HowThisWorks';
@@ -39,6 +41,8 @@ function AppRoutes() {
             <Route path="/" element={<Home />} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/school/:rcdts" element={<SchoolDetail />} />
+            <Route path="/browse" element={<Browse />} />
+            <Route path="/district/:districtId" element={<District />} />
             <Route path="/compare" element={<Compare />} />
             <Route path="/top-scores" element={<TopScores />} />
             <Route path="/how-this-works" element={<HowThisWorks />} />

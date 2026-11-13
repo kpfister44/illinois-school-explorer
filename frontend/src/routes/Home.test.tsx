@@ -1,8 +1,8 @@
 // ABOUTME: Unit tests for Home page component
-// ABOUTME: Verifies welcome message and SearchBar render correctly
+// ABOUTME: Verifies the headline, search field, level chips, browse links and school count
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Home from './Home';
@@ -21,6 +21,15 @@ const createWrapper = () => {
   );
 };
 
+function mockStats(result: Partial<ReturnType<typeof queries.useStats>>) {
+  vi.spyOn(queries, 'useStats').mockReturnValue({
+    isLoading: false,
+    isError: false,
+    error: null,
+    ...result,
+  } as unknown as ReturnType<typeof queries.useStats>);
+}
+
 describe('Home', () => {
   beforeAll(() => {
     global.ResizeObserver = class ResizeObserver {
@@ -31,42 +40,74 @@ describe('Home', () => {
   });
 
   beforeEach(() => {
-    vi.spyOn(queries, 'useSearch').mockReturnValue({
-      data: { results: [], total: 3827 },
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as any);
-    vi.spyOn(queries, 'useStats').mockReturnValue({
-      data: { schools: 3828, districts: 864, cities: 845 },
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as unknown as ReturnType<typeof queries.useStats>);
+    mockStats({ data: { schools: 3828, districts: 864, cities: 845 } });
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('renders welcome message', () => {
+  it('opens with the headline', () => {
     render(<Home />, { wrapper: createWrapper() });
-    expect(screen.getByText(/search for illinois schools/i)).toBeInTheDocument();
-  });
 
-  it('renders search instruction', () => {
-    render(<Home />, { wrapper: createWrapper() });
-    expect(screen.getByText(/enter a school name or city/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Look up any Illinois public school' })
+    ).toBeInTheDocument();
   });
 
   it('renders SearchBar component', () => {
     render(<Home />, { wrapper: createWrapper() });
-    expect(screen.getByPlaceholderText(/search for schools/i)).toBeInTheDocument();
+
+    expect(screen.getByPlaceholderText('School, city or district')).toBeInTheDocument();
   });
 
-  it('renders top scores CTA with link', () => {
+  it('links each level to its list of schools', () => {
     render(<Home />, { wrapper: createWrapper() });
-    const cta = screen.getByRole('link', { name: /Explore Top 100 Scores/i });
-    expect(cta).toHaveAttribute('href', '/top-scores');
+    const levels = within(screen.getByRole('navigation', { name: 'School level' }));
+
+    expect(levels.getByRole('link', { name: 'High schools' })).toHaveAttribute(
+      'href',
+      '/search?level=high'
+    );
+    expect(levels.getByRole('link', { name: 'Middle schools' })).toHaveAttribute(
+      'href',
+      '/search?level=middle'
+    );
+    expect(levels.getByRole('link', { name: 'Elementary schools' })).toHaveAttribute(
+      'href',
+      '/search?level=elementary'
+    );
+  });
+
+  it('links to districts, cities and top scores with how many there are', () => {
+    render(<Home />, { wrapper: createWrapper() });
+    const browse = within(screen.getByRole('region', { name: 'Browse' }));
+
+    const districts = browse.getByRole('link', { name: /By district/ });
+    expect(districts).toHaveAttribute('href', '/browse?by=district');
+    expect(districts).toHaveTextContent('864 districts');
+    const cities = browse.getByRole('link', { name: /By city or town/ });
+    expect(cities).toHaveAttribute('href', '/browse?by=city');
+    expect(cities).toHaveTextContent('845 places');
+    expect(browse.getByRole('link', { name: /Top scores/ })).toHaveAttribute('href', '/top-scores');
+  });
+
+  it('keeps the browse links while the counts are loading', () => {
+    mockStats({ data: undefined, isLoading: true });
+
+    render(<Home />, { wrapper: createWrapper() });
+    const browse = within(screen.getByRole('region', { name: 'Browse' }));
+
+    expect(browse.getByRole('link', { name: 'By district' })).toHaveAttribute(
+      'href',
+      '/browse?by=district'
+    );
+    expect(browse.queryByText(/districts$/)).not.toBeInTheDocument();
+  });
+
+  it('shows how many schools the site covers', () => {
+    render(<Home />, { wrapper: createWrapper() });
+
+    expect(screen.getByText('3,828 schools available')).toBeInTheDocument();
   });
 });

@@ -1,7 +1,7 @@
 // ABOUTME: The site's main destinations, shared by the header navigation and the phone tab bar
 // ABOUTME: Each destination knows which pages it is current for
 
-import { Scale, Search, Star, type LucideIcon } from 'lucide-react';
+import { List, Scale, Search, Star, type LucideIcon } from 'lucide-react';
 
 export interface Destination {
   to: string;
@@ -15,6 +15,13 @@ export const SEARCH: Destination = {
   label: 'Search',
   icon: Search,
   isCurrent: (pathname) => pathname === '/' || pathname === '/search',
+};
+
+export const BROWSE: Destination = {
+  to: '/browse',
+  label: 'Browse',
+  icon: List,
+  isCurrent: (pathname) => pathname === '/browse' || pathname.startsWith('/district/'),
 };
 
 export const COMPARE: Destination = {
