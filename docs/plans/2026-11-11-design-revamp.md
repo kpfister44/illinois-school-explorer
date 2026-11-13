@@ -289,6 +289,14 @@ Each phase ships on its own. All work follows the TDD and testing rules in the r
 - `display_name` leaves "Schl" unexpanded ("Devry Advantage Academy High Schl").
 - `npm run lint` now reports 7 errors, all in files that predate phase 3.
 
+**Notes from phase 6:**
+- The Compare URL is `/compare?schools=<rcdts>,...` (`comparePath`, `readCompareList` in `frontend/src/lib/compareList.ts`). On the Compare page the URL leads and `ComparisonContext` follows; actions there change the URL only, so the desktop comparison bar is hidden on that page. The district page's "Compare all" is now a link to that URL.
+- `DotPlot` rows take a `series` colour and a `null` value ("Not reported"). `DotTrack` draws several dots on one scale; `lib/series.ts` holds the series colour classes, shared with `CompositionBar`.
+- Compare shows `display_name`. The table's highest test result in a row is bold, replacing the green cell from phase 1.
+- Compare shows no benchmarks or "most schools" band yet, though `/api/schools/compare` returns `benchmarks` for each school.
+- Enrollment is plotted from 0 to the largest school rounded up to 500; test scores use `ASSESSMENT_SCALES`; shares use 0 to 100.
+- `framer-motion` is removed. `npm run lint` still reports the same 7 errors in files that predate phase 3.
+
 ### Phase 7: Top scores (small)
 - Context columns, designation label, region filter, rank lookup, URL state, accurate explainer.
 - **Done when:** enrollment and low-income share are visible on phones for every row.

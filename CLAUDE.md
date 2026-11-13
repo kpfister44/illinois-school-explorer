@@ -246,7 +246,8 @@ Playwright starts the frontend dev server itself but not the backend: start the 
 - `frontend/src/components/SiteHeader.tsx`, `BottomTabBar.tsx` — desktop header navigation and phone tab bar; destinations live in `frontend/src/lib/destinations.ts`
 - `frontend/src/components/SchoolDetailView.tsx` — the school page: one scroll of key facts, designation, test scores, history, students, enrollment
 - `frontend/src/components/HistoryChart.tsx` (Recharts line chart), `Sparkline.tsx`, `HistorySheet.tsx`, `HistorySparkline.tsx` — a metric's history; `frontend/src/lib/history.ts` builds the year series
-- `frontend/src/components/DotPlot.tsx` — a figure beside its yardsticks on one scale, with the band where most schools fall; rows can link to a page (the district page); `SimilarSchoolsSheet.tsx` lists the 25 similar schools; `frontend/src/lib/benchmarks.ts` holds the wording and scales
+- `frontend/src/components/DotPlot.tsx` — a figure beside its yardsticks on one scale, with the band where most schools fall; rows can link to a page (the district page) or take a series colour (Compare); `DotTrack.tsx` is the track itself, several dots on one scale; `frontend/src/lib/series.ts` names the series colour classes; `SimilarSchoolsSheet.tsx` lists the 25 similar schools; `frontend/src/lib/benchmarks.ts` holds the wording and scales
+- `frontend/src/routes/Compare.tsx`, `frontend/src/components/ComparisonView.tsx`, `frontend/src/lib/compareList.ts` — the comparison: its list in the URL, a dot plot per metric on phones and a table on desktop
 - `frontend/src/components/CompositionBar.tsx`, `DesignationScale.tsx`, `SectionLinks.tsx`, `Facts.tsx` — other school page parts
 - `frontend/src/routes/HowThisWorks.tsx` — plain-language explanation of every yardstick; keep it in step with `benchmarks.py`
 - `frontend/src/components/` — reusable components
@@ -308,8 +309,13 @@ Tokens are defined in `frontend/src/index.css` and documented in `docs/plans/202
 - Each row shows the one score for its level: the ACT average for high schools, IAR proficiency for every other level (`headline_assessment` in `browse.py`).
 - Sorting by score needs a level, since levels take different tests. The API answers 422 otherwise and the list drops the sort.
 - `/browse?by=district` and `/browse?by=city` list places; a district opens `/district/{id}`, a city opens `/search?city=`.
-- The district page plots each level's scores on the level's `ASSESSMENT_SCALES` scale and offers "Compare all" when the level has 2 to 5 schools. It replaces the comparison selection.
+- The district page plots each level's scores on the level's `ASSESSMENT_SCALES` scale and offers "Compare all" when the level has 2 to 5 schools. It links to that comparison's URL, which replaces the comparison selection.
 - The school page's city and district are links to the same places.
+
+### Compare
+- The URL is the comparison: `/compare?schools=<rcdts>,<rcdts>` (`comparePath` and `readCompareList` in `frontend/src/lib/compareList.ts`). On the Compare page the URL leads and the remembered list (`ComparisonContext`, in localStorage) follows it. `/compare` with no list opens the remembered one; `?schools=` with nothing after it is an empty comparison.
+- Removing and clearing on the Compare page change the URL, never the context directly. The desktop comparison bar is hidden there for that reason.
+- Each school keeps one series colour down the page. Designation comes first. Below `lg` each metric is a short dot plot with every school; from `lg` it is a table with a dot track per row, and the highest test result in a row is bold. Metrics no school reports are left out.
 
 ### Display Names
 `display_name` is the official `school_name` with abbreviations spelled out (`display_name` in `sync_from_api.py`):
