@@ -109,7 +109,10 @@ Ranked lists of top-performing schools by ACT composite (high schools) or IAR pr
 **Technical highlights:**
 - Filter by school level (elementary, middle, high)
 - Filter by assessment type (ACT, IAR)
-- Proper tie-breaking for equal scores
+- Rank within a county or district, with ranks starting from 1
+- Find any school's rank, including those outside the top 100
+- Enrollment, low-income share and state designation on every row
+- Tied scores share a rank; the view lives in the URL
 - Efficient database queries with proper indexing
 
 ---

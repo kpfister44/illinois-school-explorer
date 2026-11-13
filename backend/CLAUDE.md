@@ -69,7 +69,7 @@ The sync script handles all format differences automatically via a probe-then-fe
 | `/api/search` | GET | Search schools by name, city, or district | [→](docs/API_ENDPOINTS.md#search-schools) |
 | `/api/schools/{rcdts}` | GET | Get complete school information | [→](docs/API_ENDPOINTS.md#get-school-detail) |
 | `/api/schools/compare` | GET | Compare 2-5 schools side-by-side | [→](docs/API_ENDPOINTS.md#compare-schools) |
-| `/api/top-scores` | GET | Ranked list of top schools by assessment | [→](docs/API_ENDPOINTS.md#get-top-scores) |
+| `/api/top-scores` | GET | Ranking by assessment and level, statewide or in a county or district, with one school's rank | [→](docs/API_ENDPOINTS.md#get-top-scores) |
 | `/api/schools/{rcdts}/similar` | GET | The 25 schools most like a school | [→](docs/API_ENDPOINTS.md#get-similar-schools) |
 | `/api/benchmarks/state` | GET | State average by year and the band where most schools fall | [→](docs/API_ENDPOINTS.md#get-state-benchmark) |
 | `/api/stats` | GET | School, district and city counts | [→](docs/API_ENDPOINTS.md#get-stats) |
@@ -104,9 +104,10 @@ Side-by-side comparison of 2-5 schools. See [full documentation](docs/API_ENDPOI
 
 ```http
 GET /api/top-scores?assessment=act&level=high&limit=100
+GET /api/top-scores?assessment=act&level=high&county=Dupage&school=19-022-2030-26-0001
 ```
 
-Ranked list of top schools by ACT or IAR. See [full documentation](docs/API_ENDPOINTS.md#get-top-scores)
+Ranked list of top schools by ACT or IAR, with the number ranked. A county or district ranks only its schools; `school` returns one school's rank even beyond the limit. See [full documentation](docs/API_ENDPOINTS.md#get-top-scores)
 
 ---
 
@@ -281,8 +282,8 @@ All API responses use Pydantic models for validation and serialization:
 - `StateYearAverage`, `StateBenchmark`: State average by year and the 10th to 90th percentile band
 
 **Top Scores:**
-- `TopScoreEntry`: Single ranked school entry with rank, score, and basic info
-- `TopScoresResponse`: Wrapper for top scores results array
+- `TopScoreEntry`: Single ranked school entry with rank, score, enrollment, low-income share and designation
+- `TopScoresResponse`: The top of the ranking (`results`), how many schools it ranks (`total`) and the looked-up `school`
 
 ---
 

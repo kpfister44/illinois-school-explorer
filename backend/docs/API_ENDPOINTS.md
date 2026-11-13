@@ -468,7 +468,7 @@ const { data } = useCompare(['rcdts1', 'rcdts2', 'rcdts3']);
 
 ### Get Top Scores
 
-Retrieve ranked list of top 100 schools by ACT composite or IAR proficiency, filtered by school level.
+Rank one level's schools by ACT or IAR proficiency, across Illinois or within a county or district, and look up any one school's rank.
 
 **Endpoint:** `GET /api/top-scores`
 
@@ -481,6 +481,9 @@ Retrieve ranked list of top 100 schools by ACT composite or IAR proficiency, fil
 | `assessment` | string | Yes | `act`, `iar` | - | Assessment type to rank by |
 | `level` | string | Yes | `high`, `middle`, `elementary` | - | School level filter |
 | `limit` | integer | No | 1-100 | 100 | Maximum results to return |
+| `county` | string | No | County name, any case | - | Rank only this county's schools |
+| `district` | string | No | First 14 characters of an RCDTS code | - | Rank only this district's schools |
+| `school` | string | No | RCDTS code | - | A school to look up; returned as `school` with its rank, even beyond `limit` |
 
 **Parameter Details:**
 
@@ -504,39 +507,53 @@ curl "http://localhost:8000/api/top-scores?assessment=iar&level=elementary"
 
 # Top 20 middle schools by IAR
 curl "http://localhost:8000/api/top-scores?assessment=iar&level=middle&limit=20"
+
+# DuPage County high schools, with Naperville Central's rank in the county
+curl "http://localhost:8000/api/top-scores?assessment=act&level=high&county=Dupage&limit=1&school=19-022-2030-26-0001"
 ```
 
-**Example Response:**
+**Example Response** (the DuPage request above):
 ```json
 {
   "results": [
     {
       "rank": 1,
-      "rcdts": "05-016-2140-17-0002",
-      "school_name": "Elk Grove High School",
-      "city": "Elk Grove Village",
-      "district": "Township HSD 214",
+      "rcdts": "19-022-0860-17-0001",
+      "school_name": "Hinsdale Central High School",
+      "display_name": "Hinsdale Central High School",
+      "city": "Hinsdale",
+      "county": "Dupage",
+      "district": "Hinsdale Twp HSD 86",
+      "district_id": "19-022-0860-17",
       "school_type": "High School",
       "level": "high",
-      "enrollment": 1775,
-      "score": 25.1,
-      "act_ela_avg": 24.5,
-      "act_math_avg": 25.7
-    },
-    {
-      "rank": 2,
-      "rcdts": "15-016-3050-17-0003",
-      "school_name": "Example High School",
-      "city": "Chicago",
-      "district": "CPS District 299",
-      "school_type": "High School",
-      "level": "high",
-      "enrollment": 1520,
-      "score": 24.8,
-      "act_ela_avg": 24.2,
-      "act_math_avg": 25.4
+      "enrollment": 2417,
+      "low_income_percentage": 7.2,
+      "designation": "Exemplary",
+      "score": 25.85,
+      "act_ela_avg": 24.6,
+      "act_math_avg": 27.1
     }
-  ]
+  ],
+  "total": 23,
+  "school": {
+    "rank": 3,
+    "rcdts": "19-022-2030-26-0001",
+    "school_name": "Naperville Central High School",
+    "display_name": "Naperville Central High School",
+    "city": "Naperville",
+    "county": "Dupage",
+    "district": "Naperville CUSD 203",
+    "district_id": "19-022-2030-26",
+    "school_type": "High School",
+    "level": "high",
+    "enrollment": 2505,
+    "low_income_percentage": 13.8,
+    "designation": "Exemplary",
+    "score": 23.0,
+    "act_ela_avg": 21.9,
+    "act_math_avg": 24.1
+  }
 }
 ```
 
@@ -545,14 +562,24 @@ curl "http://localhost:8000/api/top-scores?assessment=iar&level=middle&limit=20"
 See [`../app/models.py`](../app/models.py) for `TopScoresResponse` and `TopScoreEntry` definitions.
 
 **Fields Returned:**
-- `rank` (int) - School's ranking (1-indexed)
+- `results` - The top of the ranking, at most `limit` schools
+- `total` (int) - How many schools the ranking holds (every school of the level with a score, in the region if one is given)
+- `school` - The looked-up school's entry, or `null` when none was asked for or it is not in this ranking (another level, outside the region, or no score)
+
+Each entry has:
+- `rank` (int) - School's ranking (1-indexed); tied schools share a rank
 - `rcdts` (string) - State school identifier
 - `school_name` (string) - Official school name
+- `display_name` (string) - School name with abbreviations spelled out
 - `city` (string) - City location
+- `county` (string | null) - County
 - `district` (string | null) - School district
+- `district_id` (string) - District id: the first 14 characters of the RCDTS code
 - `school_type` (string | null) - Original school type
 - `level` (string) - Normalized level (high/middle/elementary)
 - `enrollment` (int | null) - Total student count
+- `low_income_percentage` (float | null) - Share of students from low-income families
+- `designation` (string | null) - 2026 state designation
 - `score` (float) - Ranking score (ACT composite or IAR proficiency)
 - `act_ela_avg` (float | null) - ACT ELA average (only for ACT assessment)
 - `act_math_avg` (float | null) - ACT Math average (only for ACT assessment)
@@ -563,9 +590,11 @@ See [`../app/models.py`](../app/models.py) for `TopScoresResponse` and `TopScore
 - ACT: `(act_ela_avg + act_math_avg) / 2` rounded to 2 decimals
 - IAR: `iar_overall_proficiency_pct` rounded to 2 decimals
 
-**Sorting:**
+**Sorting and ranks:**
 1. Primary: Score (descending)
-2. Tie-breaker: School name (alphabetical)
+2. Tie-breaker: Display name (alphabetical)
+3. Schools with the same score share a rank and the next rank is skipped (1, 2, 2, 4)
+4. With `county` or `district`, only that region's schools are ranked, so ranks start from 1 within it
 
 **Exclusions:**
 - Schools with `NULL` scores are excluded from results
@@ -609,16 +638,16 @@ See [`../app/models.py`](../app/models.py) for `TopScoresResponse` and `TopScore
 - Data journalism and research
 
 **Database Operations:**
-- Filtered query on `level` field (indexed)
-- Sorted by computed score + school name
+- Filtered query on `level` (indexed), and on county or district when given
+- Every school in the ranking is read and ranked, so `total` and the looked-up school's rank are exact
 - See [`docs/DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md#schools-table) for relevant fields
 
 **Frontend Integration:**
 ```typescript
 // See frontend/src/lib/api/queries.ts
 const { data } = useQuery({
-  queryKey: topScoresQueryKey('act', 'high', 100),
-  queryFn: () => getTopScores({ assessment: 'act', level: 'high', limit: 100 })
+  queryKey: topScoresQueryKey({ level: 'high', county: 'Dupage' }),
+  queryFn: () => getTopScores({ assessment: 'act', level: 'high', county: 'Dupage', limit: 100 })
 });
 ```
 
