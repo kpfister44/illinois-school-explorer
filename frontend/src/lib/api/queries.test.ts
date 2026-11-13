@@ -11,6 +11,7 @@ import {
   stateBenchmarkQueryKey,
   similarSchoolsQueryKey,
   getTopScores,
+  topScoresQueryKey,
   getSchools,
   schoolListQueryKey,
   districtQueryKey,
@@ -124,5 +125,46 @@ describe('getTopScores', () => {
       params: { assessment: 'act', level: 'high', limit: 25 },
     });
     expect(payload.results[0].rank).toBe(1);
+  });
+
+  it('narrows to a region and looks up a school', async () => {
+    mockedGet.mockResolvedValue({ data: { results: [], total: 0, school: null } });
+
+    await getTopScores({
+      assessment: 'iar',
+      level: 'middle',
+      county: 'Lake',
+      district: '34-049-0050-02',
+      school: '34-049-0050-02-1001',
+    });
+
+    expect(mockedGet).toHaveBeenCalledWith('/api/top-scores', {
+      params: {
+        limit: 100,
+        assessment: 'iar',
+        level: 'middle',
+        county: 'Lake',
+        district: '34-049-0050-02',
+        school: '34-049-0050-02-1001',
+      },
+    });
+  });
+});
+
+describe('topScoresQueryKey', () => {
+  it('keys on the whole view', () => {
+    expect(topScoresQueryKey({ level: 'high', county: 'Cook' })).toEqual([
+      'top-scores',
+      { level: 'high', county: 'Cook' },
+    ]);
+  });
+
+  it('tells apart regions and looked-up schools', () => {
+    expect(topScoresQueryKey({ level: 'high', county: 'Cook' })).not.toEqual(
+      topScoresQueryKey({ level: 'high', county: 'Lake' })
+    );
+    expect(topScoresQueryKey({ level: 'high' })).not.toEqual(
+      topScoresQueryKey({ level: 'high', school: '1' })
+    );
   });
 });

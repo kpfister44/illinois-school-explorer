@@ -3,6 +3,7 @@
 
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { apiParams, type SchoolListFilters } from '@/lib/schoolList';
+import type { TopScoresView } from '@/lib/topScores';
 import { apiClient } from './client';
 import type {
   SearchResponse,
@@ -49,12 +50,7 @@ export const similarSchoolsQueryKey = (rcdts: string, assessment: Assessment) =>
   rcdts,
   assessment,
 ];
-export const topScoresQueryKey = (assessment: Assessment, level: SchoolLevel, limit: number) => [
-  'top-scores',
-  assessment,
-  level,
-  limit,
-];
+export const topScoresQueryKey = (view: TopScoresView) => ['top-scores', view];
 
 export const schoolListQueryKey = (filters: SchoolListFilters) => ['schools', filters];
 export const districtQueryKey = (id: string) => ['district', id];
@@ -77,6 +73,9 @@ export async function getTopScores(params: {
   assessment: Assessment;
   level: SchoolLevel;
   limit?: number;
+  county?: string;
+  district?: string;
+  school?: string;
 }): Promise<TopScoresResponse> {
   const { data } = await apiClient.get<TopScoresResponse>('/api/top-scores', {
     params: { limit: 100, ...params },

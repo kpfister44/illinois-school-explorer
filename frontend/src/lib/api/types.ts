@@ -199,11 +199,16 @@ export interface TopScoreEntry {
   rank: number;
   rcdts: string;
   school_name: string;
+  display_name: string;
   city: string;
+  county: string | null;
   district: string | null;
+  district_id: string;
   school_type: string | null;
   level: SchoolLevel;
   enrollment: number | null;
+  low_income_percentage: number | null;
+  designation: Designation | null;
   score: number;
   act_ela_avg?: number | null;
   act_math_avg?: number | null;
@@ -211,6 +216,8 @@ export interface TopScoreEntry {
 
 export interface TopScoresResponse {
   results: TopScoreEntry[];
+  total: number;
+  school: TopScoreEntry | null;
 }
 
 export interface SchoolListItem {
